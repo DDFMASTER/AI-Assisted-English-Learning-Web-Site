@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LinguaAI - 自适应测评</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<style>
+        body { background-color: #F8F7F4; color: #1F2937; font-family: 'Inter', 'Noto Sans SC', sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 32px; }
+        .option-card { border: 2px solid #F3F4F6; transition: all 0.2s; cursor: pointer; }
+        .option-card:hover { border-color: #DBEAFE; background-color: #F9FAFB; }
+        .option-selected { border-color: #2563EB; background-color: #EFF6FF; }
+        .mark-btn { transition: all 0.2s; }
+        .mark-btn:hover { transform: translateY(-2px); }
+        .mark-active-green { background-color: #10B981; color: white; border-color: #10B981; }
+        .mark-active-yellow { background-color: #F59E0B; color: white; border-color: #F59E0B; }
+        .mark-active-red { background-color: #EF4444; color: white; border-color: #EF4444; }
+        .nav-link { transition: all 0.3s; }
+        .nav-link:hover { color: #2563EB; }
+        .nav-active { color: #2563EB; font-weight: 600; position: relative; }
+        .nav-active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: #2563EB; }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+<!-- 全局导航栏 -->
+<nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+<div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+<a class="flex items-center gap-2" href="materials.html">
+<div class="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center">
+<iconify-icon class="text-white text-xl" icon="ph:book-open-text-bold"></iconify-icon>
+</div>
+<span class="text-xl font-bold tracking-tight text-[#1F2937]">LinguaAI</span>
+</a>
+<div class="flex items-center gap-8">
+<a class="nav-link text-gray-500" href="materials.html">读物匹配</a>
+<a class="nav-link text-gray-500" href="tasks.html">任务管理</a>
+<a class="nav-link nav-active" href="assessment.html">测评中心</a>
+<a class="nav-link text-gray-500" href="profile.html">个人中心</a>
+</div>
+<div class="flex items-center gap-4">
+<div class="text-xs font-bold text-gray-400">测评模式</div>
+</div>
+</div>
+</nav>
+<main class="max-w-[1200px] mx-auto px-6 mt-10">
+<!-- 状态1: 开始页面 -->
+<div class="max-w-2xl mx-auto text-center py-20" id="startScreen">
+<div class="w-20 h-20 bg-blue-50 text-[#2563EB] rounded-3xl flex items-center justify-center mx-auto mb-8">
+<iconify-icon class="text-4xl" icon="ph:clipboard-text-bold"></iconify-icon>
+</div>
+<h1 class="text-4xl font-bold mb-6">英语能力自适应测评</h1>
+<p class="text-gray-500 text-lg mb-10 leading-relaxed">
+                本测评将通过 15 道精选题目，实时评估你的词汇量、语法掌握度及阅读理解能力。AI 会根据你的答题表现动态调整后续题目难度。
+            </p>
+<div class="grid grid-cols-3 gap-6 mb-12 text-left">
+<div class="card !p-6">
+<div class="text-[#2563EB] mb-2 font-bold">10-15 min</div>
+<div class="text-xs text-gray-400">预计时长</div>
+</div>
+<div class="card !p-6">
+<div class="text-[#2563EB] mb-2 font-bold">15 题</div>
+<div class="text-xs text-gray-400">题目数量</div>
+</div>
+<div class="card !p-6">
+<div class="text-[#2563EB] mb-2 font-bold">动态难度</div>
+<div class="text-xs text-gray-400">AI 实时调整</div>
+</div>
+</div>
+<button class="px-12 py-4 bg-[#2563EB] text-white rounded-2xl text-lg font-bold shadow-xl shadow-blue-200 hover:scale-105 transition-transform" onclick="startAssessment()">开始测评</button>
+</div>
+<!-- 状态2: 答题页面 -->
+<div class="max-w-4xl mx-auto hidden" id="quizScreen">
+<!-- 顶部进度 -->
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-3">
+<span class="text-2xl font-bold text-[#2563EB]" id="currentNum">04</span>
+<span class="text-gray-300 font-bold">/ 15</span>
+</div>
+<div class="flex-1 max-w-md h-2 bg-gray-100 rounded-full mx-8 overflow-hidden">
+<div class="w-[26%] h-full bg-[#2563EB] transition-all duration-500" id="progressBar"></div>
+</div>
+<button class="text-sm font-bold text-gray-400 hover:text-red-500 transition-colors">退出测评</button>
+</div>
+<!-- 题目内容 -->
+<div class="grid grid-cols-12 gap-8">
+<!-- 左侧：阅读文本 -->
+<div class="col-span-7">
+<div class="card h-full">
+<h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Reading Passage</h3>
+<div class="text-lg leading-relaxed text-gray-700 space-y-4">
+<p>
+                                The concept of "Smart Cities" has gained significant momentum over the past decade. By leveraging 
+                                <span class="bg-yellow-50 border-b-2 border-yellow-200">Internet of Things (IoT)</span> 
+                                technologies, urban centers can now monitor traffic patterns, energy consumption, and public safety in real-time.
+                            </p>
+<p>
+                                However, the implementation of such systems is not without controversy. Critics argue that the pervasive nature of sensors and cameras raises serious concerns regarding citizen privacy and data security.
+                            </p>
+</div>
+</div>
+</div>
+<!-- 右侧：问题与选项 -->
+<div class="col-span-5 flex flex-col gap-6">
+<div class="card flex-1">
+<h3 class="font-bold text-xl mb-6">What is the primary concern raised by critics of Smart Cities?</h3>
+<div class="space-y-4">
+<div class="option-card p-4 rounded-xl flex items-center gap-4" onclick="selectOption(this)">
+<div class="w-6 h-6 rounded-full border-2 border-gray-200 flex items-center justify-center flex-none">
+<span class="text-xs font-bold">A</span>
+</div>
+<span class="text-sm font-medium">The high cost of implementation</span>
+</div>
+<div class="option-card p-4 rounded-xl flex items-center gap-4 option-selected" onclick="selectOption(this)">
+<div class="w-6 h-6 rounded-full border-2 border-[#2563EB] bg-[#2563EB] flex items-center justify-center flex-none">
+<span class="text-xs font-bold text-white">B</span>
+</div>
+<span class="text-sm font-medium">Privacy and data security issues</span>
+</div>
+<div class="option-card p-4 rounded-xl flex items-center gap-4" onclick="selectOption(this)">
+<div class="w-6 h-6 rounded-full border-2 border-gray-200 flex items-center justify-center flex-none">
+<span class="text-xs font-bold">C</span>
+</div>
+<span class="text-sm font-medium">Inefficient traffic monitoring</span>
+</div>
+<div class="option-card p-4 rounded-xl flex items-center gap-4" onclick="selectOption(this)">
+<div class="w-6 h-6 rounded-full border-2 border-gray-200 flex items-center justify-center flex-none">
+<span class="text-xs font-bold">D</span>
+</div>
+<span class="text-sm font-medium">Lack of IoT infrastructure</span>
+</div>
+</div>
+</div>
+<!-- 自主标记功能 -->
+<div class="card !bg-[#F8F7F4] !border-none">
+<h4 class="text-sm font-bold mb-4 text-center">你对这段内容的理解程度？</h4>
+<div class="flex gap-3">
+<button class="mark-btn flex-1 py-3 bg-white border border-gray-200 rounded-xl flex flex-col items-center gap-1 group" onclick="mark(this, 'green')">
+<iconify-icon class="text-xl text-green-500" icon="ph:check-circle-bold"></iconify-icon>
+<span class="text-[10px] font-bold text-gray-500 group-hover:text-green-600">看得懂</span>
+</button>
+<button class="mark-btn flex-1 py-3 bg-white border border-gray-200 rounded-xl flex flex-col items-center gap-1 group" onclick="mark(this, 'yellow')">
+<iconify-icon class="text-xl text-yellow-500" icon="ph:question-bold"></iconify-icon>
+<span class="text-[10px] font-bold text-gray-500 group-hover:text-yellow-600">模糊</span>
+</button>
+<button class="mark-btn flex-1 py-3 bg-white border border-gray-200 rounded-xl flex flex-col items-center gap-1 group" onclick="mark(this, 'red')">
+<iconify-icon class="text-xl text-red-500" icon="ph:x-circle-bold"></iconify-icon>
+<span class="text-[10px] font-bold text-gray-500 group-hover:text-red-600">看不懂</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- 底部导航 -->
+<div class="mt-12 flex justify-between items-center">
+<button class="px-8 py-3 text-gray-400 font-bold hover:text-gray-600 transition-colors">← 上一题</button>
+<div class="flex items-center gap-4">
+<span class="text-sm text-gray-400">已自动保存进度</span>
+<a class="px-10 py-3 bg-[#2563EB] text-white rounded-xl font-bold shadow-lg shadow-blue-100 hover:scale-105 transition-transform" href="result.html">下一题</a>
+</div>
+</div>
+</div>
+</main>
+<script>
+        function startAssessment() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('quizScreen').classList.remove('hidden');
+        }
+
+        function selectOption(el) {
+            document.querySelectorAll('.option-card').forEach(card => {
+                card.classList.remove('option-selected');
+                const radio = card.querySelector('div');
+                radio.classList.remove('border-[#2563EB]', 'bg-[#2563EB]');
+                radio.classList.add('border-gray-200');
+                radio.querySelector('span').classList.remove('text-white');
+            });
+            el.classList.add('option-selected');
+            const radio = el.querySelector('div');
+            radio.classList.remove('border-gray-200');
+            radio.classList.add('border-[#2563EB]', 'bg-[#2563EB]');
+            radio.querySelector('span').classList.add('text-white');
+        }
+
+        function mark(btn, color) {
+            const btns = btn.parentElement.querySelectorAll('button');
+            btns.forEach(b => {
+                b.classList.remove('mark-active-green', 'mark-active-yellow', 'mark-active-red', 'border-transparent');
+                b.classList.add('bg-white', 'border-gray-200');
+            });
+            
+            btn.classList.remove('bg-white', 'border-gray-200');
+            btn.classList.add(`mark-active-${color}`, 'border-transparent');
+        }
+    </script>
+</body>
+</html>

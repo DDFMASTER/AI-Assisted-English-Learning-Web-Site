@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LinguaAI - AI 沉浸式阅读器</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<style>
+    body { background-color: #F8F7F4; color: #1F2937; font-family: 'Inter', 'Noto Sans SC', sans-serif; overflow-x: hidden; }
+    .reader-container { max-width: 720px; margin: 0 auto; padding: 120px 24px; }
+    .interactive-word { border-bottom: 2px dotted #BFDBFE; cursor: pointer; transition: all 0.2s; }
+    .interactive-word:hover { background-color: #DBEAFE; border-bottom-color: #2563EB; }
+    .culture-mark { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #F59E0B; color: white; border-radius: 4px; font-size: 10px; margin-left: 2px; cursor: pointer; vertical-align: middle; }
+    .glass-popover { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px border-white; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border-radius: 12px; transition: opacity 0.2s, transform 0.2s; }
+    .article-p { font-size: 18px; line-height: 1.8; margin-bottom: 24px; color: #374151; text-align: justify; }
+    .socratic-card { background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); padding: 32px; border: 1px border-blue-50; }
+    .nav-link { transition: all 0.3s; }
+    .nav-link:hover { color: #2563EB; }
+    .nav-active { color: #2563EB; font-weight: 600; position: relative; }
+    .nav-active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: #2563EB; }
+</style>
+</head>
+<body class="min-h-screen">
+<!-- 全局导航栏（半透明沉浸式） -->
+<nav class="sticky top-0 z-50 bg-white/60 backdrop-blur-md border-b border-gray-100">
+<div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<a class="p-2 hover:bg-gray-100 rounded-full transition-colors" href="materials.html">
+<iconify-icon class="text-xl" icon="ph:arrow-left-bold"></iconify-icon>
+</a>
+<div class="h-6 w-px bg-gray-200"></div>
+<h2 class="font-bold truncate max-w-[400px]">The Future of AI in Modern Classrooms</h2>
+</div>
+<div class="flex items-center gap-8">
+<a class="nav-link text-gray-500" href="materials.html">读物匹配</a>
+<a class="nav-link text-gray-500" href="tasks.html">任务管理</a>
+<a class="nav-link text-gray-500" href="assessment.html">测评中心</a>
+<a class="nav-link text-gray-500" href="profile.html">个人中心</a>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-blue-50 text-[#2563EB] rounded-full text-sm font-bold hover:bg-blue-100 transition-all">
+<iconify-icon icon="ph:translate-bold"></iconify-icon>
+                对照翻译
+            </button>
+<button class="p-2 text-gray-400 hover:text-gray-600">
+<iconify-icon class="text-2xl" icon="ph:text-t-bold"></iconify-icon>
+</button>
+<button class="p-2 text-gray-400 hover:text-gray-600">
+<iconify-icon class="text-2xl" icon="ph:bookmark-simple-bold"></iconify-icon>
+</button>
+</div>
+</div>
+</nav>
+<!-- 阅读区域 -->
+<main class="reader-container">
+<header class="mb-12">
+<div class="flex items-center gap-2 text-sm text-gray-400 font-medium mb-4">
+<span>Education</span>
+<span>•</span>
+<span>12 min read</span>
+<span>•</span>
+<span class="text-[#2563EB]">B2 Upper Intermediate</span>
+</div>
+<h1 class="text-4xl font-bold leading-tight mb-8">How Artificial Intelligence is Redefining the Role of Educators</h1>
+<div class="flex items-center gap-3 mb-12">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold flex-none">S</div>
+<div>
+<div class="text-sm font-bold">Dr. Sarah Jenkins</div>
+<div class="text-xs text-gray-400">Published on June 25, 2026</div>
+</div>
+</div>
+</header>
+<article id="articleContent">
+<p class="article-p">
+            In the rapidly evolving landscape of modern education, the integration of 
+            <span class="interactive-word" data-def="人工的，人造的" data-phonetic="/ˌɑːrtɪˈfɪʃl/" data-pos="adj." data-word="artificial">artificial</span> 
+            intelligence has moved from a futuristic concept to a daily reality. However, the most profound impact of this technology is not just in the 
+            <span class="interactive-word" data-def="算法，演算法" data-phonetic="/ˈælɡərɪðəm/" data-pos="n." data-word="algorithm">algorithms</span> 
+            themselves, but in how they reshape the 
+            <span class="interactive-word" data-def="教学法，教育学" data-phonetic="/ˈpedəɡəʊdʒi/" data-pos="n." data-word="pedagogy">pedagogy</span> 
+            of the 21st-century classroom.
+        </p>
+<p class="article-p">
+            Traditional teaching models often relied on a "one-size-fits-all" approach, where a single instructor would deliver content to a diverse group of students. Today, AI-powered platforms can provide personalized learning paths, adapting to each student's 
+            <span class="interactive-word" data-def="认知的，感知的" data-phonetic="/ˈkɒɡnətɪv/" data-pos="adj." data-word="cognitive">cognitive</span> 
+            load and pace. This shift allows teachers to move away from being the primary source of information to becoming facilitators of critical thinking and 
+            <span class="interactive-word" data-def="合作的，协作的" data-phonetic="/kəˈlæbəreɪtɪv/" data-pos="adj." data-word="collaborative">collaborative</span> 
+            problem-solving.
+        </p>
+<!-- 苏格拉底式提问卡片 -->
+<div class="my-12 socratic-card border-l-4 border-l-[#2563EB]">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-[#2563EB] flex-none">
+<iconify-icon class="text-2xl" icon="ph:chats-circle-bold"></iconify-icon>
+</div>
+<div>
+<h4 class="text-lg font-bold mb-3">🤔 AI 深度思考</h4>
+<p class="text-gray-600 leading-relaxed mb-6">
+                    作者在文中提到"教师的角色正在从信息源转变为引导者"。你认为这种转变对学生自主学习能力提出了哪些新的挑战？
+                </p>
+<div class="flex items-center gap-3">
+<button class="px-6 py-2.5 bg-[#2563EB] text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-600 transition-all">写下你的想法</button>
+<button class="px-6 py-2.5 bg-gray-50 text-gray-500 rounded-xl text-sm font-bold hover:bg-gray-100 transition-all">稍后回答</button>
+</div>
+</div>
+</div>
+</div>
+<p class="article-p">
+            One of the most notable frameworks being revitalized by AI is the 
+            <span class="font-bold text-gray-900">Socratic Method</span><span class="culture-mark" onclick="showCultureNote(this, '苏格拉底教学法', '由古希腊哲学家苏格拉底提出，通过一系列启发式提问而非直接灌输，引导学生发现真理并建立逻辑。在AI时代，这被用于开发对话式教学机器人。')">★</span>. 
+            Instead of giving answers, AI tutors are being designed to ask the right questions, nudging students to uncover the underlying logic of a subject. This 
+            <span class="interactive-word" data-def="范式，典范" data-phonetic="/ˈpærədaɪm/" data-pos="n." data-word="paradigm">paradigm</span> 
+            shift ensures that technology enhances human intelligence rather than replacing it.
+        </p>
+<p class="article-p">
+            Despite the benefits, challenges remain. The 
+            <span class="interactive-word" data-def="伦理的，道德的" data-phonetic="/ˈeθɪkl/" data-pos="adj." data-word="ethical">ethical</span> 
+            implications of data privacy and the potential for 
+            <span class="interactive-word" data-def="偏见，偏向" data-phonetic="/ˈbaɪəs/" data-pos="n." data-word="bias">bias</span> 
+            in automated grading systems are significant concerns that require careful 
+            <span class="interactive-word" data-def="监督，监察" data-phonetic="/ˈəʊvəsaɪt/" data-pos="n." data-word="oversight">oversight</span>.
+        </p>
+</article>
+</main>
+<!-- 底部操作栏 -->
+<div class="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-t border-gray-100">
+<div class="max-w-[1200px] mx-auto px-6 h-20 flex items-center justify-between">
+<div class="flex items-center gap-4 w-1/4">
+<span class="text-xs font-bold text-gray-400">进度 45%</span>
+<div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+<div class="w-[45%] h-full bg-[#2563EB]"></div>
+</div>
+</div>
+<div class="flex items-center gap-8">
+<button class="flex flex-col items-center gap-1 group">
+<iconify-icon class="text-xl text-gray-400 group-hover:text-[#2563EB]" icon="ph:translate-bold"></iconify-icon>
+<span class="text-[10px] text-gray-400 group-hover:text-[#2563EB]">分段翻译</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<iconify-icon class="text-xl text-gray-400 group-hover:text-[#2563EB]" icon="ph:headset-bold"></iconify-icon>
+<span class="text-[10px] text-gray-400 group-hover:text-[#2563EB]">语音朗读</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<iconify-icon class="text-xl text-gray-400 group-hover:text-[#2563EB]" icon="ph:list-bullets-bold"></iconify-icon>
+<span class="text-[10px] text-gray-400 group-hover:text-[#2563EB]">目录</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<iconify-icon class="text-xl text-gray-400 group-hover:text-[#2563EB]" icon="ph:gear-bold"></iconify-icon>
+<span class="text-[10px] text-gray-400 group-hover:text-[#2563EB]">设置</span>
+</button>
+</div>
+<div class="w-1/4 flex justify-end">
+<button class="px-6 py-2 bg-[#2563EB] text-white rounded-full text-sm font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform">下一段</button>
+</div>
+</div>
+</div>
+<!-- 单词查词浮窗 (JS 动态控制) -->
+<div class="fixed z-[100] glass-popover p-5 w-64 hidden" id="wordPopover">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h3 class="text-xl font-bold text-[#2563EB]" id="pop-word">Word</h3>
+<p class="text-xs text-gray-400" id="pop-phonetic">/phonetic/</p>
+</div>
+<button class="text-gray-400 hover:text-red-500 transition-colors">
+<iconify-icon class="text-2xl" icon="ph:plus-circle-bold"></iconify-icon>
+</button>
+</div>
+<div class="space-y-2 mb-4">
+<div class="flex gap-2 items-baseline">
+<span class="text-[10px] font-bold px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded" id="pop-pos">pos.</span>
+<p class="text-sm text-gray-700" id="pop-def">释义内容...</p>
+</div>
+</div>
+<div class="pt-3 border-t border-white/50">
+<button class="w-full py-2 bg-white/50 hover:bg-white text-[11px] font-bold text-gray-500 rounded-lg transition-colors">查看详细解析与例句</button>
+</div>
+</div>
+<!-- 文化注解浮窗 -->
+<div class="fixed z-[100] glass-popover p-5 w-80 hidden" id="culturePopover">
+<h3 class="text-lg font-bold text-[#F59E0B] mb-2" id="cul-title">文化注解</h3>
+<p class="text-sm text-gray-600 leading-relaxed" id="cul-content"></p>
+</div>
+<script>
+    const popover = document.getElementById('wordPopover');
+    const culPopover = document.getElementById('culturePopover');
+
+    document.querySelectorAll('.interactive-word').forEach(word => {
+        word.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const rect = word.getBoundingClientRect();
+            
+            document.getElementById('pop-word').textContent = word.dataset.word;
+            document.getElementById('pop-phonetic').textContent = word.dataset.phonetic;
+            document.getElementById('pop-pos').textContent = word.dataset.pos;
+            document.getElementById('pop-def').textContent = word.dataset.def;
+
+            popover.style.left = `${rect.left + (rect.width/2) - 128}px`;
+            popover.style.top = `${rect.top - 180}px`;
+            popover.classList.remove('hidden');
+            culPopover.classList.add('hidden');
+        });
+    });
+
+    function showCultureNote(el, title, content) {
+        const rect = el.getBoundingClientRect();
+        document.getElementById('cul-title').textContent = title;
+        document.getElementById('cul-content').textContent = content;
+
+        culPopover.style.left = `${rect.left - 150}px`;
+        culPopover.style.top = `${rect.top + 30}px`;
+        culPopover.classList.remove('hidden');
+        popover.classList.add('hidden');
+    }
+
+    document.addEventListener('click', () => {
+        popover.classList.add('hidden');
+        culPopover.classList.add('hidden');
+    });
+
+    popover.addEventListener('click', (e) => e.stopPropagation());
+    culPopover.addEventListener('click', (e) => e.stopPropagation());
+</script>
+</body>
+</html>
