@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LinguaAI - 智能读物匹配</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<style>
+    body { background-color: #F8F7F4; color: #1F2937; font-family: 'Inter', 'Noto Sans SC', sans-serif; }
+    .card { background: white; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 24px; }
+    .nav-link { transition: all 0.3s; }
+    .nav-link:hover { color: #2563EB; }
+    .nav-active { color: #2563EB; font-weight: 600; position: relative; }
+    .nav-active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: #2563EB; }
+    .tab-active { background: #2563EB; color: white; }
+    .badge { padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge-hard { background: #FEE2E2; color: #EF4444; }
+    .badge-medium { background: #FEF3C7; color: #D97706; }
+    .badge-easy { background: #D1FAE5; color: #059669; }
+</style>
+</head>
+<body class="min-h-screen pb-12">
+<!-- 全局导航栏 -->
+<nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+<div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+<a class="flex items-center gap-2" href="materials.html">
+<div class="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center">
+<iconify-icon class="text-white text-xl" icon="ph:book-open-text-bold"></iconify-icon>
+</div>
+<span class="text-xl font-bold tracking-tight text-[#1F2937]">LinguaAI</span>
+</a>
+<div class="flex items-center gap-8">
+<a class="nav-link nav-active" href="materials.html">读物匹配</a>
+<a class="nav-link text-gray-500" href="tasks.html">任务管理</a>
+<a class="nav-link text-gray-500" href="assessment.html">测评中心</a>
+<a class="nav-link text-gray-500" href="profile.html">个人中心</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-gray-400 hover:text-gray-600">
+<iconify-icon class="text-2xl" icon="ph:bell-bold"></iconify-icon>
+</button>
+<a class="w-10 h-10 rounded-full bg-blue-100 border-2 border-white overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#2563EB] transition-all" href="profile.html">
+<div class="w-full h-full rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">A</div>
+</a>
+</div>
+</div>
+</nav>
+<main class="max-w-[1200px] mx-auto px-6 mt-10">
+<!-- 顶部标题区 -->
+<div class="mb-10">
+<h1 class="text-3xl font-bold mb-2">智能读物匹配</h1>
+<p class="text-gray-500">基于你的当前水平 <span class="font-bold text-[#2563EB]">B1 · 中级</span>，AI 为你精准推荐</p>
+</div>
+<div class="grid grid-cols-12 gap-8">
+<!-- 左栏 col-span-8：主体内容 -->
+<div class="col-span-8">
+<!-- Tab 切换 -->
+<div class="flex p-1 bg-white rounded-xl mb-8 w-fit shadow-sm">
+<button class="px-6 py-2 rounded-lg text-sm font-medium tab-active transition-all">进阶类 (期刊/原著)</button>
+<button class="px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all">应试类 (考研/四六级)</button>
+<button class="px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all">基础类 (日常/故事)</button>
+</div>
+<!-- 文章列表 -->
+<div class="space-y-6">
+<!-- 卡片 1 -->
+<div class="card flex gap-6 hover:shadow-lg transition-shadow cursor-pointer group">
+<div class="w-48 h-32 rounded-xl overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 flex-none relative flex items-center justify-center">
+<iconify-icon class="text-4xl text-[#2563EB]/40" icon="ph:newspaper-bold"></iconify-icon>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2">
+<span class="badge badge-medium">B1+ 适中</span>
+<span class="text-[11px] text-gray-400 font-medium">经济学人 · The Economist</span>
+</div>
+<h3 class="text-xl font-bold mb-2 group-hover:text-[#2563EB] transition-colors">The Green Hydrogen Revolution: Hope or Hype?</h3>
+<p class="text-gray-500 text-sm line-clamp-2 leading-relaxed mb-4">氢能被视为实现零排放的关键，但高昂的成本与技术难题依然是其商业化道路上的巨大障碍...</p>
+<div class="flex items-center gap-6 text-[11px] text-gray-400 font-medium">
+<span class="flex items-center gap-1"><iconify-icon icon="ph:clock-bold"></iconify-icon> 12 min read</span>
+<span class="flex items-center gap-1"><iconify-icon icon="ph:text-t-bold"></iconify-icon> 850 words</span>
+<span class="flex items-center gap-1"><iconify-icon icon="ph:translate-bold"></iconify-icon> 12 New Words</span>
+</div>
+</div>
+<div class="flex flex-col justify-center">
+<a class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#2563EB] hover:bg-[#2563EB] hover:text-white transition-all" href="reader.html">
+<iconify-icon class="text-xl" icon="ph:arrow-right-bold"></iconify-icon>
+</a>
+</div>
+</div>
+<!-- 卡片 2 -->
+<div class="card flex gap-6 hover:shadow-lg transition-shadow cursor-pointer group">
+<div class="w-48 h-32 rounded-xl overflow-hidden bg-gradient-to-br from-yellow-100 to-orange-100 flex-none relative flex items-center justify-center">
+<iconify-icon class="text-4xl text-yellow-500/40" icon="ph:building-bold"></iconify-icon>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2">
+<span class="badge badge-hard">B2 较难</span>
+<span class="text-[11px] text-gray-400 font-medium">纽约客 · The New Yorker</span>
+</div>
+<h3 class="text-xl font-bold mb-2 group-hover:text-[#2563EB] transition-colors">The Architecture of Silence: Modern Minimalism</h3>
+<p class="text-gray-500 text-sm line-clamp-2 leading-relaxed mb-4">探讨现代主义建筑中"留白"的哲学意义，以及它如何影响我们在这个喧嚣世界的心理状态...</p>
+<div class="flex items-center gap-6 text-[11px] text-gray-400 font-medium">
+<span class="flex items-center gap-1"><iconify-icon icon="ph:clock-bold"></iconify-icon> 15 min read</span>
+<span class="flex items-center gap-1"><iconify-icon icon="ph:text-t-bold"></iconify-icon> 1200 words</span>
+<span class="flex items-center gap-1"><iconify-icon icon="ph:translate-bold"></iconify-icon> 24 New Words</span>
+</div>
+</div>
+<div class="flex flex-col justify-center">
+<a class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#2563EB] hover:bg-[#2563EB] hover:text-white transition-all" href="reader.html">
+<iconify-icon class="text-xl" icon="ph:arrow-right-bold"></iconify-icon>
+</a>
+</div>
+</div>
+<!-- 卡片 3 -->
+<div class="card flex gap-6 hover:shadow-lg transition-shadow cursor-pointer group">
+<div class="w-48 h-32 rounded-xl overflow-hidden bg-gradient-to-br from-green-100 to-teal-100 flex-none relative flex items-center justify-center">
+<iconify-icon class="text-4xl text-green-500/40" icon="ph:flask-bold"></iconify-icon>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2">
+<span class="badge badge-easy">A2+ 适中</span>
+<span class="text-[11px] text-gray-400 font-medium">每日科学 · Science Daily</span>
+</div>
+<h3 class="text-xl font-bold mb-2 group-hover:text-[#2563EB] transition-colors">Why Deep Sleep is Critical for Memory</h3>
+<p class="text-gray-500 text-sm line-clamp-2 leading-relaxed mb-4">最新的神经科学研究表明，深度睡眠阶段是大脑进行记忆巩固和代谢废物清理的关键时期...</p>
+<div class="flex items-center gap-6 text-[11px] text-gray-400 font-medium">
+<span class="flex items-center gap-1"><iconify-icon icon="ph:clock-bold"></iconify-icon> 8 min read</span>
+<span class="flex items-center gap-1"><iconify-icon icon="ph:text-t-bold"></iconify-icon> 540 words</span>
+<span class="flex items-center gap-1"><iconify-icon icon="ph:translate-bold"></iconify-icon> 8 New Words</span>
+</div>
+</div>
+<div class="flex flex-col justify-center">
+<a class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#2563EB] hover:bg-[#2563EB] hover:text-white transition-all" href="reader.html">
+<iconify-icon class="text-xl" icon="ph:arrow-right-bold"></iconify-icon>
+</a>
+</div>
+</div>
+</div>
+<!-- 底部提示条 -->
+<div class="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#2563EB] shadow-sm">
+<iconify-icon class="text-xl animate-pulse" icon="ph:sparkle-bold"></iconify-icon>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-[#2563EB] text-sm">难度动态调整中</h4>
+<p class="text-[11px] text-blue-600/70">AI 正在根据你最近 3 天的阅读速度和查词频率调整推荐权重，当前的素材更贴合你的"舒适区+1"学习曲线。</p>
+</div>
+</div>
+</div>
+<!-- 右栏 col-span-4 -->
+<div class="col-span-4 space-y-8">
+<!-- 今日任务侧边栏 -->
+<div class="card">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold">🎯 今日任务</h3>
+<div class="flex items-center gap-2">
+<div class="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
+<div class="w-[60%] h-full bg-[#10B981]"></div>
+</div>
+<span class="text-sm font-medium text-[#10B981]">3/5</span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-3 text-sm">
+<span class="w-5 h-5 rounded bg-[#10B981] flex items-center justify-center flex-none"><iconify-icon class="text-white text-[10px]" icon="ph:check-bold"></iconify-icon></span>
+<span class="text-gray-500 line-through">阅读 'AI in Education' 文章</span>
+</div>
+<div class="flex items-center gap-3 text-sm">
+<span class="w-5 h-5 rounded bg-[#10B981] flex items-center justify-center flex-none"><iconify-icon class="text-white text-[10px]" icon="ph:check-bold"></iconify-icon></span>
+<span class="text-gray-500 line-through">学习 5 个新词</span>
+</div>
+<div class="flex items-center gap-3 text-sm">
+<span class="w-5 h-5 rounded bg-[#10B981] flex items-center justify-center flex-none"><iconify-icon class="text-white text-[10px]" icon="ph:check-bold"></iconify-icon></span>
+<span class="text-gray-500 line-through">复习 10 个旧词</span>
+</div>
+<div class="flex items-center gap-3 text-sm">
+<span class="w-5 h-5 rounded border-2 border-gray-200 flex-none"></span>
+<span>完成一篇精读练习</span>
+</div>
+<div class="flex items-center gap-3 text-sm">
+<span class="w-5 h-5 rounded border-2 border-gray-200 flex-none"></span>
+<span>口语练习 5 分钟</span>
+</div>
+</div>
+<a class="block w-full text-center mt-4 py-2 border border-gray-100 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-all" href="tasks.html">查看全部 →</a>
+</div>
+<!-- 浏览历史侧边栏 -->
+<div class="card">
+<h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+<iconify-icon class="text-[#2563EB]" icon="ph:history-bold"></iconify-icon>
+                    浏览历史
+                </h3>
+<div class="space-y-5">
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center flex-none">
+<iconify-icon class="text-lg text-[#2563EB]/50" icon="ph:briefcase-bold"></iconify-icon>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-sm font-bold truncate">The Rise of Remote Work</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[10px] text-green-600 font-bold bg-green-50 px-1 rounded">100% 已读</span>
+<span class="text-[10px] text-gray-400">2天前</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-100 to-teal-100 flex items-center justify-center flex-none">
+<iconify-icon class="text-lg text-green-500/50" icon="ph:tree-bold"></iconify-icon>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-sm font-bold truncate">Urban Farming in Singapore</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1 rounded">45% 在读</span>
+<span class="text-[10px] text-gray-400">昨天</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center flex-none">
+<iconify-icon class="text-lg text-yellow-500/50" icon="ph:music-notes-bold"></iconify-icon>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-sm font-bold truncate">History of Jazz Music</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[10px] text-green-600 font-bold bg-green-50 px-1 rounded">100% 已读</span>
+<span class="text-[10px] text-gray-400">上周</span>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full py-3 mt-5 border border-gray-100 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-all">查看全部历史</button>
+</div>
+</div>
+</div>
+</main>
+</body>
+</html>

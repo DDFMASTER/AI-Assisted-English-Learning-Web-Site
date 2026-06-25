@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LinguaAI - 测评结果</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/echarts.min.js"></script>
+<style>
+    body { background-color: #F8F7F4; color: #1F2937; font-family: 'Inter', 'Noto Sans SC', sans-serif; }
+    .card { background: white; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 32px; }
+    .progress-bar { height: 8px; border-radius: 99px; background: #F3F4F6; overflow: hidden; }
+    .progress-inner { height: 100%; border-radius: 99px; transition: width 1s ease-out; }
+    .nav-link { transition: all 0.3s; }
+    .nav-link:hover { color: #2563EB; }
+    .nav-active { color: #2563EB; font-weight: 600; position: relative; }
+    .nav-active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: #2563EB; }
+</style>
+</head>
+<body class="min-h-screen pb-20">
+<!-- 全局导航栏 -->
+<nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+<div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+<a class="flex items-center gap-2" href="materials.html">
+<div class="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center">
+<iconify-icon class="text-white text-xl" icon="ph:book-open-text-bold"></iconify-icon>
+</div>
+<span class="text-xl font-bold tracking-tight text-[#1F2937]">LinguaAI</span>
+</a>
+<div class="flex items-center gap-8">
+<a class="nav-link text-gray-500" href="materials.html">读物匹配</a>
+<a class="nav-link text-gray-500" href="tasks.html">任务管理</a>
+<a class="nav-link text-gray-500" href="assessment.html">测评中心</a>
+<a class="nav-link text-gray-500" href="profile.html">个人中心</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-bold">分享结果</button>
+</div>
+</div>
+</nav>
+<main class="max-w-[1000px] mx-auto px-6 mt-12">
+<!-- 顶部结果展示 -->
+<div class="card mb-8 overflow-hidden relative">
+<div class="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full -mr-20 -mt-20 z-0"></div>
+<div class="relative z-10 flex items-center gap-12">
+<div class="flex-none text-center">
+<div class="relative w-40 h-40 flex items-center justify-center mx-auto mb-4">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-gray-100" cx="80" cy="80" fill="transparent" r="72" stroke="currentColor" stroke-width="12"></circle>
+<circle class="text-[#2563EB]" cx="80" cy="80" fill="transparent" r="72" stroke="currentColor" stroke-dasharray="452" stroke-dashoffset="144" stroke-width="12"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="text-4xl font-black text-[#2563EB]">B1</span>
+<span class="text-xs font-bold text-gray-400">CEFR 等级</span>
+</div>
+</div>
+<div class="text-sm font-bold text-gray-500">综合得分: 68/100</div>
+</div>
+<div class="flex-1">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-bold mb-4">
+<iconify-icon icon="ph:party-bold"></iconify-icon>
+                测评已通过
+            </div>
+<h1 class="text-3xl font-bold mb-4">恭喜！你已成功晋级 B2 阶段</h1>
+<p class="text-gray-500 leading-relaxed mb-8">
+                AI 分析显示，你在阅读理解和逻辑分析方面表现优异，但在复杂长难句的语法拆解及文化背景知识上仍有提升空间。我们已为你定制了下一阶段的学习计划。
+            </p>
+<div class="flex items-center gap-4">
+<a class="px-8 py-3 bg-[#2563EB] text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform" href="materials.html">开启 B2 学习之旅</a>
+<button class="px-8 py-3 border border-gray-200 text-gray-500 rounded-xl font-bold hover:bg-gray-50 transition-all">重新测评</button>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-8">
+<!-- 左侧：雷达图 -->
+<div class="col-span-5 flex flex-col gap-8">
+<div class="card h-full">
+<h3 class="text-lg font-bold mb-6">能力雷达图</h3>
+<div class="w-full h-80" id="radarChart"></div>
+</div>
+</div>
+<!-- 右侧：分项能力 -->
+<div class="col-span-7 flex flex-col gap-8">
+<div class="card">
+<h3 class="text-lg font-bold mb-8">分项能力详情</h3>
+<div class="space-y-8">
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-bold">词汇量 (Vocabulary)</span>
+<span class="text-sm font-bold text-[#2563EB]">68%</span>
+</div>
+<div class="progress-bar">
+<div class="progress-inner bg-[#2563EB]" style="width: 68%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-bold">语法掌握度 (Grammar)</span>
+<span class="text-sm font-bold text-[#2563EB]">72%</span>
+</div>
+<div class="progress-bar">
+<div class="progress-inner bg-[#2563EB]" style="width: 72%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-bold">阅读理解 (Reading)</span>
+<span class="text-sm font-bold text-[#2563EB]">65%</span>
+</div>
+<div class="progress-bar">
+<div class="progress-inner bg-[#2563EB]" style="width: 65%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-bold">文化背景 (Culture)</span>
+<span class="text-sm font-bold text-[#F59E0B]">55%</span>
+</div>
+<div class="progress-bar">
+<div class="progress-inner bg-[#F59E0B]" style="width: 55%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-bold">逻辑分析 (Logic)</span>
+<span class="text-sm font-bold text-[#10B981]">70%</span>
+</div>
+<div class="progress-bar">
+<div class="progress-inner bg-[#10B981]" style="width: 70%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 底部推荐 -->
+<div class="grid grid-cols-2 gap-8 mt-8">
+<!-- 薄弱词汇推送 -->
+<div class="card">
+<h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+<iconify-icon class="text-[#F59E0B]" icon="ph:lightning-bold"></iconify-icon>
+                AI 薄弱词汇推送
+            </h3>
+<div class="grid grid-cols-1 gap-4">
+<div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+<div>
+<div class="font-bold text-[#2563EB]">Algorithm</div>
+<div class="text-xs text-gray-400">n. 算法，演算法</div>
+</div>
+<iconify-icon class="text-xl text-gray-300 hover:text-[#2563EB] cursor-pointer" icon="ph:plus-circle-bold"></iconify-icon>
+</div>
+<div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+<div>
+<div class="font-bold text-[#2563EB]">Paradigm</div>
+<div class="text-xs text-gray-400">n. 范式，典范</div>
+</div>
+<iconify-icon class="text-xl text-gray-300 hover:text-[#2563EB] cursor-pointer" icon="ph:plus-circle-bold"></iconify-icon>
+</div>
+<div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+<div>
+<div class="font-bold text-[#2563EB]">Cognitive</div>
+<div class="text-xs text-gray-400">adj. 认知的，感知的</div>
+</div>
+<iconify-icon class="text-xl text-gray-300 hover:text-[#2563EB] cursor-pointer" icon="ph:plus-circle-bold"></iconify-icon>
+</div>
+</div>
+</div>
+<!-- 推荐短文 -->
+<div class="card">
+<h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+<iconify-icon class="text-[#2563EB]" icon="ph:book-bookmark-bold"></iconify-icon>
+                针对性强化阅读
+            </h3>
+<div class="space-y-4">
+<div class="flex gap-4 group cursor-pointer">
+<div class="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center flex-none">
+<iconify-icon class="text-2xl text-[#2563EB]/40" icon="ph:books-bold"></iconify-icon>
+</div>
+<div>
+<h4 class="text-sm font-bold group-hover:text-[#2563EB] transition-colors">The Philosophy of Education</h4>
+<p class="text-[10px] text-gray-400 mt-1">适合提升你的"文化背景"维度</p>
+</div>
+</div>
+<div class="flex gap-4 group cursor-pointer">
+<div class="w-16 h-16 rounded-lg bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center flex-none">
+<iconify-icon class="text-2xl text-yellow-500/40" icon="ph:pen-bold"></iconify-icon>
+</div>
+<div>
+<h4 class="text-sm font-bold group-hover:text-[#2563EB] transition-colors">Advanced Grammar in Use</h4>
+<p class="text-[10px] text-gray-400 mt-1">适合提升你的"语法掌握度"维度</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chartDom = document.getElementById('radarChart');
+        const myChart = echarts.init(chartDom);
+        const option = {
+            radar: {
+                indicator: [
+                    { name: '词汇', max: 100 },
+                    { name: '语法', max: 100 },
+                    { name: '阅读理解', max: 100 },
+                    { name: '文化背景', max: 100 },
+                    { name: '逻辑分析', max: 100 }
+                ],
+                splitArea: { show: false },
+                axisLine: { lineStyle: { color: '#E5E7EB' } },
+                splitLine: { lineStyle: { color: '#E5E7EB' } }
+            },
+            series: [{
+                type: 'radar',
+                data: [
+                    {
+                        value: [68, 72, 65, 55, 70],
+                        name: '能力评估',
+                        itemStyle: { color: '#2563EB' },
+                        areaStyle: { color: 'rgba(37, 99, 235, 0.2)' },
+                        lineStyle: { width: 3 }
+                    }
+                ]
+            }]
+        };
+        myChart.setOption(option);
+        window.addEventListener('resize', () => myChart.resize());
+    });
+</script>
+</body>
+</html>

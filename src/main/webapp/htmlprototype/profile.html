@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LinguaAI - 个人中心</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/echarts.min.js"></script>
+<style>
+    body { background-color: #F8F7F4; color: #1F2937; font-family: 'Inter', 'Noto Sans SC', sans-serif; }
+    .card { background: white; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 32px; }
+    .nav-link { transition: all 0.3s; }
+    .nav-link:hover { color: #2563EB; }
+    .nav-active { color: #2563EB; font-weight: 600; position: relative; }
+    .nav-active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: #2563EB; }
+    .toggle-switch { position: relative; width: 44px; height: 24px; background: #E5E7EB; border-radius: 99px; cursor: pointer; transition: background 0.3s; }
+    .toggle-switch.active { background: #2563EB; }
+    .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.3s; }
+    .toggle-switch.active::after { transform: translateX(20px); }
+</style>
+</head>
+<body class="min-h-screen pb-12">
+<!-- 全局导航栏 -->
+<nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+<div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+<a class="flex items-center gap-2" href="materials.html">
+<div class="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center">
+<iconify-icon class="text-white text-xl" icon="ph:book-open-text-bold"></iconify-icon>
+</div>
+<span class="text-xl font-bold tracking-tight text-[#1F2937]">LinguaAI</span>
+</a>
+<div class="flex items-center gap-8">
+<a class="nav-link text-gray-500" href="materials.html">读物匹配</a>
+<a class="nav-link text-gray-500" href="tasks.html">任务管理</a>
+<a class="nav-link text-gray-500" href="assessment.html">测评中心</a>
+<a class="nav-link nav-active" href="profile.html">个人中心</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-gray-400 hover:text-gray-600">
+<iconify-icon class="text-2xl" icon="ph:bell-bold"></iconify-icon>
+</button>
+<a class="w-10 h-10 rounded-full bg-blue-100 border-2 border-white overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#2563EB] transition-all" href="profile.html">
+<div class="w-full h-full rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">A</div>
+</a>
+</div>
+</div>
+</nav>
+<main class="max-w-[1200px] mx-auto px-6 mt-10">
+<!-- 顶部：用户信息卡片 -->
+<div class="card flex items-center gap-8 mb-8">
+<div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold flex-none">A</div>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-1">
+<h1 class="text-2xl font-bold">Alex</h1>
+<span class="px-3 py-1 bg-blue-50 text-[#2563EB] rounded-full text-xs font-bold">B1 · 中级</span>
+</div>
+<div class="flex items-center gap-8 mt-4">
+<div class="text-center">
+<div class="text-xl font-bold">12</div>
+<div class="text-[10px] text-gray-400">连续学习 天</div>
+</div>
+<div class="w-px h-8 bg-gray-100"></div>
+<div class="text-center">
+<div class="text-xl font-bold">23</div>
+<div class="text-[10px] text-gray-400">累计阅读 篇</div>
+</div>
+<div class="w-px h-8 bg-gray-100"></div>
+<div class="text-center">
+<div class="text-xl font-bold text-[#F59E0B]">1580</div>
+<div class="text-[10px] text-gray-400">总经验 XP</div>
+</div>
+</div>
+</div>
+<button class="px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 transition-all flex-none">编辑资料</button>
+</div>
+<!-- 主体：两栏布局 -->
+<div class="grid grid-cols-12 gap-8">
+<!-- 左侧 55% -->
+<div class="col-span-7 flex flex-col gap-8">
+<!-- 区块1：学习趋势 -->
+<div class="card">
+<h3 class="text-lg font-bold mb-6">📊 学习趋势</h3>
+<div class="w-full h-72" id="trendChart"></div>
+</div>
+<!-- 区块2：学习记录 -->
+<div class="card">
+<h3 class="text-lg font-bold mb-6">📖 学习记录</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-none">
+<iconify-icon class="text-xl text-[#2563EB]" icon="ph:book-open-bold"></iconify-icon>
+</div>
+<div>
+<div class="text-sm font-bold">阅读：The Future of AI</div>
+<div class="text-[10px] text-gray-400 mt-0.5">今天 09:30</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-xs font-bold text-[#10B981]">+50 XP</div>
+<div class="text-[10px] text-gray-400">15 min</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center flex-none">
+<iconify-icon class="text-xl text-[#F59E0B]" icon="ph:translate-bold"></iconify-icon>
+</div>
+<div>
+<div class="text-sm font-bold">学习 5 个新词</div>
+<div class="text-[10px] text-gray-400 mt-0.5">今天 09:15</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-xs font-bold text-[#10B981]">+30 XP</div>
+<div class="text-[10px] text-gray-400">10 min</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-none">
+<iconify-icon class="text-xl text-[#10B981]" icon="ph:repeat-bold"></iconify-icon>
+</div>
+<div>
+<div class="text-sm font-bold">复习 10 个旧词</div>
+<div class="text-[10px] text-gray-400 mt-0.5">今天 08:50</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-xs font-bold text-[#10B981]">+30 XP</div>
+<div class="text-[10px] text-gray-400">10 min</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-none">
+<iconify-icon class="text-xl text-purple-500" icon="ph:clipboard-text-bold"></iconify-icon>
+</div>
+<div>
+<div class="text-sm font-bold">完成 B1 能力测评</div>
+<div class="text-[10px] text-gray-400 mt-0.5">昨天 14:20</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-xs font-bold text-[#10B981]">+100 XP</div>
+<div class="text-[10px] text-gray-400">25 min</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center flex-none">
+<iconify-icon class="text-xl text-orange-500" icon="ph:headset-bold"></iconify-icon>
+</div>
+<div>
+<div class="text-sm font-bold">口语练习 5 分钟</div>
+<div class="text-[10px] text-gray-400 mt-0.5">昨天 13:40</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-xs font-bold text-[#10B981]">+20 XP</div>
+<div class="text-[10px] text-gray-400">5 min</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 右侧 45% -->
+<div class="col-span-5 flex flex-col gap-8">
+<!-- 区块3：勋章成就 -->
+<div class="card">
+<h3 class="text-lg font-bold mb-6">🏆 勋章墙</h3>
+<div class="grid grid-cols-3 gap-4">
+<div class="flex flex-col items-center gap-2 p-4 bg-blue-50 rounded-xl">
+<div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+<span class="text-2xl">🥇</span>
+</div>
+<span class="text-[11px] font-bold text-center text-gray-700">初出茅庐</span>
+<span class="text-[9px] text-blue-500 font-bold">已解锁</span>
+</div>
+<div class="flex flex-col items-center gap-2 p-4 bg-yellow-50 rounded-xl">
+<div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+<span class="text-2xl">🥈</span>
+</div>
+<span class="text-[11px] font-bold text-center text-gray-700">小有成就</span>
+<span class="text-[9px] text-yellow-500 font-bold">已解锁</span>
+</div>
+<div class="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl opacity-50">
+<div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+<span class="text-2xl">🔒</span>
+</div>
+<span class="text-[11px] font-bold text-center text-gray-400">词汇达人</span>
+<span class="text-[9px] text-gray-400">未解锁</span>
+</div>
+<div class="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl opacity-50">
+<div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+<span class="text-2xl">🔒</span>
+</div>
+<span class="text-[11px] font-bold text-center text-gray-400">阅读之星</span>
+<span class="text-[9px] text-gray-400">未解锁</span>
+</div>
+<div class="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl opacity-50">
+<div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+<span class="text-2xl">🔒</span>
+</div>
+<span class="text-[11px] font-bold text-center text-gray-400">打卡达人</span>
+<span class="text-[9px] text-gray-400">未解锁</span>
+</div>
+<div class="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl opacity-50">
+<div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+<span class="text-2xl">🔒</span>
+</div>
+<span class="text-[11px] font-bold text-center text-gray-400">全能学者</span>
+<span class="text-[9px] text-gray-400">未解锁</span>
+</div>
+</div>
+</div>
+<!-- 区块4：设置 -->
+<div class="card">
+<h3 class="text-lg font-bold mb-6">⚙️ 设置</h3>
+<div class="space-y-1">
+<div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors">
+<span class="text-sm font-medium text-gray-700">每日学习提醒</span>
+<div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+</div>
+<div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors">
+<span class="text-sm font-medium text-gray-700">学习目标时长</span>
+<span class="text-sm text-gray-400">30 分钟/天</span>
+</div>
+<div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors">
+<span class="text-sm font-medium text-gray-700">难度偏好</span>
+<span class="text-sm text-gray-400">自适应</span>
+</div>
+<div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors">
+<span class="text-sm font-medium text-gray-700">通知设置</span>
+<div class="toggle-switch" onclick="this.classList.toggle('active')"></div>
+</div>
+<div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors">
+<span class="text-sm font-medium text-gray-700">关于我们</span>
+<iconify-icon class="text-gray-300 text-lg" icon="ph:caret-right-bold"></iconify-icon>
+</div>
+<div class="flex items-center justify-between p-4 hover:bg-red-50 rounded-xl transition-colors cursor-pointer">
+<span class="text-sm font-medium text-red-500">退出登录</span>
+<iconify-icon class="text-red-300 text-lg" icon="ph:sign-out-bold"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chartDom = document.getElementById('trendChart');
+        const myChart = echarts.init(chartDom);
+        const option = {
+            grid: { top: 10, bottom: 30, left: 40, right: 10 },
+            xAxis: {
+                type: 'category',
+                data: ['6/1','6/3','6/5','6/7','6/9','6/11','6/13','6/15','6/17','6/19','6/21','6/23','6/25'],
+                axisLine: { show: false },
+                axisTick: { show: false },
+                axisLabel: { color: '#9CA3AF', fontSize: 10 }
+            },
+            yAxis: {
+                type: 'value',
+                splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } },
+                axisLabel: { color: '#9CA3AF', fontSize: 10 }
+            },
+            series: [{
+                data: [20, 35, 0, 45, 50, 30, 60, 40, 55, 25, 70, 45, 35],
+                type: 'bar',
+                barWidth: '10px',
+                itemStyle: {
+                    borderRadius: [4, 4, 0, 0],
+                    color: function(params) {
+                        return params.dataIndex === params.data.length - 1 ? '#2563EB' : '#DBEAFE';
+                    }
+                }
+            }]
+        };
+        myChart.setOption(option);
+        window.addEventListener('resize', () => myChart.resize());
+    });
+</script>
+</body>
+</html>
