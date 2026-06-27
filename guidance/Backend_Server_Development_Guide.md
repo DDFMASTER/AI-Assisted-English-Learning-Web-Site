@@ -5,7 +5,7 @@
 本项目为 AI 辅助英语学习决策在线英语学习网站，项目名称为：
 
 ```text
-AI-Assist-English-Learning-Web-Site
+AI-Assisted-English-Learning-Web-Site
 ```
 
 项目简称：
