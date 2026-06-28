@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div
       v-if="visible"
-      class="fixed z-[100] glass-popover p-5 w-80 max-h-[60vh] overflow-y-auto"
+      class="fixed z-[60] glass-popover p-5 w-80 max-h-[calc(100vh-160px)] overflow-y-auto"
       :style="{ left: position.x + 'px', top: position.y + 'px' }"
       @click.stop
     >

@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen">
     <!-- 沉浸式导航栏 -->
-    <nav class="sticky top-0 z-50 bg-white/60 backdrop-blur-md border-b border-gray-100">
+    <nav class="sticky top-16 z-40 bg-white/60 backdrop-blur-md border-b border-gray-100">
       <div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
         <div class="flex items-center gap-4">
           <router-link to="/materials" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -302,15 +302,26 @@ const showSettings = ref(false)
 // ========== 单词点击 ==========
 function handleWordClick(wordData, event) {
   event.stopPropagation()
-  const rect = event.target.getBoundingClientRect()
+  const articleEl = document.querySelector('.reader-container')
+  const articleRect = articleEl ? articleEl.getBoundingClientRect() : null
+
+  // 弹窗宽度 320px (w-80)，固定放在文章左侧
+  const popoverWidth = 320
+  const gap = 20
+  let left = articleRect ? articleRect.left - popoverWidth - gap : 0
+
+  // 如果左侧空间不足，回退到右侧
+  if (left < 10) {
+    left = Math.min((articleRect?.right || window.innerWidth) + gap, window.innerWidth - popoverWidth - 10)
+  }
+
+  // 垂直位置：固定距页面顶端 30px
+  const top = 30
 
   // 立即显示弹窗（加载状态）
   wordPopover.word = { word: wordData.word, results: [] }
   wordPopover.loading = true
-  wordPopover.position = {
-    x: Math.min(rect.left + rect.width / 2 - 160, window.innerWidth - 340),
-    y: Math.max(rect.top - 200, 80),
-  }
+  wordPopover.position = { x: Math.max(10, left), y: top }
   wordPopover.visible = true
   culturePopover.visible = false
 
@@ -349,13 +360,23 @@ async function lookupWordForPopover(word) {
 // ========== 文化注解点击 ==========
 function handleCultureClick(data, event) {
   event.stopPropagation()
-  const rect = event.target.getBoundingClientRect()
+  const articleEl = document.querySelector('.reader-container')
+  const articleRect = articleEl ? articleEl.getBoundingClientRect() : null
+
+  const popoverWidth = 320
+  const gap = 20
+  let left = articleRect ? articleRect.left - popoverWidth - gap : 0
+
+  if (left < 10) {
+    left = Math.min((articleRect?.right || window.innerWidth) + gap, window.innerWidth - popoverWidth - 10)
+  }
+
+  // 垂直位置：固定距页面顶端 30px
+  const top = 50
+
   culturePopover.title = data.title
   culturePopover.content = data.content
-  culturePopover.position = {
-    x: Math.max(rect.left - 150, 10),
-    y: Math.min(rect.top + 30, window.innerHeight - 200),
-  }
+  culturePopover.position = { x: Math.max(10, left), y: top }
   culturePopover.visible = true
   wordPopover.visible = false
 }

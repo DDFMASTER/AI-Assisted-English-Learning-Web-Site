@@ -243,7 +243,7 @@ function editDifficulty() {
 function handleLogout() {
   if (confirm('确定退出登录吗？')) {
     userStore.logout()
-    router.push('/materials')
+    router.push('/login')
   }
 }
 

@@ -27,7 +27,7 @@
         <!-- 铃铛通知 -->
         <button
           class="p-2 text-gray-400 hover:text-gray-600 relative"
-          @click="guard(() => { showNotifications = !showNotifications })"
+          @click="showNotifications = !showNotifications"
         >
           <Icon icon="ph:bell-bold" class="text-2xl" />
           <span
@@ -38,18 +38,8 @@
           </span>
         </button>
 
-        <!-- 登录按钮（未登录时显示） -->
-        <button
-          v-if="!userStore.isLoggedIn"
-          class="px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm font-bold hover:bg-blue-600 transition-all"
-          @click="userStore.openLoginModal()"
-        >
-          登录
-        </button>
-
-        <!-- 头像（已登录时显示） -->
+        <!-- 头像 -->
         <router-link
-          v-else
           to="/profile"
           class="w-10 h-10 rounded-full bg-blue-100 border-2 border-white overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#2563EB] transition-all"
         >
@@ -77,10 +67,8 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
-import { useRequireAuth } from '@/composables/useAuth'
 
 const userStore = useUserStore()
-const { guard } = useRequireAuth()
 const showNotifications = ref(false)
 const unreadCount = ref(0)
 

@@ -1,6 +1,6 @@
 <template>
   <div id="lingua-app">
-    <AppNav />
+    <AppNav v-if="$route.name !== 'Login'" />
     <router-view />
     <LoginModal
       :visible="userStore.showLoginModal"

@@ -153,13 +153,11 @@ body {
 
 /* 阅读器样式 */
 .interactive-word {
-  border-bottom: 2px dotted #BFDBFE;
   cursor: pointer;
   transition: all 0.2s;
 }
 .interactive-word:hover {
   background-color: #DBEAFE;
-  border-bottom-color: #2563EB;
 }
 .culture-mark {
   display: inline-flex;
