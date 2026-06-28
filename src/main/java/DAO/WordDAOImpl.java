@@ -20,7 +20,7 @@ public class WordDAOImpl implements WordDAO {
             "高中", "senior",
             "四级", "cet_4",
             "六级", "cet_6",
-            "考研", "postgraduate",
+            "考研", "graduate",
             "托福", "toefl"
     );
 
