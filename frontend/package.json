@@ -10,6 +10,7 @@
     "postbuild": "xcopy /E /Y \"../src/main/webapp/app\" \"../target/AAEL-1.0-SNAPSHOT/app\""
   },
   "dependencies": {
+    "axios": "^1.18.1",
     "vue": "^3.5.38"
   },
   "devDependencies": {
