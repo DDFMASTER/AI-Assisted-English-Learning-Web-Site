@@ -26,8 +26,21 @@
           </button>
         </div>
 
+        <!-- 加载骨架屏 -->
+        <div v-if="loadingArticles" class="space-y-6">
+          <div v-for="n in 3" :key="'skel-'+n" class="card flex gap-6 animate-pulse">
+            <div class="w-48 h-32 rounded-xl bg-gray-200 flex-none" />
+            <div class="flex-1 space-y-3 py-2">
+              <div class="h-4 w-20 bg-gray-200 rounded" />
+              <div class="h-6 w-3/4 bg-gray-200 rounded" />
+              <div class="h-4 w-full bg-gray-200 rounded" />
+              <div class="h-4 w-1/3 bg-gray-200 rounded" />
+            </div>
+          </div>
+        </div>
+
         <!-- 文章卡片列表 -->
-        <div class="space-y-6">
+        <div v-else class="space-y-6">
           <ArticleCard
             v-for="article in filteredArticles"
             :key="article.id"
@@ -109,7 +122,7 @@
               v-for="item in historyItems"
               :key="item.id"
               class="flex gap-3 cursor-pointer group"
-              @click="guard(() => goToReader(item.articleId))"
+              @click="goToReader(item.articleId)"
             >
               <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center flex-none">
                 <Icon :icon="item.icon" class="text-lg opacity-50" :class="item.iconColor" />
@@ -148,6 +161,7 @@ import { useTaskStore } from '@/stores/task'
 import { useUserStore } from '@/stores/user'
 import ArticleCard from '@/components/ArticleCard.vue'
 import request from '@/utils/request'
+import { getRecentHistory, relativeTime } from '@/utils/historyDB'
 import { useRequireAuth } from '@/composables/useAuth'
 
 const router = useRouter()
@@ -165,6 +179,7 @@ const activeCategory = ref('advanced')
 
 // 文章数据
 const articles = ref([])
+const loadingArticles = ref(true)
 const historyItems = ref([])
 
 // 用户水平
@@ -274,175 +289,57 @@ function pickPerCategory(all, perCategory = 3) {
   return picked
 }
 
-// 获取文章列表
+// 获取文章列表（骨架屏占位 → API 响应 → 展示真实数据）
 async function fetchArticles() {
+  loadingArticles.value = true
   try {
     const data = await request.get('/article/list')
     if (data.success && Array.isArray(data.articles)) {
       const mapped = data.articles.map(mapArticle)
       articles.value = pickPerCategory(mapped, 3)
-      return
     }
   } catch (err) {
-    console.warn('从后端获取文章失败，使用 mock 数据:', err.message)
+    console.warn('从后端获取文章失败:', err.message)
+  } finally {
+    loadingArticles.value = false
   }
-
-  // 后端未就绪时使用 mock 数据（每类 ≥3 篇）
-  articles.value = [
-    // ===== 进阶类 (advanced) =====
-    {
-      id: 1, article_id: 1,
-      title: 'The Green Hydrogen Revolution: Hope or Hype?',
-      source: 'The Economist',
-      difficulty: 'TOEFL',
-      category: 'advanced',
-      readTime: '12 min read', wordCount: '850 words', newWords: '12 道词汇题',
-      abstract: '氢能被视为实现零排放的关键，但高昂的成本与技术难题依然是其商业化道路上的巨大障碍...',
-    },
-    {
-      id: 10, article_id: 10,
-      title: 'The Ethics of Artificial Intelligence in Healthcare',
-      source: 'Scientific American',
-      difficulty: 'TOEFL',
-      category: 'advanced',
-      readTime: '14 min read', wordCount: '1100 words', newWords: '18 道词汇题',
-      abstract: 'AI 在医疗领域的应用引发了关于隐私、偏见和责任的深刻伦理讨论...',
-    },
-    {
-      id: 11, article_id: 11,
-      title: 'Global Trade in the Post-Pandemic Era',
-      source: 'Financial Times',
-      difficulty: 'TOEFL',
-      category: 'advanced',
-      readTime: '10 min read', wordCount: '780 words', newWords: '9 道词汇题',
-      abstract: '疫情后的全球贸易格局变化，供应链重组与区域化趋势分析...',
-    },
-    // ===== 应试类 (exam) =====
-    {
-      id: 2, article_id: 2,
-      title: 'The Architecture of Silence: Modern Minimalism',
-      source: 'The New Yorker',
-      difficulty: '考研',
-      category: 'exam',
-      readTime: '15 min read', wordCount: '1200 words', newWords: '24 道词汇题',
-      abstract: '探讨现代主义建筑中"留白"的哲学意义...',
-    },
-    {
-      id: 3, article_id: 3,
-      title: '考研英语阅读精选: Education Reform',
-      source: 'China Daily',
-      difficulty: '考研',
-      category: 'exam',
-      readTime: '10 min read', wordCount: '720 words', newWords: '8 道词汇题',
-      abstract: '教育改革的深入探讨，涵盖政策变化与教学方法创新的最新趋势...',
-    },
-    {
-      id: 7, article_id: 7,
-      title: '考研英语: Climate Policy and Economics',
-      source: '经济学人',
-      difficulty: '考研',
-      category: 'exam',
-      readTime: '13 min read', wordCount: '950 words', newWords: '20 道词汇题',
-      abstract: '气候政策的经济影响分析，考研阅读常见话题...',
-    },
-    {
-      id: 4, article_id: 4,
-      title: 'CET-4 Reading: Campus Life',
-      source: '英语周报',
-      difficulty: 'CET-4',
-      category: 'exam',
-      readTime: '8 min read', wordCount: '540 words', newWords: '5 道词汇题',
-      abstract: '大学校园生活的方方面面，帮助学生熟悉四级阅读常见话题...',
-    },
-    {
-      id: 5, article_id: 5,
-      title: 'CET-6: Technology and Society',
-      source: 'The Guardian',
-      difficulty: 'CET-6',
-      category: 'exam',
-      readTime: '11 min read', wordCount: '900 words', newWords: '15 道词汇题',
-      abstract: '科技对社会的影响，包含六级常考的逻辑推理和态度判断题型...',
-    },
-    {
-      id: 8, article_id: 8,
-      title: 'CET-4: Environmental Protection',
-      source: 'BBC Learning',
-      difficulty: 'CET-4',
-      category: 'exam',
-      readTime: '7 min read', wordCount: '480 words', newWords: '6 道词汇题',
-      abstract: '环境保护与可持续发展的英语短文，四级难度...',
-    },
-    // ===== 基础类 (basic) =====
-    {
-      id: 6, article_id: 6,
-      title: 'Why Deep Sleep is Critical for Memory',
-      source: 'Science Daily',
-      difficulty: '高中',
-      category: 'basic',
-      readTime: '8 min read', wordCount: '540 words', newWords: '暂无题目',
-      abstract: '最新的神经科学研究表明，深度睡眠阶段是大脑进行记忆巩固的关键时期...',
-    },
-    {
-      id: 7, article_id: 7,
-      title: 'My Daily Routine — A Junior High Reading',
-      source: 'English Club',
-      difficulty: '初中',
-      category: 'basic',
-      readTime: '5 min read', wordCount: '320 words', newWords: '暂无题目',
-      abstract: '以日常作息为主题的英语短文，适合初中阶段学习者阅读练习...',
-    },
-    {
-      id: 9, article_id: 9,
-      title: '高中英语阅读: Cultural Differences',
-      source: 'English Weekly',
-      difficulty: '高中',
-      category: 'basic',
-      readTime: '9 min read', wordCount: '600 words', newWords: '暂无题目',
-      abstract: '中西方文化差异的英语文章，适合高中阶段学习者提升阅读理解能力...',
-    },
-  ]
 }
 
-// 获取浏览历史
-function fetchHistory() {
-  // Mock 数据
-  historyItems.value = [
-    {
-      id: 1,
-      articleId: 1,
-      title: 'The Rise of Remote Work',
-      icon: 'ph:briefcase-bold',
-      iconColor: 'text-[#2563EB]',
-      status: '100% 已读',
-      statusClass: 'text-[10px] text-green-600 font-bold bg-green-50 px-1 rounded',
-      time: '2天前',
-    },
-    {
-      id: 2,
-      articleId: 2,
-      title: 'Urban Farming in Singapore',
-      icon: 'ph:tree-bold',
-      iconColor: 'text-green-500',
-      status: '45% 在读',
-      statusClass: 'text-[10px] text-blue-600 font-bold bg-blue-50 px-1 rounded',
-      time: '昨天',
-    },
-    {
-      id: 3,
-      articleId: 3,
-      title: 'History of Jazz Music',
-      icon: 'ph:music-notes-bold',
-      iconColor: 'text-yellow-500',
-      status: '100% 已读',
-      statusClass: 'text-[10px] text-green-600 font-bold bg-green-50 px-1 rounded',
-      time: '上周',
-    },
-  ]
+/** 历史记录图标列表（用于前 3 条做视觉区分） */
+const HISTORY_ICONS = [
+  { icon: 'ph:book-open-bold', color: 'text-[#2563EB]' },
+  { icon: 'ph:bookmark-simple-bold', color: 'text-green-500' },
+  { icon: 'ph:books-bold', color: 'text-yellow-500' },
+]
+
+// 获取浏览历史（从 IndexedDB 读取最近 3 条）
+async function fetchHistory() {
+  try {
+    const records = await getRecentHistory(3)
+    console.log('[MaterialsPage] 读取到浏览历史:', records.length, '条', records)
+    historyItems.value = records.map((r, i) => {
+      const iconCfg = HISTORY_ICONS[i] || HISTORY_ICONS[HISTORY_ICONS.length - 1]
+      return {
+        id: r.articleId,
+        articleId: r.articleId,
+        title: r.title,
+        icon: iconCfg.icon,
+        iconColor: iconCfg.color,
+        status: '已读',
+        statusClass: 'text-[10px] text-green-600 font-bold bg-green-50 px-1 rounded',
+        time: relativeTime(r.visitedAt),
+      }
+    })
+  } catch (err) {
+    console.error('读取浏览历史失败:', err)
+    historyItems.value = []
+  }
 }
 
-onMounted(async () => {
+onMounted(() => {
+  // 所有数据并行加载，不阻塞页面渲染
   fetchArticles()
-  await taskStore.initDailyTasks()
+  taskStore.initDailyTasks()
   fetchHistory()
 })
 </script>

@@ -197,6 +197,7 @@ import { useReaderStore } from '@/stores/reader'
 import WordPopover from '@/components/WordPopover.vue'
 import CulturePopover from '@/components/CulturePopover.vue'
 import { useRequireAuth } from '@/composables/useAuth'
+import { addToHistory } from '@/utils/historyDB'
 
 const route = useRoute()
 const router = useRouter()
@@ -435,9 +436,15 @@ function handleScroll() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   const articleId = route.query.id
-  readerStore.fetchArticle(articleId)
+  await readerStore.fetchArticle(articleId)
+  // 记录浏览历史到 IndexedDB
+  if (articleId && readerStore.article?.title) {
+    addToHistory(articleId, readerStore.article.title).catch(err => {
+      console.error('记录浏览历史失败:', err)
+    })
+  }
   document.addEventListener('click', handleGlobalClick)
   window.addEventListener('scroll', handleScroll)
 })
