@@ -1,18 +1,19 @@
 package Servlet;
 
-import Utils.DBUtil;
+import Entities.Article;
+import Service.ArticleService;
+import Utils.JsonUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.util.List;
 
 @WebServlet("/api/article/list")
 public class ArticleListServlet extends HttpServlet {
+    private final ArticleService articleService = new ArticleService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -25,57 +26,32 @@ public class ArticleListServlet extends HttpServlet {
         StringBuilder json = new StringBuilder();
         json.append("{\"success\":true,\"articles\":[");
 
-        try (Connection conn = DBUtil.getConnection()) {
-            String sql = "SELECT article_id, title, difficulty, article_like_count, " +
-                         "explanation_like_count, explanation_dislike_count, " +
-                         "vocquiz_num, comquiz_num " +
-                         "FROM article";
+        try {
+            List<Article> articles = articleService.getArticleList(difficulty);
+            boolean first = true;
+            for (Article a : articles) {
+                if (!first) json.append(",");
+                first = false;
 
-            if (difficulty != null && !difficulty.isBlank()) {
-                sql += " WHERE difficulty = ?";
-            }
-            sql += " ORDER BY article_id DESC LIMIT 20";
-
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                if (difficulty != null && !difficulty.isBlank()) {
-                    ps.setString(1, difficulty);
-                }
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    boolean first = true;
-                    while (rs.next()) {
-                        if (!first) json.append(",");
-                        first = false;
-
-                        json.append("{");
-                        json.append("\"articleId\":").append(rs.getLong("article_id")).append(",");
-                        json.append("\"title\":\"").append(escapeJson(rs.getString("title"))).append("\",");
-                        json.append("\"difficulty\":\"").append(escapeJson(rs.getString("difficulty"))).append("\",");
-                        json.append("\"articleLikeCount\":").append(rs.getInt("article_like_count")).append(",");
-                        json.append("\"explanationLikeCount\":").append(rs.getInt("explanation_like_count")).append(",");
-                        json.append("\"explanationDislikeCount\":").append(rs.getInt("explanation_dislike_count")).append(",");
-                        json.append("\"vocquizNum\":").append(rs.getInt("vocquiz_num")).append(",");
-                        json.append("\"comquizNum\":").append(rs.getInt("comquiz_num"));
-                        json.append("}");
-                    }
-                }
+                json.append("{");
+                json.append("\"articleId\":").append(a.getArticleId()).append(",");
+                json.append("\"title\":\"").append(JsonUtil.escapeJson(a.getTitle())).append("\",");
+                json.append("\"difficulty\":\"").append(JsonUtil.escapeJson(a.getDifficulty())).append("\",");
+                json.append("\"articleLikeCount\":").append(a.getArticleLikeCount()).append(",");
+                json.append("\"explanationLikeCount\":").append(a.getExplanationLikeCount()).append(",");
+                json.append("\"explanationDislikeCount\":").append(a.getExplanationDislikeCount()).append(",");
+                json.append("\"vocquizNum\":").append(a.getVocquizNum()).append(",");
+                json.append("\"comquizNum\":").append(a.getComquizNum());
+                json.append("}");
             }
         } catch (Exception e) {
             response.getWriter().write(
-                    "{\"success\":false,\"message\":\"查询文章列表失败: " + escapeJson(e.getMessage()) + "\"}");
+                    "{\"success\":false,\"message\":\"查询文章列表失败: "
+                    + JsonUtil.escapeJson(e.getMessage()) + "\"}");
             return;
         }
 
         json.append("]}");
         response.getWriter().write(json.toString());
-    }
-
-    private String escapeJson(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
     }
 }
