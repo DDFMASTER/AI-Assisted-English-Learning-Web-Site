@@ -23,6 +23,7 @@ function difficultyToCategory(difficulty) {
 
 // ========== localStorage 读写（当日已读文章追踪） ==========
 const STORAGE_KEY = 'engliai_read_articles_today'
+const XP_SYNCED_KEY = 'engliai_xp_synced_today'
 
 function todayKey() {
   const now = new Date()
@@ -47,6 +48,29 @@ function saveReadArticles(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 }
 
+/** 获取今日已同步过经验的每日任务ID列表 */
+function loadXpSyncedTasks() {
+  try {
+    const raw = localStorage.getItem(XP_SYNCED_KEY)
+    const data = raw ? JSON.parse(raw) : {}
+    if (data.date !== todayKey()) {
+      return { date: todayKey(), synced: [] }
+    }
+    return data
+  } catch {
+    return { date: todayKey(), synced: [] }
+  }
+}
+
+/** 记录某个每日任务的经验已同步，防止页面刷新后重复发放 */
+function saveXpSyncedTask(taskId) {
+  const data = loadXpSyncedTasks()
+  if (!data.synced.includes(taskId)) {
+    data.synced.push(taskId)
+    localStorage.setItem(XP_SYNCED_KEY, JSON.stringify(data))
+  }
+}
+
 export const useTaskStore = defineStore('task', () => {
   // ========== 状态 ==========
   const todayTasks = ref([])
@@ -65,6 +89,11 @@ export const useTaskStore = defineStore('task', () => {
   /** 初始化任务 */
   function initDailyTasks() {
     if (todayTasks.value.length > 0) return
+
+    // 读取今日已同步过经验的每日任务ID
+    const xpSyncedData = loadXpSyncedTasks()
+    const syncedIds = xpSyncedData.synced || []
+
     todayTasks.value = FIXED_DAILY_TASKS.map((t, idx) => ({
       id: `daily-${idx}`,
       name: t.name,
@@ -75,8 +104,30 @@ export const useTaskStore = defineStore('task', () => {
       done: false,
     }))
 
-    // 恢复今日已有的完成状态
-    recheckAllTasks()
+    // 恢复今日已有的完成状态（只恢复 done 状态，不重复发放经验）
+    restoreTaskDoneState(syncedIds)
+  }
+
+  /** 根据已读文章和已同步经验记录恢复任务打勾状态，但不重复发放经验 */
+  function restoreTaskDoneState(syncedIds) {
+    for (const task of todayTasks.value) {
+      if (!task.requiredCategory || task.requiredCount <= 0) continue
+
+      const articles = readArticlesData.value.articles || {}
+      const readCount = (articles[task.requiredCategory] || []).length
+
+      if (readCount >= task.requiredCount) {
+        task.done = true
+      }
+    }
+
+    // 手动任务（测试、复习单词）：根据已同步记录恢复
+    for (const syncedId of syncedIds) {
+      const task = todayTasks.value.find(t => t.id === syncedId)
+      if (task) {
+        task.done = true
+      }
+    }
   }
 
   /** 切换任务完成状态（手动勾选/取消） */
@@ -87,6 +138,7 @@ export const useTaskStore = defineStore('task', () => {
     task.done = !task.done
     if (task.done) {
       xpEarned.value += task.xp
+      saveXpSyncedTask(taskId)
       syncXp(task.xp)
     } else {
       xpEarned.value = Math.max(0, xpEarned.value - task.xp)
@@ -128,6 +180,8 @@ export const useTaskStore = defineStore('task', () => {
 
   /** 根据已读文章数量重新检查所有自动任务 */
   function recheckAllTasks() {
+    const xpSyncedData = loadXpSyncedTasks()
+    const syncedIds = xpSyncedData.synced || []
     let xpChanged = 0
 
     for (const task of todayTasks.value) {
@@ -139,8 +193,13 @@ export const useTaskStore = defineStore('task', () => {
 
       if (readCount >= task.requiredCount) {
         task.done = true
-        xpEarned.value += task.xp
-        xpChanged += task.xp
+
+        // 检查今日是否已经为该任务发放过经验（防止页面刷新后重复发放）
+        if (!syncedIds.includes(task.id)) {
+          xpEarned.value += task.xp
+          xpChanged += task.xp
+          saveXpSyncedTask(task.id)
+        }
       }
     }
 
