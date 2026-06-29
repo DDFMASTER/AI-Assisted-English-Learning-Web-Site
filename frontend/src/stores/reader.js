@@ -12,6 +12,15 @@ export const useReaderStore = defineStore('reader', () => {
   const bookmarks = ref([])
   const loading = ref(false)
 
+  // ========== AI 例句缓存 ==========
+  /** @type {import('vue').Ref<Record<string, {examples: Array<{en:string,zh:string}>, loading: boolean}>>} */
+  const aiExampleCache = ref({})
+  const aiExampleLoading = ref(false)
+
+  // ========== AI 文化背景 & 选择题缓存 ==========
+  const culturalNotesCache = ref(null)  // { notes: [], loading: bool, error: str }
+  const quizCache = ref(null)           // { questions: [], loading: bool, error: str }
+
   // ========== 计算属性 ==========
   const articleTitle = computed(() => article.value?.title || '加载中...')
   const articleContent = computed(() => article.value?.content || '')
@@ -309,6 +318,140 @@ export const useReaderStore = defineStore('reader', () => {
     }
   }
 
+  // ========== AI 例句 ==========
+
+  /**
+   * 预取单词的 AI 例句并缓存。
+   * 在用户点击单词后即可调用，后台静默加载。
+   * @param {string} word
+   */
+  async function prefetchAIExamples(word) {
+    const key = word.toLowerCase().trim()
+    // 已缓存则跳过
+    if (aiExampleCache.value[key]) return
+
+    // 标记为加载中
+    aiExampleCache.value[key] = { examples: [], loading: true }
+
+    try {
+      const data = await request.get('/word/ai-examples', {
+        params: { word: key },
+        timeout: 20000, // AI 调用较慢，给 20 秒
+      })
+      if (data.success && data.examples) {
+        aiExampleCache.value[key] = {
+          examples: data.examples,
+          loading: false,
+        }
+      } else {
+        aiExampleCache.value[key] = {
+          examples: [],
+          loading: false,
+          error: data.message || '例句生成失败',
+        }
+      }
+    } catch (err) {
+      console.error('预取 AI 例句失败:', err)
+      aiExampleCache.value[key] = {
+        examples: [],
+        loading: false,
+        error: '例句生成失败，请稍后重试',
+      }
+    }
+  }
+
+  /**
+   * 获取单词的 AI 例句缓存。
+   * @param {string} word
+   * @returns {{ examples: Array<{en:string,zh:string}>, loading: boolean, error?: string } | null}
+   */
+  function getAIExamples(word) {
+    const key = word.toLowerCase().trim()
+    return aiExampleCache.value[key] || null
+  }
+
+  // ========== 文化背景 ==========
+
+  /**
+   * 预取文章的文化背景分析（以 articleId 为 key 缓存）
+   */
+  async function prefetchCulturalNotes(articleId, content) {
+    if (!content || culturalNotesCache.value?.articleId === articleId) return
+
+    culturalNotesCache.value = { articleId, notes: [], loading: true, error: null }
+
+    try {
+      const data = await request.post('/article/cultural-notes',
+        { content },
+        { timeout: 30000 }
+      )
+      if (data.success) {
+        culturalNotesCache.value = {
+          articleId,
+          notes: data.notes || [],
+          loading: false,
+          error: null,
+        }
+      } else {
+        culturalNotesCache.value = {
+          articleId,
+          notes: [],
+          loading: false,
+          error: data.message || '文化背景分析失败',
+        }
+      }
+    } catch (err) {
+      culturalNotesCache.value = {
+        articleId,
+        notes: [],
+        loading: false,
+        error: '文化背景分析失败，请稍后重试',
+      }
+    }
+  }
+
+  // ========== 阅读理解出题 ==========
+
+  /**
+   * 预取文章的阅读理解选择题（以 articleId 为 key 缓存）
+   */
+  async function prefetchQuiz(articleId, content) {
+    if (!content || quizCache.value?.articleId === articleId) return
+
+    quizCache.value = { articleId, questions: [], loading: true, error: null }
+
+    try {
+      const data = await request.post('/article/quiz',
+        { content },
+        { timeout: 30000 }
+      )
+      if (data.success) {
+        quizCache.value = {
+          articleId,
+          mainIdea: data.mainIdea || '',
+          questions: data.questions || [],
+          loading: false,
+          error: null,
+        }
+      } else {
+        quizCache.value = {
+          articleId,
+          mainIdea: '',
+          questions: [],
+          loading: false,
+          error: data.message || '题目生成失败',
+        }
+      }
+    } catch (err) {
+      quizCache.value = {
+        articleId,
+        questions: [],
+        loading: false,
+        error: '题目生成失败，请稍后重试',
+      }
+    }
+  }
+
   return {
     article,
     readingProgress,
@@ -326,5 +469,13 @@ export const useReaderStore = defineStore('reader', () => {
     removeBookmark,
     lookupWord,
     addToVocabulary,
+    aiExampleCache,
+    aiExampleLoading,
+    prefetchAIExamples,
+    getAIExamples,
+    culturalNotesCache,
+    quizCache,
+    prefetchCulturalNotes,
+    prefetchQuiz,
   }
 })

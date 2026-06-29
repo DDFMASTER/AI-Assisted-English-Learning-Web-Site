@@ -19,6 +19,15 @@
           <button class="p-2 text-gray-400 hover:text-gray-600" @click="guard(handleBookmark)">
             <Icon icon="ph:bookmark-simple-bold" class="text-2xl" />
           </button>
+          <!-- AI 面板切换 -->
+          <button
+            class="p-2 transition-colors"
+            :class="showSidePanel ? 'text-[#2563EB]' : 'text-gray-300 hover:text-[#2563EB]'"
+            title="AI 文化讲解 & 选择题"
+            @click="showSidePanel = !showSidePanel"
+          >
+            <Icon icon="ph:brain-bold" class="text-lg" />
+          </button>
         </div>
       </div>
     </nav>
@@ -175,8 +184,12 @@
       :word="wordPopover.word"
       :loading="wordPopover.loading"
       :position="wordPopover.position"
+      :detail-visible="showAIDetail"
+      :detail-data="aiDetailData"
       @close="wordPopover.visible = false"
       @add-vocab="onAddVocab"
+      @view-detail="onViewDetail"
+      @back-to-summary="onBackToSummary"
     />
 
     <!-- 文化注解浮窗 -->
@@ -186,6 +199,15 @@
       :content="culturePopover.content"
       :position="culturePopover.position"
     />
+
+    <!-- 文章右侧 AI 面板（文化背景 + 选择题） -->
+    <ArticleSidePanel
+      :visible="showSidePanel"
+      :cultural-notes="readerStore.culturalNotesCache"
+      :quiz-data="readerStore.quizCache"
+      :position="{ x: sidePanelX, y: 140 }"
+    />
+
   </div>
 </template>
 
@@ -197,6 +219,7 @@ import { useReaderStore } from '@/stores/reader'
 import { useTaskStore } from '@/stores/task'
 import WordPopover from '@/components/WordPopover.vue'
 import CulturePopover from '@/components/CulturePopover.vue'
+import ArticleSidePanel from '@/components/ArticleSidePanel.vue'
 import { useRequireAuth } from '@/composables/useAuth'
 import { addToHistory } from '@/utils/historyDB'
 
@@ -294,6 +317,20 @@ const culturePopover = reactive({
   position: { x: 0, y: 0 },
 })
 
+// ========== AI 例句详情 ==========
+const showAIDetail = ref(false)
+const aiDetailWord = ref('')
+const showSidePanel = ref(true)
+
+// 右侧面板位置：文章区域右边缘 + 20px gap
+const sidePanelX = computed(() => {
+  return Math.max(20, Math.floor((window.innerWidth - 800) / 2) - 360)
+})
+const aiDetailData = computed(() => {
+  if (!aiDetailWord.value) return null
+  return readerStore.getAIExamples(aiDetailWord.value) || { examples: [], loading: true }
+})
+
 // ========== 苏格拉底提问 ==========
 const showAnswerInput = ref(false)
 const answerText = ref('')
@@ -322,6 +359,8 @@ function handleWordClick(wordData, event) {
   const top = 140
 
   // 立即显示弹窗（加载状态）
+  showAIDetail.value = false  // 新单词默认展示释义视图
+  aiDetailWord.value = ''
   wordPopover.word = { word: wordData.word, results: [] }
   wordPopover.loading = true
   wordPopover.position = { x: Math.max(10, left), y: top }
@@ -349,6 +388,9 @@ async function lookupWordForPopover(word) {
       lemmaFrom: result.lemmaFrom || '',
       lemmaTo: result.lemmaTo || '',
     }
+
+    // 后台预取 AI 例句（不阻塞释义展示）
+    readerStore.prefetchAIExamples(result.word || word)
   } else {
     wordPopover.word = {
       word: word,
@@ -421,10 +463,28 @@ function onAddVocab(word) {
   // 已在 store 中处理
 }
 
+function onViewDetail(wordData) {
+  const word = (wordData.word || wordData).toLowerCase().trim()
+  aiDetailWord.value = word
+  showAIDetail.value = true
+
+  // 确保已触发预取（正常情况已在 lookupWordForPopover 中触发）
+  if (!readerStore.getAIExamples(word)) {
+    readerStore.prefetchAIExamples(word)
+  }
+}
+
+function onBackToSummary() {
+  showAIDetail.value = false
+  aiDetailWord.value = ''
+}
+
 // ========== 全局点击关闭浮窗 ==========
 function handleGlobalClick() {
   wordPopover.visible = false
   culturePopover.visible = false
+  showAIDetail.value = false
+  aiDetailWord.value = ''
   showToc.value = false
   showSettings.value = false
 }
@@ -449,6 +509,13 @@ onMounted(async () => {
     // 通知任务系统：已阅读一篇文章（用于自动检测阅读类任务完成）
     taskStore.initDailyTasks()
     taskStore.recordArticleRead(articleId, readerStore.article.difficulty)
+
+    // 后台预取 AI 文化背景分析和阅读理解选择题
+    const content = readerStore.article?.content
+    if (content) {
+      readerStore.prefetchCulturalNotes(articleId, content)
+      readerStore.prefetchQuiz(articleId, content)
+    }
   }
   document.addEventListener('click', handleGlobalClick)
   window.addEventListener('scroll', handleScroll)
