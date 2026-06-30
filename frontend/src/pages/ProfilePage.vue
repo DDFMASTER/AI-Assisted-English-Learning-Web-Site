@@ -2,8 +2,24 @@
   <main class="max-w-[1200px] mx-auto px-6 mt-10">
     <!-- 用户信息卡片 -->
     <div class="card flex items-center gap-8 mb-8">
-      <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold flex-none">
-        {{ avatarLetter }}
+      <div
+        class="w-20 h-20 rounded-full flex items-center justify-center flex-none cursor-pointer hover:ring-4 hover:ring-blue-200 transition-all overflow-hidden relative group"
+        @click="showAvatarPicker = true"
+        title="点击更换头像"
+      >
+        <img
+          v-if="currentAvatarSrc"
+          :src="currentAvatarSrc"
+          :alt="'头像 ' + currentAvatarId"
+          class="w-full h-full object-cover"
+        />
+        <span v-else class="text-white text-2xl font-bold bg-gradient-to-br from-blue-400 to-purple-500 w-full h-full flex items-center justify-center">
+          {{ avatarLetter }}
+        </span>
+        <!-- 悬停提示 -->
+        <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <Icon icon="ph:camera-bold" class="text-white text-xl" />
+        </div>
       </div>
       <div class="flex-1">
         <div class="flex items-center gap-3 mb-1">
@@ -30,6 +46,42 @@
         </div>
       </div>
     </div>
+
+    <!-- ========== 头像选择弹窗 ========== -->
+    <Teleport to="body">
+      <div
+        v-if="showAvatarPicker"
+        class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        @click.self="showAvatarPicker = false"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">选择头像</h3>
+            <button
+              class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              @click="showAvatarPicker = false"
+            >
+              <Icon icon="ph:x-bold" class="text-gray-500" />
+            </button>
+          </div>
+          <div class="grid grid-cols-5 gap-3">
+            <div
+              v-for="avatar in avatarList"
+              :key="avatar.id"
+              class="aspect-square rounded-xl overflow-hidden cursor-pointer border-2 transition-all hover:scale-105"
+              :class="currentAvatarId === avatar.id ? 'border-[#2563EB] ring-2 ring-blue-200' : 'border-gray-100 hover:border-gray-300'"
+              @click="selectAvatar(avatar)"
+            >
+              <img
+                :src="photoBase + avatar.file"
+                :alt="avatar.name"
+                class="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- 抽屉式便签栏 -->
     <div class="drawer-tabs flex items-center gap-2 mb-0 flex-wrap">
@@ -271,6 +323,68 @@ const router = useRouter()
 const userStore = useUserStore()
 const taskStore = useTaskStore()
 const { guard } = useRequireAuth()
+
+// ========== 头像 ==========
+const AVATAR_STORAGE_KEY = 'aael_selected_avatar'
+const defaultAvatarId = 1
+
+// 头像资源基础路径（dev → /photo/, prod → ./photo/）
+const photoBase = import.meta.env.BASE_URL + 'photo/'
+
+// 头像列表（与 photo/ 目录下文件名对应）
+const avatarList = [
+  { id: 1,  file: '1.白猫.svg',   name: '白猫' },
+  { id: 2,  file: '2.边牧.svg',   name: '边牧' },
+  { id: 3,  file: '3.布偶猫.svg', name: '布偶猫' },
+  { id: 4,  file: '4.仓鼠.svg',   name: '仓鼠' },
+  { id: 5,  file: '5.藏獒.svg',   name: '藏獒' },
+  { id: 6,  file: '6.柴犬.svg',   name: '柴犬' },
+  { id: 7,  file: '7.哈士奇.svg', name: '哈士奇' },
+  { id: 8,  file: '8.荷兰猪.svg', name: '荷兰猪' },
+  { id: 9,  file: '9.黑猫.svg',   name: '黑猫' },
+  { id: 10, file: '10.金毛.svg',  name: '金毛' },
+  { id: 11, file: '11.橘猫.svg',  name: '橘猫' },
+  { id: 12, file: '12.柯基.svg',  name: '柯基' },
+  { id: 13, file: '13.可达鸭.svg', name: '可达鸭' },
+  { id: 14, file: '14.蓝猫.svg',  name: '蓝猫' },
+  { id: 15, file: '15.奶牛猫.svg', name: '奶牛猫' },
+  { id: 16, file: '16.三花猫.svg', name: '三花猫' },
+  { id: 17, file: '17.田园犬.svg', name: '田园犬' },
+  { id: 18, file: '18.暹罗猫.svg', name: '暹罗猫' },
+  { id: 19, file: '19.羊.svg',    name: '羊' },
+  { id: 20, file: '20.bvvd.png',  name: 'bvvd' },
+]
+
+function loadSelectedAvatarId() {
+  try {
+    const val = localStorage.getItem(AVATAR_STORAGE_KEY)
+    if (val !== null) {
+      const num = parseInt(val, 10)
+      if (!isNaN(num) && num >= 1 && num <= avatarList.length) return num
+    }
+  } catch (_) { /* ignore */ }
+  return defaultAvatarId
+}
+
+function saveSelectedAvatarId(id) {
+  localStorage.setItem(AVATAR_STORAGE_KEY, String(id))
+}
+
+const currentAvatarId = ref(loadSelectedAvatarId())
+const showAvatarPicker = ref(false)
+
+const currentAvatarSrc = computed(() => {
+  const avatar = avatarList.find(a => a.id === currentAvatarId.value)
+  return avatar ? photoBase + avatar.file : ''
+})
+
+function selectAvatar(avatar) {
+  currentAvatarId.value = avatar.id
+  saveSelectedAvatarId(avatar.id)
+  showAvatarPicker.value = false
+  // 通知导航栏同步更新头像
+  window.dispatchEvent(new CustomEvent('avatar-changed'))
+}
 
 // ========== 用户信息 ==========
 const showEditProfile = ref(false)

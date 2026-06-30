@@ -121,9 +121,15 @@
         <!-- 头像 -->
         <router-link
           to="/profile"
-          class="w-10 h-10 rounded-full bg-blue-100 border-2 border-white overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#2563EB] transition-all"
+          class="w-10 h-10 rounded-full border-2 border-white overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#2563EB] transition-all"
         >
-          <div class="w-full h-full rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
+          <img
+            v-if="navAvatarSrc"
+            :src="navAvatarSrc"
+            alt="头像"
+            class="w-full h-full object-cover rounded-full"
+          />
+          <div v-else class="w-full h-full rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
             {{ avatarLetter }}
           </div>
         </router-link>
@@ -167,6 +173,37 @@ const avatarLetter = computed(() => {
   return username.charAt(0).toUpperCase()
 })
 
+// 导航栏头像（与个人中心同步，读取 localStorage）
+const photoBase = import.meta.env.BASE_URL + 'photo/'
+const avatarFiles = ['1.白猫.svg','2.边牧.svg','3.布偶猫.svg','4.仓鼠.svg','5.藏獒.svg','6.柴犬.svg','7.哈士奇.svg','8.荷兰猪.svg','9.黑猫.svg','10.金毛.svg','11.橘猫.svg','12.柯基.svg','13.可达鸭.svg','14.蓝猫.svg','15.奶牛猫.svg','16.三花猫.svg','17.田园犬.svg','18.暹罗猫.svg','19.羊.svg','20.bvvd.png']
+
+function getAvatarSrc() {
+  try {
+    const id = parseInt(localStorage.getItem('aael_selected_avatar'), 10)
+    if (!isNaN(id) && id >= 1 && id <= avatarFiles.length) {
+      return photoBase + avatarFiles[id - 1]
+    }
+  } catch (_) { /* ignore */ }
+  return photoBase + avatarFiles[0]
+}
+
+const navAvatarSrc = ref(getAvatarSrc())
+
+// 监听头像变更事件（由 ProfilePage 触发）
+function onAvatarChanged() {
+  navAvatarSrc.value = getAvatarSrc()
+}
+
+onMounted(() => {
+  document.addEventListener('click', onClickOutside)
+  window.addEventListener('avatar-changed', onAvatarChanged)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onClickOutside)
+  window.removeEventListener('avatar-changed', onAvatarChanged)
+})
+
 // 点击外部关闭搜索卡片和通知面板
 function onClickOutside(e) {
   if (searchContainer.value && !searchContainer.value.contains(e.target)) {
@@ -178,14 +215,6 @@ function onClickOutside(e) {
     showNotifications.value = false
   }
 }
-
-onMounted(() => {
-  document.addEventListener('click', onClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', onClickOutside)
-})
 
 async function handleSearch() {
   const query = searchQuery.value.trim()
