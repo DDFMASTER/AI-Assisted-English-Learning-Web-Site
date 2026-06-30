@@ -121,6 +121,43 @@
           </div>
         </div>
 
+        <!-- 生词本 -->
+        <div v-else-if="activeDrawer === 'vocab'" key="vocab" class="card drawer-card">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold">📝 生词本</h3>
+            <span class="text-xs text-gray-400">{{ vocabWords.length }} 个单词</span>
+          </div>
+          <div v-if="vocabWords.length === 0" class="text-center py-12 text-gray-400">
+            <Icon icon="ph:bookmark-simple-bold" class="text-3xl mx-auto mb-3 opacity-30" />
+            <p class="text-sm">暂无生词</p>
+            <p class="text-xs mt-1">在阅读时点击单词卡片右上角的 <span class="text-[#2563EB] font-bold">+</span> 即可收藏</p>
+          </div>
+          <div v-else class="max-h-96 overflow-y-auto">
+            <div class="grid grid-cols-4 gap-3">
+              <div
+                v-for="item in vocabWords"
+                :key="item.wordLower"
+                class="p-3 bg-gray-50 rounded-xl group hover:bg-blue-50 transition-colors relative"
+              >
+                <button
+                  class="absolute top-1.5 right-1.5 text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                  @click="removeVocabWord(item.wordLower)"
+                  title="移出生词本"
+                >
+                  <Icon icon="ph:x-circle-fill" class="text-sm" />
+                </button>
+                <p class="text-sm font-bold text-gray-800 truncate pr-4">{{ item.word }}</p>
+                <p v-if="item.phonetic" class="text-[10px] text-gray-400 font-mono truncate mt-0.5">{{ item.phonetic }}</p>
+                <p class="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">{{ item.translation }}</p>
+                <div class="flex items-center gap-1.5 mt-2">
+                  <span v-if="item.source" class="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{{ item.source }}</span>
+                  <span class="text-[10px] text-gray-300">{{ formatAddedTime(item.addedAt) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 设置 -->
         <div v-else-if="activeDrawer === 'settings'" key="settings" class="card drawer-card">
           <h3 class="text-lg font-bold mb-6">⚙️ 设置</h3>
@@ -224,6 +261,7 @@ import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import * as echarts from 'echarts'
 import { useUserStore } from '@/stores/user'
+import { useTaskStore } from '@/stores/task'
 import { useRequireAuth } from '@/composables/useAuth'
 import { getRecentOnlineTime, getTodayMinutes, getDailyTarget, setDailyTarget, getStreak } from '@/utils/onlineTimeDB'
 import { getRecentHistory, countHistory } from '@/utils/historyDB'
@@ -231,6 +269,7 @@ import aboutAudioSrc from '@/ggg/gggg.mp3'
 
 const router = useRouter()
 const userStore = useUserStore()
+const taskStore = useTaskStore()
 const { guard } = useRequireAuth()
 
 // ========== 用户信息 ==========
@@ -279,6 +318,7 @@ const badges = ref([
 const drawerTabs = [
   { key: 'trend', label: '学习趋势', emoji: '📊' },
   { key: 'records', label: '学习记录', emoji: '📖' },
+  { key: 'vocab', label: '生词本', emoji: '📝' },
   { key: 'badges', label: '勋章墙', emoji: '🏆' },
   { key: 'settings', label: '设置', emoji: '⚙️' },
 ]
@@ -287,6 +327,55 @@ const activeDrawer = ref('trend')
 function toggleDrawer(key) {
   // 点击已打开的便签 → 关闭；点击其他便签 → 切换
   activeDrawer.value = activeDrawer.value === key ? null : key
+}
+
+// ========== 生词本 ==========
+const vocabWords = ref([])
+let vocabTimer = null
+const VOCAB_REVIEW_SECONDS = 30  // 停留 30 秒视为完成复习任务
+
+function startVocabTimer() {
+  clearVocabTimer()
+  vocabTimer = setTimeout(() => {
+    taskStore.completeVocabReviewTask()
+  }, VOCAB_REVIEW_SECONDS * 1000)
+}
+
+function clearVocabTimer() {
+  if (vocabTimer) {
+    clearTimeout(vocabTimer)
+    vocabTimer = null
+  }
+}
+
+async function loadVocabWords() {
+  try {
+    const { getAllVocab } = await import('@/utils/vocabDB')
+    vocabWords.value = await getAllVocab()
+  } catch (e) {
+    console.error('加载生词本失败:', e)
+  }
+}
+
+async function removeVocabWord(wordLower) {
+  try {
+    const { removeFromVocab } = await import('@/utils/vocabDB')
+    await removeFromVocab(wordLower)
+    vocabWords.value = vocabWords.value.filter(v => v.wordLower !== wordLower)
+  } catch (e) {
+    console.error('移出生词失败:', e)
+  }
+}
+
+function formatAddedTime(timestamp) {
+  const now = Date.now()
+  const diff = now - timestamp
+  const days = Math.floor(diff / 86400000)
+  if (days < 1) return '今天'
+  if (days < 2) return '昨天'
+  if (days < 7) return `${days}天前`
+  const d = new Date(timestamp)
+  return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
 const studyTarget = ref(getDailyTarget())
@@ -518,11 +607,21 @@ watch(activeDrawer, async (val, oldVal) => {
   if (val === 'records') {
     loadHistoryRecords()
   }
+  // 进入生词本抽屉 → 刷新生词列表 + 启动复习计时
+  if (val === 'vocab') {
+    loadVocabWords()
+    startVocabTimer()
+  }
+  // 离开生词本 → 停止计时
+  if (oldVal === 'vocab') {
+    clearVocabTimer()
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('click', handleGlobalClick)
+  clearVocabTimer()
   disposeChart()
 })
 </script>

@@ -223,6 +223,71 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
+  /**
+   * 测评完成后调用：标记"完成一次测试"任务为已完成并发放经验。
+   * 每日首次完成有效，重复调用不会重复发放。
+   */
+  async function completeAssessmentTask() {
+    const ASSESSMENT_TASK_ID = 'daily-3'
+
+    // 确保任务列表已初始化
+    if (todayTasks.value.length === 0) {
+      initDailyTasks()
+    }
+
+    const task = todayTasks.value.find(t => t.id === ASSESSMENT_TASK_ID)
+    if (!task) return
+
+    // 已完成的跳过
+    if (task.done) return
+
+    // 检查今日是否已同步过经验（防止页面刷新后重复）
+    const xpSyncedData = loadXpSyncedTasks()
+    if ((xpSyncedData.synced || []).includes(ASSESSMENT_TASK_ID)) {
+      task.done = true
+      return
+    }
+
+    // 标记完成 + 发放经验
+    task.done = true
+    xpEarned.value += task.xp
+    saveXpSyncedTask(ASSESSMENT_TASK_ID)
+    await syncXp(task.xp)
+
+    // 同步后刷新用户信息
+    const { useUserStore } = await import('@/stores/user')
+    useUserStore().fetchProfile()
+  }
+
+  /**
+   * 复习生词本任务完成（停留生词本一定时间后调用）。
+   * 每日首次完成有效，重复调用不会重复发放。
+   */
+  async function completeVocabReviewTask() {
+    const VOCAB_TASK_ID = 'daily-4'
+
+    if (todayTasks.value.length === 0) {
+      initDailyTasks()
+    }
+
+    const task = todayTasks.value.find(t => t.id === VOCAB_TASK_ID)
+    if (!task || task.done) return
+
+    const xpSyncedData = loadXpSyncedTasks()
+    if ((xpSyncedData.synced || []).includes(VOCAB_TASK_ID)) {
+      task.done = true
+      return
+    }
+
+    task.done = true
+    xpEarned.value += task.xp
+    saveXpSyncedTask(VOCAB_TASK_ID)
+    await syncXp(task.xp)
+
+    const { useUserStore } = await import('@/stores/user')
+    useUserStore().fetchProfile()
+  }
+
   return {
     todayTasks,
     xpEarned,
@@ -231,5 +296,7 @@ export const useTaskStore = defineStore('task', () => {
     initDailyTasks,
     toggleTask,
     recordArticleRead,
+    completeAssessmentTask,
+    completeVocabReviewTask,
   }
 })

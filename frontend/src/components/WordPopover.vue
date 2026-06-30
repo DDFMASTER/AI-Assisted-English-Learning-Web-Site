@@ -28,6 +28,15 @@
           </button>
         </div>
 
+        <!-- 加入生词本提示 -->
+        <div
+          v-if="vocabToast"
+          class="mb-3 px-3 py-1.5 rounded-lg text-center text-xs font-bold transition-all duration-200"
+          :class="vocabToast.includes('已加入') ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-500'"
+        >
+          {{ vocabToast }}
+        </div>
+
         <!-- 加载中 -->
         <div v-if="loading" class="flex items-center justify-center py-6">
           <Icon icon="ph:spinner-bold" class="text-lg text-[#2563EB] animate-spin" />
@@ -44,12 +53,21 @@
           <p class="text-sm text-gray-400">未在当前词库中找到该单词</p>
         </div>
 
+        <!-- 跨词书检索提示 -->
+        <div v-if="word.crossStage && word.found" class="mb-3 px-2.5 py-2 bg-amber-50 border border-amber-100 rounded-lg">
+          <p class="text-[11px] text-amber-700 leading-relaxed">
+            <Icon icon="ph:arrows-clockwise-bold" class="inline text-amber-500 mr-1" />
+            该单词未在你的当前阶段词书中找到，以下结果来自其他词书：
+          </p>
+        </div>
+
         <!-- 按来源分组的结果 -->
-        <div v-else-if="word.results && word.results.length" class="space-y-3 mb-4">
+        <div v-if="word.results && word.results.length" class="space-y-3 mb-4">
           <div v-for="(group, gIdx) in word.results" :key="gIdx">
             <div class="flex items-center gap-1.5 mb-1">
               <span
-                class="text-[10px] font-bold px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded"
+                class="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                :class="word.crossStage ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-600'"
               >
                 {{ group.source }}
               </span>
@@ -139,7 +157,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useReaderStore } from '@/stores/reader'
 
@@ -166,6 +184,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'add-vocab', 'view-detail', 'back-to-summary'])
 
 const readerStore = useReaderStore()
+const vocabToast = ref('')  // 加入生词本成功提示
 
 const detailWord = computed(() => props.word?.word || '')
 const detailLoading = computed(() => props.detailData?.loading || false)
@@ -173,9 +192,23 @@ const detailError = computed(() => props.detailData?.error || '')
 const detailExamples = computed(() => props.detailData?.examples || [])
 
 async function handleAddToVocab() {
-  const success = await readerStore.addToVocabulary(props.word.word)
+  // 提取第一条翻译和来源词书
+  const firstResult = props.word.results?.[0]
+  const firstEntry = firstResult?.entries?.[0]
+  const wordData = {
+    word: props.word.word,
+    phonetic: props.word.phonetic || firstEntry?.phonetic || '',
+    translation: firstEntry?.translation || '',
+    source: firstResult?.source || '',
+  }
+  const success = await readerStore.addToVocabulary(wordData)
   if (success) {
-    emit('add-vocab', props.word)
+    vocabToast.value = '已加入生词本 ✓'
+    setTimeout(() => { vocabToast.value = '' }, 1000)
+    emit('add-vocab', wordData)
+  } else {
+    vocabToast.value = '已在生词本中'
+    setTimeout(() => { vocabToast.value = '' }, 1000)
   }
 }
 

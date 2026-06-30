@@ -257,7 +257,10 @@ export const useReaderStore = defineStore('reader', () => {
         params.studyPurpose = studyPurpose
       }
       const data = await request.get('/word/lookup', { params })
-      if (data.success) return data
+      if (data.success) {
+        // 透传跨词书检索标记
+        return { ...data, crossStage: data.crossStage || false }
+      }
     } catch (error) {
       // 后端不可用，继续尝试本地
     }
@@ -383,12 +386,14 @@ export const useReaderStore = defineStore('reader', () => {
   }
 
   /**
-   * 添加单词到生词本
+   * 添加单词到生词本（本地 IndexedDB）
+   * @param {{ word: string, phonetic?: string, translation?: string, source?: string }} wordData
+   * @returns {Promise<boolean>}
    */
-  async function addToVocabulary(word) {
+  async function addToVocabulary(wordData) {
     try {
-      await request.post('/word/collect', { word })
-      return true
+      const { addToVocab } = await import('@/utils/vocabDB')
+      return await addToVocab(wordData)
     } catch (error) {
       console.error('添加生词失败:', error)
       return false

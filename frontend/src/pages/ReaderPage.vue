@@ -427,6 +427,7 @@ async function lookupWordForPopover(word) {
       phonetic: result.phonetic || '',
       results: result.results || [],
       found: result.found,
+      crossStage: result.crossStage || false,
       lemmaFrom: result.lemmaFrom || '',
       lemmaTo: result.lemmaTo || '',
     }

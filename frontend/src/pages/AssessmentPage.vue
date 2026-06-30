@@ -149,7 +149,17 @@
 
       <!-- 底部导航 -->
       <div class="mt-12 flex justify-between items-center">
-        <div></div>
+        <button
+          class="px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-1.5"
+          :class="!store.isFirstQuestion
+            ? 'bg-white border border-gray-200 text-gray-600 hover:border-[#2563EB] hover:text-[#2563EB]'
+            : 'bg-gray-50 text-gray-300 cursor-not-allowed'"
+          :disabled="store.isFirstQuestion"
+          @click="store.prevQuestion()"
+        >
+          <Icon icon="ph:arrow-left-bold" class="text-sm" />
+          上一题
+        </button>
         <div class="flex items-center gap-4">
           <span class="text-sm text-gray-400">已自动保存进度</span>
           <button
@@ -217,9 +227,11 @@ import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useAssessmentStore } from '@/stores/assessment'
 import { useUserStore } from '@/stores/user'
+import { useTaskStore } from '@/stores/task'
 
 const store = useAssessmentStore()
 const userStore = useUserStore()
+const taskStore = useTaskStore()
 const router = useRouter()
 
 const showExitConfirm = ref(false)
@@ -254,6 +266,8 @@ async function handleNext() {
     if (result && result.success) {
       // 测评完成后同步最新用户数据（经验值等）
       userStore.fetchProfile()
+      // 标记今日"完成一次测试"任务并发放经验
+      taskStore.completeAssessmentTask()
       router.push('/result')
     } else if (result && !result.success) {
       error.value = result.error || '评估失败，请稍后重试'

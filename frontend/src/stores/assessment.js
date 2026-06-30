@@ -183,6 +183,16 @@ export const useAssessmentStore = defineStore('assessment', () => {
   }
 
   /**
+   * 上一题
+   */
+  function prevQuestion() {
+    if (currentIndex.value > 0) {
+      currentIndex.value--
+      saveProgress()
+    }
+  }
+
+  /**
    * 提交测评结果（AI 评估）
    */
   async function submitAssessment() {
@@ -342,6 +352,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
     startAssessment,
     selectOption,
     nextQuestion,
+    prevQuestion,
     submitAssessment,
     resetAssessment,
     getResult,

@@ -103,11 +103,12 @@ public class WordService {
 
     /**
      * 按用户学习阶段查词（用于阅读器中点击单词时按 study_purpose 过滤）。
-     * 只查询匹配阶段的词库表，仅展示当前学习阶段的释义。
+     * 优先查询当前学习阶段词库；若未命中，则按顺序（初中→高中→四级→六级→考研→托福）
+     * 检索其他词书，返回第一个匹配结果并标注来源词书。
      *
      * @param word         单词
      * @param studyPurpose 用户学习阶段（初中/高中/四级/六级/考研/托福）
-     * @return 仅包含匹配阶段释义的查词结果
+     * @return 查词结果，found=true 时 results 中包含来源词书信息
      */
     public WordLookupResult lookupWordByStage(String word, String studyPurpose) {
         WordLookupResult result = new WordLookupResult();
@@ -123,7 +124,7 @@ public class WordService {
             return lookupWordInAllStages(word);
         }
 
-        // 只查询匹配阶段的词库表
+        // 1) 先查当前学习阶段词库
         List<WordBase> stageResults = wordDAO.findByWordAndStage(word, studyPurpose);
 
         if (!stageResults.isEmpty()) {
@@ -137,10 +138,34 @@ public class WordService {
             if (ph != null && !ph.isBlank()) {
                 result.phonetic = ph;
             }
-        } else {
-            result.stageResults = new LinkedHashMap<>();
-            result.found = false;
+            return result;
         }
+
+        // 2) 当前阶段未命中 → 按顺序遍历其他词书，返回第一个命中的词书
+        // 词书顺序：初中 → 高中 → 四级 → 六级 → 考研 → 托福
+        String[] ALL_STAGES = {"初中", "高中", "四级", "六级", "考研", "托福"};
+        for (String stage : ALL_STAGES) {
+            if (stage.equals(studyPurpose)) continue;  // 跳过已查过的当前阶段
+
+            List<WordBase> fallbackResults = wordDAO.findByWordAndStage(word, stage);
+            if (!fallbackResults.isEmpty()) {
+                Map<String, List<WordBase>> grouped = new LinkedHashMap<>();
+                grouped.put(stage, fallbackResults);
+                result.stageResults = grouped;
+                result.found = true;
+                result.crossStage = true;
+
+                String ph = fallbackResults.get(0).getPhonetic();
+                if (ph != null && !ph.isBlank()) {
+                    result.phonetic = ph;
+                }
+                return result;
+            }
+        }
+
+        // 全部词书均未命中
+        result.stageResults = new LinkedHashMap<>();
+        result.found = false;
 
         return result;
     }
@@ -224,6 +249,7 @@ public class WordService {
         public String phonetic;
         public Map<String, List<WordBase>> stageResults;
         public boolean found;
+        public boolean crossStage;   // 是否来自跨词书检索（当前阶段未命中后回退）
         public String error;
 
         public String toJson() {
@@ -240,6 +266,7 @@ public class WordService {
             }
 
             sb.append(",\"found\":").append(found);
+            sb.append(",\"crossStage\":").append(crossStage);
             sb.append(",\"results\":[");
 
             boolean firstStage = true;
