@@ -317,7 +317,8 @@ import { useTaskStore } from '@/stores/task'
 import { useRequireAuth } from '@/composables/useAuth'
 import { getRecentOnlineTime, getTodayMinutes, getDailyTarget, setDailyTarget, getStreak } from '@/utils/onlineTimeDB'
 import { getRecentHistory, countHistory } from '@/utils/historyDB'
-import aboutAudioSrc from '@/ggg/gggg.mp3'
+const gggAudioModules = import.meta.glob('../ggg/*.mp3', { eager: true })
+const gggAudioFiles = Object.values(gggAudioModules).map(m => m.default)
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -533,7 +534,8 @@ const showAboutModal = ref(false)
 
 function openAbout() {
   showAboutModal.value = true
-  const audio = new Audio(aboutAudioSrc)
+  const randomSrc = gggAudioFiles[Math.floor(Math.random() * gggAudioFiles.length)]
+  const audio = new Audio(randomSrc)
   audio.play().catch((e) => console.error('播放失败:', e.message))
 }
 
