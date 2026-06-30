@@ -75,14 +75,22 @@
             <div
               v-for="(entry, eIdx) in group.entries"
               :key="eIdx"
-              class="flex items-baseline gap-2 ml-1 mb-0.5"
             >
-              <span v-if="entry.phonetic" class="text-[11px] text-gray-400 font-mono flex-none">
-                {{ entry.phonetic }}
-              </span>
-              <span class="text-sm text-gray-700 leading-relaxed">
-                {{ entry.translation }}
-              </span>
+              <div class="flex items-baseline gap-2 ml-1 mb-0.5">
+                <span v-if="entry.phonetic" class="text-[11px] text-gray-400 font-mono flex-none">
+                  {{ entry.phonetic }}
+                </span>
+                <span class="text-sm text-gray-700 leading-relaxed">
+                  {{ entry.translation }}
+                </span>
+              </div>
+              <!-- AI 详细解释 -->
+              <div
+                v-if="entry.explanation"
+                class="ml-1 mt-1 mb-2 px-2.5 py-1.5 bg-blue-50/50 rounded-lg text-[11px] text-gray-500 leading-relaxed"
+              >
+                {{ entry.explanation }}
+              </div>
             </div>
           </div>
         </div>

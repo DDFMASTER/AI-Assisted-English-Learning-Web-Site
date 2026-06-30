@@ -256,7 +256,8 @@ export const useReaderStore = defineStore('reader', () => {
       if (studyPurpose) {
         params.studyPurpose = studyPurpose
       }
-      const data = await request.get('/word/lookup', { params })
+      // AI 兜底查词可能耗时 15-20 秒，超时设为 30 秒
+      const data = await request.get('/word/lookup', { params, timeout: 30000 })
       if (data.success) {
         // 透传跨词书检索标记
         return { ...data, crossStage: data.crossStage || false }

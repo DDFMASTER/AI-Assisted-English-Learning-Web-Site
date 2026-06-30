@@ -163,7 +163,62 @@ public class WordService {
             }
         }
 
-        // 全部词书均未命中
+        // 3) 词书均未命中 → 查询 AI 动态词典 ai_word_dic
+        AiWordDic aiDic = wordDAO.findLatestAiDic(word);
+        if (aiDic != null) {
+            Map<String, List<WordBase>> grouped = new LinkedHashMap<>();
+            // 将 ai_word_dic 结果伪装为词书结果
+            WordBase wb = new WordBase();
+            wb.setId(aiDic.getAidicId() != null ? aiDic.getAidicId() : 0L);
+            wb.setWord(aiDic.getWord());
+            wb.setPhonetic(aiDic.getPhonetic());
+            wb.setTranslation(aiDic.getTranslation());
+            wb.setExplanation(aiDic.getExplanation());
+            grouped.put("AI 词典", java.util.Collections.singletonList(wb));
+            result.stageResults = grouped;
+            result.found = true;
+            result.crossStage = true;  // 非当前阶段来源
+            if (aiDic.getPhonetic() != null && !aiDic.getPhonetic().isBlank()) {
+                result.phonetic = aiDic.getPhonetic();
+            }
+            return result;
+        }
+
+        // 4) ai_word_dic 也未命中 → AI 介入搜索并写入数据库
+        Service.AIService aiService = new Service.AIService();
+        Service.AIService.AiWordLookupResult aiResult = aiService.lookupWordByAI(word);
+        if (aiResult.translation != null && !aiResult.translation.isBlank()) {
+            // 写入 ai_word_dic 表
+            AiWordDic newAiDic = new AiWordDic();
+            newAiDic.setWord(word);
+            newAiDic.setPhonetic(aiResult.phonetic);
+            newAiDic.setTranslation(aiResult.translation);
+            newAiDic.setExplanation(aiResult.explanation);
+            newAiDic.setLikeCount(0);
+            newAiDic.setDislikeCount(0);
+            newAiDic.setIsRemoved(false);
+            newAiDic.setCreatedAt(java.time.LocalDateTime.now());
+            wordDAO.insertAiDic(newAiDic);
+
+            // 返回结果
+            Map<String, List<WordBase>> grouped = new LinkedHashMap<>();
+            WordBase wb = new WordBase();
+            wb.setId(0L);
+            wb.setWord(word);
+            wb.setPhonetic(aiResult.phonetic);
+            wb.setTranslation(aiResult.translation);
+            wb.setExplanation(aiResult.explanation);
+            grouped.put("AI 生成", java.util.Collections.singletonList(wb));
+            result.stageResults = grouped;
+            result.found = true;
+            result.crossStage = true;
+            if (aiResult.phonetic != null && !aiResult.phonetic.isBlank()) {
+                result.phonetic = aiResult.phonetic;
+            }
+            return result;
+        }
+
+        // 全部手段均未命中
         result.stageResults = new LinkedHashMap<>();
         result.found = false;
 
@@ -287,6 +342,9 @@ public class WordService {
                         sb.append("\"word\":\"").append(escape(w.getWord())).append("\",");
                         sb.append("\"phonetic\":\"").append(escape(w.getPhonetic())).append("\",");
                         sb.append("\"translation\":\"").append(escape(w.getTranslation())).append("\"");
+                        if (w.getExplanation() != null && !w.getExplanation().isBlank()) {
+                            sb.append(",\"explanation\":\"").append(escape(w.getExplanation())).append("\"");
+                        }
                         sb.append("}");
                     }
 

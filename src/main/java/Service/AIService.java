@@ -46,6 +46,24 @@ public class AIService {
                 .build();
     }
 
+    // ========== AI 单词释义查词 ==========
+
+    private static final String WORD_LOOKUP_PROMPT =
+            "你是一个专业的英语词典助手。用户会给你一个英文单词，请返回该单词的音标、中文释义和详细解释。\n" +
+            "\n" +
+            "要求：\n" +
+            "1. 音标使用国际音标（IPA）\n" +
+            "2. translation 为简洁的中文释义（取最常用义项）\n" +
+            "3. explanation 包含词性、用法说明、常见搭配等\n" +
+            "\n" +
+            "请严格以如下 JSON 格式输出（不要输出其他内容）：\n" +
+            "{\n" +
+            "  \"word\": \"单词\",\n" +
+            "  \"phonetic\": \"/音标/\",\n" +
+            "  \"translation\": \"中文释义\",\n" +
+            "  \"explanation\": \"详细解释\"\n" +
+            "}";
+
     // ========== 段落翻译 ==========
 
     private static final String TRANSLATION_SYSTEM_PROMPT =
@@ -671,6 +689,64 @@ public class AIService {
 
         result.duration = System.currentTimeMillis() - startTime;
         return result;
+    }
+
+    /**
+     * AI 查词：当所有词书和 ai_word_dic 都未命中时，由 AI 搜索单词释义。
+     * @param word 英文单词
+     * @return AiWordLookupResult，成功时包含音标/释义/解释
+     */
+    public AiWordLookupResult lookupWordByAI(String word) {
+        AiWordLookupResult result = new AiWordLookupResult();
+        result.word = word;
+        long startTime = System.currentTimeMillis();
+
+        String content = callDeepSeek(WORD_LOOKUP_PROMPT, word, 20, new AIResultBase());
+
+        if (content != null) {
+            // 解析 phonetic
+            for (String key : new String[]{"\"phonetic\":\"", "\"phonetic\": \"", "\"phonetic\" :\""}) {
+                int start = content.indexOf(key);
+                if (start != -1) {
+                    start += key.length();
+                    result.phonetic = extractStringValue(content, start);
+                    break;
+                }
+            }
+            // 解析 translation
+            for (String key : new String[]{"\"translation\":\"", "\"translation\": \"", "\"translation\" :\""}) {
+                int start = content.indexOf(key);
+                if (start != -1) {
+                    start += key.length();
+                    result.translation = extractStringValue(content, start);
+                    break;
+                }
+            }
+            // 解析 explanation
+            for (String key : new String[]{"\"explanation\":\"", "\"explanation\": \"", "\"explanation\" :\""}) {
+                int start = content.indexOf(key);
+                if (start != -1) {
+                    start += key.length();
+                    result.explanation = extractStringValue(content, start);
+                    break;
+                }
+            }
+
+            if (result.translation == null || result.translation.isEmpty()) {
+                result.error = "AI 查词解析失败";
+            }
+        }
+
+        result.duration = System.currentTimeMillis() - startTime;
+        return result;
+    }
+
+    /** AI 查词结果 */
+    public static class AiWordLookupResult extends AIResultBase {
+        public String word;
+        public String phonetic;
+        public String translation;
+        public String explanation;
     }
 
     /**
