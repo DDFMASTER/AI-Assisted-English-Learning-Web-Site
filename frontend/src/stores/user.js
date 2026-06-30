@@ -92,16 +92,26 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
-   * 获取用户信息
+   * 获取用户信息（每次调用都从数据库同步最新值）。
+   * 支持 userId 或 username 任一方式查找，确保在任意状态下都能刷新。
    */
   async function fetchProfile() {
-    if (!token.value) return
+    // 构建查询参数：有几个传几个
+    const params = {}
+    if (user.value?.userId) params.userId = user.value.userId
+    if (user.value?.username) params.username = user.value.username
+
+    // 没有任何可用的标识符则放弃
+    if (Object.keys(params).length === 0) {
+      console.warn('fetchProfile: 无可用用户标识，跳过')
+      return
+    }
+
     try {
-      const data = await request.get('/user/profile', {
-        params: { token: token.value }
-      })
-      if (data.success) {
-        user.value = data.user
+      const data = await request.get('/user/profile', { params })
+      if (data.success && data.user) {
+        // 用服务端返回的最新数据覆盖本地（尤其是 experience）
+        user.value = { ...user.value, ...data.user }
         saveUserToStorage()
       }
     } catch (error) {

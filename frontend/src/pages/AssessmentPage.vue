@@ -216,8 +216,10 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useAssessmentStore } from '@/stores/assessment'
+import { useUserStore } from '@/stores/user'
 
 const store = useAssessmentStore()
+const userStore = useUserStore()
 const router = useRouter()
 
 const showExitConfirm = ref(false)
@@ -250,6 +252,8 @@ async function handleNext() {
     submitting.value = true
     const result = await store.submitAssessment()
     if (result && result.success) {
+      // 测评完成后同步最新用户数据（经验值等）
+      userStore.fetchProfile()
       router.push('/result')
     } else if (result && !result.success) {
       error.value = result.error || '评估失败，请稍后重试'

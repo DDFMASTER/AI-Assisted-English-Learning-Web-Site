@@ -1,7 +1,7 @@
 <template>
   <main class="max-w-[1000px] mx-auto px-6 mt-12">
     <!-- 顶部结果卡片 -->
-    <div class="card mb-8 overflow-hidden relative">
+    <div ref="resultTopRef" class="card mb-8 overflow-hidden relative">
       <div class="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full -mr-20 -mt-20 z-0"></div>
       <div class="relative z-10 flex items-center gap-12">
         <!-- 等级环形图 -->
@@ -79,6 +79,187 @@
       </div>
     </div>
 
+    <!-- ========== 答题回顾（分页） ========== -->
+    <div ref="reviewSectionRef" class="mt-12">
+      <div class="flex items-center gap-3 mb-8">
+        <Icon icon="ph:check-square-offset-bold" class="text-2xl text-[#2563EB]" />
+        <h2 class="text-2xl font-bold">答题回顾</h2>
+        <span class="text-sm text-gray-400 ml-2">
+          共 {{ questionReview.length }} 题，
+          答对 <strong class="text-green-500">{{ correctCount }}</strong> 题，
+          答错 <strong class="text-red-500">{{ wrongCount }}</strong> 题
+        </span>
+      </div>
+
+      <!-- 进度条：可点击题号 -->
+      <div class="flex items-center justify-center gap-2 mb-8">
+        <button
+          class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all hover:scale-110 flex-none"
+          :class="currentReviewIndex > 0
+            ? 'bg-white border border-gray-200 text-gray-500 hover:border-[#2563EB] hover:text-[#2563EB] cursor-pointer'
+            : 'bg-gray-100 text-gray-300 cursor-not-allowed'"
+          :disabled="currentReviewIndex === 0"
+          @click="goToQuestion(currentReviewIndex - 1)"
+        >
+          <Icon icon="ph:caret-left-bold" class="text-sm" />
+        </button>
+
+        <div class="flex items-center gap-1.5 overflow-x-auto py-1 px-2">
+          <button
+            v-for="(item, idx) in questionReview"
+            :key="item.id"
+            class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-none"
+            :class="getProgressDotClass(idx, item)"
+            @click="goToQuestion(idx)"
+          >
+            {{ item.id }}
+          </button>
+        </div>
+
+        <button
+          class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all hover:scale-110 flex-none"
+          :class="currentReviewIndex < questionReview.length - 1
+            ? 'bg-white border border-gray-200 text-gray-500 hover:border-[#2563EB] hover:text-[#2563EB] cursor-pointer'
+            : 'bg-gray-100 text-gray-300 cursor-not-allowed'"
+          :disabled="currentReviewIndex === questionReview.length - 1"
+          @click="goToQuestion(currentReviewIndex + 1)"
+        >
+          <Icon icon="ph:caret-right-bold" class="text-sm" />
+        </button>
+      </div>
+
+      <!-- 当前题目卡片（带动画过渡） -->
+      <div class="card border-l-4 transition-all duration-300"
+        :class="currentItem.isCorrect ? 'border-l-green-400' : 'border-l-red-400'"
+        :key="currentReviewIndex"
+      >
+        <!-- 题号与结果 -->
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+              :class="currentItem.isCorrect
+                ? 'bg-green-50 text-green-600'
+                : 'bg-red-50 text-red-600'"
+            >
+              {{ currentItem.id }}
+            </span>
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">
+              Question {{ currentItem.id }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <Icon
+              :icon="currentItem.isCorrect ? 'ph:check-circle-fill' : 'ph:x-circle-fill'"
+              class="text-xl"
+              :class="currentItem.isCorrect ? 'text-green-500' : 'text-red-500'"
+            />
+            <span
+              class="text-sm font-bold"
+              :class="currentItem.isCorrect ? 'text-green-600' : 'text-red-600'"
+            >
+              {{ currentItem.isCorrect ? '回答正确' : '回答错误' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- 阅读文本 -->
+        <div v-if="currentItem.passage" class="mb-4 p-4 bg-gray-50 rounded-xl">
+          <p class="text-sm text-gray-500 leading-relaxed">{{ currentItem.passage }}</p>
+        </div>
+
+        <!-- 问题 -->
+        <p class="font-bold text-lg mb-4">{{ currentItem.question }}</p>
+
+        <!-- 选项 -->
+        <div class="space-y-3 mb-4">
+          <div
+            v-for="opt in currentItem.options"
+            :key="opt.id"
+            class="flex items-center gap-3 p-3 rounded-xl text-sm"
+            :class="getOptionClass(opt.id, currentItem)"
+          >
+            <div
+              class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-none"
+              :class="getOptionDotClass(opt.id, currentItem)"
+            >
+              {{ opt.id }}
+            </div>
+            <span class="font-medium">{{ opt.text }}</span>
+            <span v-if="opt.id === currentItem.correctAnswer" class="ml-auto text-xs font-bold text-green-600">
+              ✓ 正确答案
+            </span>
+            <span v-else-if="opt.id === currentItem.userAnswer && !currentItem.isCorrect" class="ml-auto text-xs font-bold text-red-500">
+              ✗ 你的答案
+            </span>
+            <span v-else-if="opt.id === currentItem.userAnswer && currentItem.isCorrect" class="ml-auto text-xs font-bold text-green-600">
+              ✓ 你的答案
+            </span>
+          </div>
+        </div>
+
+        <!-- 解析 -->
+        <div class="p-4 rounded-xl"
+          :class="currentItem.isCorrect ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'"
+        >
+          <div class="flex items-start gap-2">
+            <Icon
+              :icon="currentItem.isCorrect ? 'ph:lightbulb-fill' : 'ph:info-fill'"
+              class="text-lg flex-none mt-0.5"
+              :class="currentItem.isCorrect ? 'text-green-500' : 'text-amber-500'"
+            />
+            <div>
+              <p class="text-xs font-bold mb-1"
+                :class="currentItem.isCorrect ? 'text-green-700' : 'text-amber-700'"
+              >
+                {{ currentItem.isCorrect ? '题目解析' : '错题解析' }}
+              </p>
+              <p class="text-sm leading-relaxed"
+                :class="currentItem.isCorrect ? 'text-green-800' : 'text-amber-800'"
+              >
+                {{ currentItem.explanation }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部翻页按钮 -->
+      <div class="flex items-center justify-between mt-6">
+        <button
+          class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
+          :class="currentReviewIndex > 0
+            ? 'bg-white border border-gray-200 text-gray-600 hover:border-[#2563EB] hover:text-[#2563EB]'
+            : 'bg-gray-50 text-gray-300 cursor-not-allowed'"
+          :disabled="currentReviewIndex === 0"
+          @click="goToQuestion(currentReviewIndex - 1)"
+        >
+          <Icon icon="ph:arrow-left-bold" class="text-base" />
+          上一题
+        </button>
+
+        <span class="text-sm text-gray-400 font-medium">
+          {{ currentReviewIndex + 1 }} / {{ questionReview.length }}
+        </span>
+
+        <button
+          class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
+          :class="currentReviewIndex < questionReview.length - 1
+            ? 'bg-[#2563EB] text-white hover:bg-blue-600'
+            : 'bg-gray-50 text-gray-300 cursor-not-allowed'"
+          :disabled="currentReviewIndex === questionReview.length - 1"
+          @click="goToQuestion(currentReviewIndex + 1)"
+        >
+          下一题
+          <Icon icon="ph:arrow-right-bold" class="text-base" />
+        </button>
+      </div>
+
+      <!-- 键盘提示 -->
+      <p class="text-center text-xs text-gray-300 mt-4">
+        使用 ← → 方向键或点击题号快速切换题目
+      </p>
+    </div>
+
   </main>
 </template>
 
@@ -96,6 +277,128 @@ const storeResult = assessmentStore.assessmentResult
 // 无结果时重定向
 if (!storeResult) {
   router.replace('/assessment')
+}
+
+// ========== 答题回顾数据 ==========
+const resultTopRef = ref(null)
+const reviewSectionRef = ref(null)
+const currentReviewIndex = ref(0)
+
+const questionReview = computed(() => assessmentStore.questionReview)
+
+const currentItem = computed(() =>
+  questionReview.value[currentReviewIndex.value] || questionReview.value[0] || {}
+)
+
+const correctCount = computed(() =>
+  questionReview.value.filter(q => q.isCorrect).length
+)
+
+const wrongCount = computed(() =>
+  questionReview.value.filter(q => !q.isCorrect).length
+)
+
+/** 跳转到指定题号的题目 */
+function goToQuestion(index) {
+  if (index >= 0 && index < questionReview.value.length) {
+    currentReviewIndex.value = index
+  }
+}
+
+/** 进度条圆点样式 */
+function getProgressDotClass(idx, item) {
+  const isCurrent = idx === currentReviewIndex.value
+  const base = 'transition-all hover:scale-110'
+
+  if (isCurrent) {
+    return `${base} bg-[#2563EB] text-white shadow-md shadow-blue-200 scale-110`
+  }
+  if (item.isCorrect) {
+    return `${base} bg-green-50 text-green-600 border border-green-200 cursor-pointer`
+  }
+  return `${base} bg-red-50 text-red-600 border border-red-200 cursor-pointer`
+}
+
+/** 滚动到解析区域 */
+function scrollToReview() {
+  if (reviewSectionRef.value) {
+    reviewSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+/** 键盘左右方向键切换题目 */
+function handleReviewKeydown(e) {
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault()
+    goToQuestion(currentReviewIndex.value - 1)
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    goToQuestion(currentReviewIndex.value + 1)
+  }
+}
+
+/** 监听滚轮：上滚回到结果页顶部，下滚定位到解析 */
+let wheelFired = false
+function handleReviewWheel(e) {
+  if (wheelFired) return
+  const reviewRect = reviewSectionRef.value?.getBoundingClientRect()
+  const topRect = resultTopRef.value?.getBoundingClientRect()
+  if (!reviewRect) return
+
+  if (e.deltaY > 0) {
+    // 向下滚动 → 定位到解析区域
+    if (reviewRect.top > window.innerHeight * 0.3) {
+      wheelFired = true
+      scrollToReview()
+      setTimeout(() => { wheelFired = false }, 800)
+    }
+  } else if (e.deltaY < 0 && topRect) {
+    // 向上滚动 → 回到结果页顶部
+    if (topRect.top < -50) {
+      wheelFired = true
+      resultTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setTimeout(() => { wheelFired = false }, 800)
+    }
+  }
+}
+
+/**
+ * 选项卡片样式
+ */
+function getOptionClass(optionId, item) {
+  const isUserAnswer = optionId === item.userAnswer
+  const isCorrectAnswer = optionId === item.correctAnswer
+
+  if (isCorrectAnswer && isUserAnswer) {
+    // 答对了 — 绿色高亮
+    return 'bg-green-50 border border-green-300'
+  }
+  if (isCorrectAnswer && !isUserAnswer) {
+    // 正确答案（用户选错了）— 绿色边框提示
+    return 'bg-green-50 border border-green-300'
+  }
+  if (isUserAnswer && !isCorrectAnswer) {
+    // 用户选错了 — 红色高亮
+    return 'bg-red-50 border border-red-300'
+  }
+  // 普通选项
+  return 'bg-gray-50 border border-transparent'
+}
+
+/**
+ * 选项圆点样式
+ */
+function getOptionDotClass(optionId, item) {
+  const isUserAnswer = optionId === item.userAnswer
+  const isCorrectAnswer = optionId === item.correctAnswer
+
+  if (isCorrectAnswer) {
+    return 'bg-green-500 text-white'
+  }
+  if (isUserAnswer && !isCorrectAnswer) {
+    return 'bg-red-500 text-white'
+  }
+  return 'bg-gray-200 text-gray-500'
 }
 
 // ========== 结果数据 ==========
@@ -172,10 +475,14 @@ function handleResize() {
 onMounted(async () => {
   await nextTick()
   initRadarChart()
+  window.addEventListener('keydown', handleReviewKeydown)
+  window.addEventListener('wheel', handleReviewWheel, { passive: true })
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('keydown', handleReviewKeydown)
+  window.removeEventListener('wheel', handleReviewWheel)
   if (radarChart) {
     radarChart.dispose()
     radarChart = null

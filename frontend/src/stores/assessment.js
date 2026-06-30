@@ -43,6 +43,27 @@ export const useAssessmentStore = defineStore('assessment', () => {
     return answers.value[currentQuestion.value.id] || null
   })
 
+  /**
+   * 答题回顾数据：供 ResultPage 展示每道题的作答情况。
+   * 返回数组，每项包含：题号、题干、用户答案、正确答案、是否答对、解析。
+   */
+  const questionReview = computed(() => {
+    return questions.value.map((q) => {
+      const userAnswer = answers.value[q.id] || null
+      const isCorrect = userAnswer === q.correctAnswer
+      return {
+        id: q.id,
+        passage: q.passage,
+        question: q.question,
+        options: q.options,
+        userAnswer,
+        correctAnswer: q.correctAnswer,
+        isCorrect,
+        explanation: q.explanation || '暂无解析',
+      }
+    })
+  })
+
   // ========== 动作 ==========
 
   /**
@@ -98,7 +119,10 @@ export const useAssessmentStore = defineStore('assessment', () => {
         { id: 'C', text: q.optionC || '' },
         { id: 'D', text: q.optionD || '' },
       ],
-      correctAnswer: q.answer,
+      // 后端 answer 是数字索引 (0-3)，转换为选项字母 (A-D)
+      correctAnswer: typeof q.answer === 'number'
+        ? String.fromCharCode(65 + q.answer)
+        : q.answer,
       explanation: q.explanation || '',
     }))
   }
@@ -314,6 +338,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
     isFirstQuestion,
     isLastQuestion,
     selectedOption,
+    questionReview,
     startAssessment,
     selectOption,
     nextQuestion,
