@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 
 @WebServlet("/api/user/login")
 public class UserLoginServlet extends HttpServlet {
@@ -32,6 +33,9 @@ public class UserLoginServlet extends HttpServlet {
             return;
         }
 
+        // 检查 VIP 是否过期
+        userService.checkVipExpired(user);
+
         // 创建/获取会话，存储用户登录状态
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getUserId());
@@ -40,21 +44,29 @@ public class UserLoginServlet extends HttpServlet {
         session.setAttribute("studyPurpose", user.getStudyPurpose());
 
         // 设置会话超时（30 分钟无操作后自动失效）
-        session.setMaxInactiveInterval(30 * 60);
+        session.setMaxInactiveInterval(24 * 60 * 60);
 
         System.out.println("[AAEL] 用户登录成功: userId=" + user.getUserId()
                 + ", username=" + user.getUsername()
                 + ", role=" + user.getRole()
                 + ", sessionId=" + session.getId());
 
+        // VIP 到期时间
+        String vipExpireAt = "";
+        if ("vip".equals(user.getProfile()) && user.getLastCheckin() != null) {
+            vipExpireAt = user.getLastCheckin().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        }
+
         // 构建成功响应
         String extra = "\"userId\":" + JsonUtil.numVal(user.getUserId())
                 + ",\"username\":" + JsonUtil.strVal(user.getUsername())
                 + ",\"role\":" + JsonUtil.strVal(user.getRole())
+                + ",\"profile\":" + JsonUtil.strVal(user.getProfile())
                 + ",\"studyPurpose\":" + JsonUtil.strVal(user.getStudyPurpose())
                 + ",\"experience\":" + JsonUtil.numVal(user.getExperience())
                 + ",\"cefrProgress\":" + JsonUtil.numVal(user.getCefrProgress())
-                + ",\"literacy\":" + JsonUtil.numVal(user.getLiteracy());
+                + ",\"literacy\":" + JsonUtil.numVal(user.getLiteracy())
+                + ",\"vipExpireAt\":" + JsonUtil.strVal(vipExpireAt);
 
         response.getWriter().write(JsonUtil.buildResponse(true, "登录成功", extra));
     }

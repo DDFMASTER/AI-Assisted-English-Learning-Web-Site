@@ -43,8 +43,8 @@ public class AppContextListener implements ServletContextListener {
         ctx.setAttribute(KICKED_USER_IDS, ConcurrentHashMap.newKeySet());
         ctx.setAttribute(APP_START_TIME, LocalDateTime.now());
 
-        // 设置会话超时时间（30 分钟）
-        ctx.setSessionTimeout(30);
+        // 设置会话超时时间（24 小时）
+        ctx.setSessionTimeout(1440);
 
         System.out.println("[AAEL] ========================================");
         System.out.println("[AAEL]        应 用 启 动 成 功");

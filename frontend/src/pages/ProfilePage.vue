@@ -1,5 +1,18 @@
 <template>
   <main class="max-w-[1200px] mx-auto px-6 mt-10">
+    <!-- Toast 通知 -->
+    <Teleport to="body">
+      <Transition name="toast">
+        <div
+          v-if="toastMsg"
+          class="fixed top-6 left-1/2 -translate-x-1/2 z-[400] px-5 py-3 rounded-xl text-sm font-bold shadow-lg"
+          :class="toastType === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'"
+        >
+          {{ toastMsg }}
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- 用户信息卡片 -->
     <div class="card flex items-center gap-8 mb-8">
       <div
@@ -26,6 +39,9 @@
           <h1 class="text-2xl font-bold">{{ username }}</h1>
           <span class="px-3 py-1 bg-blue-50 text-[#2563EB] rounded-full text-xs font-bold">
             {{ userLevel }}
+          </span>
+          <span v-if="isVip" class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold">
+            ⭐ VIP {{ vipExpireText }}
           </span>
         </div>
         <!-- CEFR 等级进度条 -->
@@ -60,6 +76,22 @@
             <div class="text-[10px] text-gray-400">总经验 XP</div>
           </div>
         </div>
+      </div>
+
+      <!-- 右侧 VIP 卡片 -->
+      <div
+        class="flex-none w-36 p-4 rounded-xl text-center cursor-pointer transition-all hover:scale-105"
+        :class="isVip ? 'bg-gradient-to-br from-yellow-100 to-yellow-200 border border-yellow-300' : 'bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 hover:border-yellow-300'"
+        @click="showVipExchange = true"
+      >
+        <div class="text-2xl mb-1">⭐</div>
+        <div v-if="isVip" class="text-xs font-bold text-yellow-700">
+          VIP {{ vipExpireText }}
+        </div>
+        <div v-else class="text-xs font-bold text-gray-500">
+          兑换 VIP
+        </div>
+        <div class="text-[10px] text-gray-400 mt-1">180经验/天</div>
       </div>
     </div>
 
@@ -162,29 +194,6 @@
                 <span class="text-[10px] text-gray-300">阅读</span>
                 <Icon icon="ph:arrow-right-bold" class="text-gray-300 group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all text-sm" />
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 勋章墙 -->
-        <div v-else-if="activeDrawer === 'badges'" key="badges" class="card drawer-card">
-          <h3 class="text-lg font-bold mb-6">🏆 勋章墙</h3>
-          <div class="grid grid-cols-3 gap-4">
-            <div
-              v-for="badge in badges"
-              :key="badge.name"
-              class="flex flex-col items-center gap-2 p-4 rounded-xl"
-              :class="badge.unlocked ? badge.bgClass : 'bg-gray-50 opacity-50'"
-            >
-              <div class="w-12 h-12 rounded-full flex items-center justify-center" :class="badge.unlocked ? badge.circleBg : 'bg-gray-100'">
-                <span class="text-2xl">{{ badge.unlocked ? badge.emoji : '🔒' }}</span>
-              </div>
-              <span class="text-[11px] font-bold text-center" :class="badge.unlocked ? 'text-gray-700' : 'text-gray-400'">
-                {{ badge.name }}
-              </span>
-              <span class="text-[9px] font-bold" :class="badge.unlocked ? badge.labelColor : 'text-gray-400'">
-                {{ badge.unlocked ? '已解锁' : '未解锁' }}
-              </span>
             </div>
           </div>
         </div>
@@ -408,14 +417,6 @@
                 <span class="text-xs text-gray-400">分钟/天</span>
               </div>
             </div>
-            <!-- 难度偏好 -->
-            <div
-              class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
-              @click="guard(editDifficulty)"
-            >
-              <span class="text-sm font-medium text-gray-700">难度偏好</span>
-              <span class="text-sm text-gray-400">{{ difficultyPreference }}</span>
-            </div>
             <!-- 关于我们 -->
             <div
               class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
@@ -478,6 +479,68 @@
 
     <!-- 词汇量测试弹窗 -->
     <VocabTestModal :visible="showVocabTest" @close="showVocabTest = false" />
+
+    <!-- VIP 兑换弹窗 -->
+    <Teleport to="body">
+      <div
+        v-if="showVipExchange"
+        class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        @click.self="showVipExchange = false"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 mx-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">⭐ VIP 兑换</h3>
+            <button
+              class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              @click="showVipExchange = false"
+            >
+              <Icon icon="ph:x-bold" class="text-gray-500" />
+            </button>
+          </div>
+
+          <div class="bg-yellow-50 rounded-xl p-4 mb-4">
+            <p class="text-sm text-yellow-700 font-medium mb-1">当前经验值：<strong>{{ totalXp }}</strong></p>
+            <p v-if="isVip" class="text-sm text-yellow-700 font-medium">
+              VIP 到期：<strong>{{ vipExpireText }}</strong>
+            </p>
+            <p v-else class="text-sm text-gray-500">你还不是 VIP 用户</p>
+          </div>
+
+          <p class="text-xs text-gray-400 mb-4">180 经验值 = 1 天 VIP，选择要兑换的天数：</p>
+
+          <div class="grid grid-cols-4 gap-2 mb-4">
+            <button
+              v-for="d in vipDayOptions"
+              :key="d"
+              class="py-2 rounded-lg text-sm font-bold transition-all border"
+              :class="vipSelectedDays === d
+                ? 'bg-yellow-100 border-yellow-400 text-yellow-700'
+                : 'bg-white border-gray-200 text-gray-500 hover:border-yellow-300'"
+              @click="vipSelectedDays = d"
+            >
+              {{ d }}天
+            </button>
+          </div>
+
+          <p class="text-center text-sm text-gray-500 mb-4">
+            需要 <strong class="text-yellow-600">{{ vipSelectedDays * 180 }}</strong> 经验值
+          </p>
+
+          <button
+            class="w-full py-3 bg-yellow-400 text-white rounded-xl font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="vipSelectedDays * 180 > totalXp || vipExchanging"
+            @click="doVipExchange"
+          >
+            <span v-if="vipExchanging">兑换中...</span>
+            <span v-else-if="isVip">续费 VIP {{ vipSelectedDays }} 天</span>
+            <span v-else>兑换 VIP {{ vipSelectedDays }} 天</span>
+          </button>
+          <p v-if="vipSelectedDays * 180 > totalXp" class="text-xs text-red-400 text-center mt-2">
+            经验值不足
+          </p>
+        </div>
+      </div>
+    </Teleport>
   </main>
 </template>
 
@@ -488,9 +551,9 @@ import { Icon } from '@iconify/vue'
 import * as echarts from 'echarts'
 import { useUserStore } from '@/stores/user'
 import { useTaskStore } from '@/stores/task'
-import { useRequireAuth } from '@/composables/useAuth'
 import { getRecentOnlineTime, getTodayMinutes, getDailyTarget, setDailyTarget, getStreak } from '@/utils/onlineTimeDB'
 import { getRecentHistory, countHistory } from '@/utils/historyDB'
+import request from '@/utils/request'
 import VocabTestModal from '@/components/VocabTestModal.vue'
 const gggAudioModules = import.meta.glob('../ggg/*.mp3', { eager: true })
 const gggAudioFiles = Object.values(gggAudioModules).map(m => m.default)
@@ -499,7 +562,6 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const taskStore = useTaskStore()
-const { guard } = useRequireAuth()
 
 // ========== 头像 ==========
 const AVATAR_STORAGE_KEY = 'aael_selected_avatar'
@@ -636,16 +698,6 @@ function goToReader(articleId) {
   router.push(`/reader?id=${articleId}`)
 }
 
-// ========== 勋章 ==========
-const badges = ref([
-  { name: '初出茅庐', emoji: '🥇', unlocked: true, bgClass: 'bg-blue-50', circleBg: 'bg-blue-100', labelColor: 'text-blue-500' },
-  { name: '小有成就', emoji: '🥈', unlocked: true, bgClass: 'bg-yellow-50', circleBg: 'bg-yellow-100', labelColor: 'text-yellow-500' },
-  { name: '词汇达人', emoji: '📚', unlocked: false },
-  { name: '阅读之星', emoji: '⭐', unlocked: false },
-  { name: '打卡达人', emoji: '📅', unlocked: false },
-  { name: '全能学者', emoji: '🎓', unlocked: false },
-])
-
 // ========== 抽屉便签 ==========
 const drawerTabs = [
   { key: 'trend', label: '学习趋势', emoji: '📊' },
@@ -653,11 +705,83 @@ const drawerTabs = [
   { key: 'vocab', label: '生词本', emoji: '📝' },
   { key: 'wrongbook', label: '错题本', emoji: '📋' },
   { key: 'vocabtest', label: '词汇量测试', emoji: '🧪' },
-  { key: 'badges', label: '勋章墙', emoji: '🏆' },
   { key: 'settings', label: '设置', emoji: '⚙️' },
 ]
 const activeDrawer = ref('trend')
 const showVocabTest = ref(false)
+
+// ========== VIP 兑换 ==========
+const showVipExchange = ref(false)
+const vipSelectedDays = ref(1)
+const vipExchanging = ref(false)
+const vipDayOptions = [1, 3, 7, 30]
+const toastMsg = ref('')
+const toastType = ref('success')
+let toastTimer = null
+
+function showToast(msg, type = 'success') {
+  toastMsg.value = msg
+  toastType.value = type
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toastMsg.value = '' }, 2500)
+}
+const vipExpireAt = computed(() => userStore.user?.vipExpireAt || '')
+
+const isVip = computed(() => userStore.user?.profile === 'vip')
+const vipExpireText = computed(() => {
+  if (!vipExpireAt.value) return ''
+  try {
+    const d = new Date(vipExpireAt.value.replace(' ', 'T'))
+    const now = new Date()
+    const daysLeft = Math.ceil((d - now) / 86400000)
+    return daysLeft > 0 ? `剩余 ${daysLeft} 天` : '已过期'
+  } catch { return vipExpireAt.value }
+})
+
+async function doVipExchange() {
+  vipExchanging.value = true
+  try {
+    // 先刷新 session 确保登录态有效
+    await userStore.fetchProfile()
+    if (!userStore.user?.userId) {
+      showToast('登录已过期，请重新登录', 'error')
+      return
+    }
+
+    const params = new URLSearchParams()
+    params.append('userId', String(userStore.user.userId))
+    params.append('days', String(vipSelectedDays.value))
+    const data = await request.post('/user/vip-exchange', params)
+    if (data.success) {
+      showVipExchange.value = false
+      await userStore.fetchProfile()
+      showToast('VIP 兑换成功！已开通 ' + vipSelectedDays.value + ' 天', 'success')
+    } else {
+      showToast(data.message || '兑换失败', 'error')
+    }
+  } catch (e) {
+    // 401 重试：刷新 session 后再试一次
+    if (e.response?.status === 401) {
+      try {
+        await userStore.fetchProfile()
+        const params2 = new URLSearchParams()
+        params2.append('userId', String(userStore.user.userId))
+        params2.append('days', String(vipSelectedDays.value))
+        const retry = await request.post('/user/vip-exchange', params2)
+        if (retry.success) {
+          showVipExchange.value = false
+          await userStore.fetchProfile()
+          showToast('VIP 兑换成功！已开通 ' + vipSelectedDays.value + ' 天', 'success')
+          return
+        }
+      } catch (_) {}
+    }
+    console.error('VIP兑换失败:', e)
+    showToast('兑换失败，请稍后重试', 'error')
+  } finally {
+    vipExchanging.value = false
+  }
+}
 
 function toggleDrawer(key) {
   // 词汇量测试：打开弹窗而非抽屉
@@ -784,8 +908,6 @@ function handleWrongBookKeydown(e) {
 }
 
 const studyTarget = ref(getDailyTarget())
-const difficultyPreference = ref('自适应')
-
 // 学习目标行内编辑
 const editingTarget = ref(false)
 const targetDraft = ref(studyTarget.value)
@@ -810,14 +932,6 @@ function saveTarget() {
     setDailyTarget(val)
     updateChartTargetLine()
   }
-}
-
-function editDifficulty() {
-  const options = ['简单', '自适应', '挑战']
-  const current = options.indexOf(difficultyPreference.value)
-  const next = (current + 1) % options.length
-  difficultyPreference.value = options[next]
-  // TODO: 调用后端 API 保存
 }
 
 const showAboutModal = ref(false)
@@ -1043,6 +1157,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleWrongBookKeydown)
   document.removeEventListener('click', handleGlobalClick)
   clearVocabTimer()
+  clearTimeout(toastTimer)
   disposeChart()
 })
 </script>
@@ -1138,5 +1253,17 @@ onUnmounted(() => {
     opacity: 0;
     transform: translateY(-12px) scale(0.98);
   }
+}
+
+/* ========== Toast 动画 ========== */
+.toast-enter-active { animation: toast-in 0.3s ease-out; }
+.toast-leave-active { animation: toast-out 0.3s ease-in; }
+@keyframes toast-in {
+  0% { opacity: 0; transform: translateY(-20px) translateX(-50%); }
+  100% { opacity: 1; transform: translateY(0) translateX(-50%); }
+}
+@keyframes toast-out {
+  0% { opacity: 1; transform: translateY(0) translateX(-50%); }
+  100% { opacity: 0; transform: translateY(-20px) translateX(-50%); }
 }
 </style>

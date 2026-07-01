@@ -18,8 +18,8 @@ export const useReaderStore = defineStore('reader', () => {
   const aiExampleLoading = ref(false)
 
   // ========== AI 文化背景 & 选择题缓存 ==========
-  const culturalNotesCache = ref(null)  // { notes: [], loading: bool, error: str }
-  const quizCache = ref(null)           // { questions: [], loading: bool, error: str }
+  const culturalNotesCache = ref(null)  // { notes: [], loading: bool, error: str, vipLimited?: bool }
+  const quizCache = ref(null)           // { questions: [], loading: bool, error: str, vipLimited?: bool }
 
   // ========== 段落翻译缓存 ==========
   /** @type {import('vue').Ref<Record<string, {zh: string, loading: boolean, error?: string}>>} */

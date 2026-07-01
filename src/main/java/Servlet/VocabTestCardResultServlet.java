@@ -18,11 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 词汇量卡片测试 — 提交结果
+ * 词汇量卡片测试 — 接收前端统计结果
  * POST /api/vocabtest/cardresult
- * Body: { "userId": 1, "answers": ["A","know","dontknow",...], "optionResults": [...] }
+ * Body: { userId, correct, total, realCorrect, realTotal, pseudoCorrect, pseudoTotal, estimatedVocab, cefrLevel }
  *
- * 词表从 session 获取。计算得分后更新用户 literacy 并返回估算词汇量。
+ * 前端已实时统计正确数，后端仅负责更新用户 literacy。
  */
 @WebServlet("/api/vocabtest/cardresult")
 public class VocabTestCardResultServlet extends HttpServlet {
@@ -33,7 +33,6 @@ public class VocabTestCardResultServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
 
-        // 读取请求体
         StringBuilder bodyBuilder = new StringBuilder();
         try (BufferedReader reader = request.getReader()) {
             String line;
@@ -44,70 +43,25 @@ public class VocabTestCardResultServlet extends HttpServlet {
         String body = bodyBuilder.toString();
 
         Long userId = extractLong(body, "userId");
+        int estimatedVocab = extractInt(body, "estimatedVocab");
+
         if (userId == null) {
             response.getWriter().write(JsonUtil.error("缺少 userId"));
             return;
         }
 
-        // 从 session 获取测试词表
+        // 清除 session 中的词表
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("vocabTestCardWords") == null) {
-            response.getWriter().write(JsonUtil.error("测试会话已过期，请重新开始"));
-            return;
+        if (session != null) {
+            session.removeAttribute("vocabTestCardWords");
         }
-        @SuppressWarnings("unchecked")
-        List<CardWord> words = (List<CardWord>) session.getAttribute("vocabTestCardWords");
-
-        // 解析 answers
-        List<String> answers = parseAnswers(body);
-        if (answers.isEmpty()) {
-            response.getWriter().write(JsonUtil.error("缺少 answers"));
-            return;
-        }
-
-        // 计算得分
-        VocabTestCardService service = new VocabTestCardService();
-        CardTestResult result = service.calculateResult(answers, words, new ArrayList<>());
 
         // 更新用户词汇量
-        new UserDAOImpl().updateLiteracy(userId, result.estimatedVocab);
-        session.removeAttribute("vocabTestCardWords");
-
-        // 缓存到本地（前端使用）
-        String extra = "\"estimatedVocab\":" + JsonUtil.numVal(result.estimatedVocab)
-                + ",\"cefrLevel\":" + JsonUtil.strVal(result.cefrLevel)
-                + ",\"cefrLabel\":" + JsonUtil.strVal(result.cefrLabel)
-                + ",\"correct\":" + result.correct
-                + ",\"total\":" + result.total
-                + ",\"realCorrect\":" + result.realCorrect
-                + ",\"realTotal\":" + result.realTotal
-                + ",\"pseudoCorrect\":" + result.pseudoCorrect
-                + ",\"pseudoTotal\":" + result.pseudoTotal
-                + ",\"honestyPercent\":" + result.honestyPercent;
-
-        response.getWriter().write(JsonUtil.buildResponse(true, "测试完成", extra));
-    }
-
-    private List<String> parseAnswers(String body) {
-        List<String> result = new ArrayList<>();
-        int arrIdx = body.indexOf("\"answers\"");
-        if (arrIdx < 0) return result;
-        int bracketIdx = body.indexOf("[", arrIdx);
-        if (bracketIdx < 0) return result;
-        int endIdx = body.indexOf("]", bracketIdx);
-        if (endIdx < 0) return result;
-
-        String arrStr = body.substring(bracketIdx + 1, endIdx);
-        int pos = 0;
-        while (pos < arrStr.length()) {
-            int qStart = arrStr.indexOf("\"", pos);
-            if (qStart < 0) break;
-            int qEnd = arrStr.indexOf("\"", qStart + 1);
-            if (qEnd < 0) break;
-            result.add(arrStr.substring(qStart + 1, qEnd));
-            pos = qEnd + 1;
+        if (estimatedVocab > 0) {
+            new UserDAOImpl().updateLiteracy(userId, estimatedVocab);
         }
-        return result;
+
+        response.getWriter().write(JsonUtil.success("结果已保存"));
     }
 
     private Long extractLong(String json, String key) {
@@ -116,9 +70,21 @@ public class VocabTestCardResultServlet extends HttpServlet {
         int colon = json.indexOf(":", idx);
         if (colon < 0) return null;
         int start = colon + 1;
-        while (start < json.length() && json.charAt(start) == ' ') start++;
+        while (start < json.length() && (json.charAt(start) == ' ' || json.charAt(start) == '"')) start++;
         int end = start;
         while (end < json.length() && json.charAt(end) >= '0' && json.charAt(end) <= '9') end++;
         try { return Long.parseLong(json.substring(start, end)); } catch (NumberFormatException e) { return null; }
+    }
+
+    private int extractInt(String json, String key) {
+        int idx = json.indexOf("\"" + key + "\"");
+        if (idx < 0) return 0;
+        int colon = json.indexOf(":", idx);
+        if (colon < 0) return 0;
+        int start = colon + 1;
+        while (start < json.length() && (json.charAt(start) == ' ' || json.charAt(start) == '"')) start++;
+        int end = start;
+        while (end < json.length() && json.charAt(end) >= '0' && json.charAt(end) <= '9') end++;
+        try { return Integer.parseInt(json.substring(start, end)); } catch (NumberFormatException e) { return 0; }
     }
 }

@@ -2,6 +2,7 @@ package Servlet;
 
 import Entities.User;
 import DAO.UserDAOImpl;
+import Service.UserService;
 import Utils.JsonUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -9,6 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * 用户个人信息接口。
@@ -55,15 +58,30 @@ public class UserProfileServlet extends HttpServlet {
             return;
         }
 
+        // 检查 VIP 是否过期
+        UserService userService = new UserService();
+        userService.checkVipExpired(user);
+
+        // 重新读取以确保 role 最新
+        user = userDAO.findById(user.getUserId());
+
+        // VIP 到期时间
+        String vipExpireAt = "";
+        if ("vip".equals(user.getProfile()) && user.getLastCheckin() != null) {
+            vipExpireAt = user.getLastCheckin().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        }
+
         // 构建用户信息 JSON
         String extra = "\"user\":{"
                 + "\"userId\":" + JsonUtil.numVal(user.getUserId())
                 + ",\"username\":" + JsonUtil.strVal(user.getUsername())
                 + ",\"role\":" + JsonUtil.strVal(user.getRole())
+                + ",\"profile\":" + JsonUtil.strVal(user.getProfile())
                 + ",\"studyPurpose\":" + JsonUtil.strVal(user.getStudyPurpose())
                 + ",\"experience\":" + JsonUtil.numVal(user.getExperience())
                 + ",\"cefrProgress\":" + JsonUtil.numVal(user.getCefrProgress())
                 + ",\"literacy\":" + JsonUtil.numVal(user.getLiteracy())
+                + ",\"vipExpireAt\":" + JsonUtil.strVal(vipExpireAt)
                 + "}";
 
         response.getWriter().write(

@@ -64,8 +64,7 @@
 
           <div class="text-center mb-6" :key="'card-' + currentIndex">
             <p class="text-3xl font-black text-gray-800 mb-1">{{ currentWord.word }}</p>
-            <p v-if="currentWord.isPseudo" class="text-[10px] text-gray-300 mt-1">（此词为虚构词，用于诚信检测）</p>
-
+            
             <div v-if="currentOptions.length === 0" class="space-y-3 mt-6">
               <div v-for="i in 4" :key="i" class="h-12 bg-gray-100 rounded-xl animate-pulse"></div>
             </div>
@@ -163,6 +162,10 @@
               <p class="text-xl font-bold text-gray-700">{{ resultCorrect }} / {{ totalWords }}</p>
               <p class="text-xs text-gray-400">正确题数</p>
             </div>
+            <div class="bg-amber-50 rounded-xl p-4">
+              <p class="text-xl font-bold text-amber-500">+{{ resultXp }}</p>
+              <p class="text-xs text-gray-400">获得经验</p>
+            </div>
             <div class="bg-gray-50 rounded-xl p-4">
               <p class="text-xl font-bold" :class="resultHonesty >= 80 ? 'text-green-500' : 'text-yellow-500'">
                 {{ resultHonesty }}%
@@ -220,6 +223,13 @@ const resultCefr = ref('A1')
 const resultCefrLabel = ref('初级')
 const resultCorrect = ref(0)
 const resultHonesty = ref(0)
+const resultXp = ref(0)
+
+// 实时统计
+const realCorrect = ref(0)
+const realTotal = ref(0)
+const pseudoCorrect = ref(0)
+const pseudoTotal = ref(0)
 
 const currentWord = computed(() => words.value[currentIndex.value] || {})
 const currentOptions = computed(() => {
@@ -248,6 +258,10 @@ async function startTest() {
   answers.value = []
   optionsCache.value = {}
   answered.value = false
+  realCorrect.value = 0
+  realTotal.value = 0
+  pseudoCorrect.value = 0
+  pseudoTotal.value = 0
 
   try {
     const data = await request.get('/vocabtest/cards')
@@ -343,6 +357,16 @@ function selectKnowOrDont(type) {
 }
 
 function scheduleNext() {
+  // 实时统计
+  const word = currentWord.value
+  if (word.isPseudo) {
+    pseudoTotal.value++
+    if (isCurrentCorrect.value) pseudoCorrect.value++
+  } else {
+    realTotal.value++
+    if (isCurrentCorrect.value) realCorrect.value++
+  }
+
   answers.value.push(selectedAnswer.value)
   clearTimers()
 
@@ -394,22 +418,67 @@ async function submitResults() {
     const userId = userStore.user?.userId
     if (!userId) return
 
-    const resp = await request.post('/vocabtest/cardresult', {
-      userId,
-      answers: answers.value,
-    })
+    // 计算本地统计结果
+    const totalCorrect = realCorrect.value + pseudoCorrect.value
+    const totalQuestions = realTotal.value + pseudoTotal.value
 
-    if (resp.success) {
-      resultVocab.value = resp.estimatedVocab || 0
-      resultCefr.value = resp.cefrLevel || 'A1'
-      resultCefrLabel.value = resp.cefrLabel || '初级'
-      resultCorrect.value = resp.correct || 0
-      resultHonesty.value = resp.honestyPercent || 0
+    // 伪词正确率 = 诚信度
+    const honesty = pseudoTotal.value > 0 ? Math.round(pseudoCorrect.value / pseudoTotal.value * 100) : 100
+    // 真词正确率
+    const realRate = realTotal.value > 0 ? realCorrect.value / realTotal.value : 0
+    // 伪词诚信修正
+    const pseudoRate = pseudoTotal.value > 0 ? pseudoCorrect.value / pseudoTotal.value : 0
+    const adjustedRate = realRate * (0.7 + 0.3 * pseudoRate)
+    // 估算词汇量
+    const vocab = Math.max(500, Math.min(20000, Math.round(adjustedRate * 12000)))
 
-      try { await userStore.fetchProfile() } catch (_) {}
+    // CEFR 等级
+    let cefr, cefrLabel
+    if (vocab < 1500) { cefr = 'A1'; cefrLabel = '初级' }
+    else if (vocab < 3000) { cefr = 'A2'; cefrLabel = '初级上' }
+    else if (vocab < 5000) { cefr = 'B1'; cefrLabel = '中级' }
+    else if (vocab < 8000) { cefr = 'B2'; cefrLabel = '中高级' }
+    else if (vocab < 12000) { cefr = 'C1'; cefrLabel = '高级' }
+    else { cefr = 'C2'; cefrLabel = '精通' }
 
-      phase.value = 'result'
-    }
+    resultVocab.value = vocab
+    resultCefr.value = cefr
+    resultCefrLabel.value = cefrLabel
+    resultCorrect.value = totalCorrect
+    resultHonesty.value = honesty
+
+    // 根据得分给予 0-10 经验值
+    const xpEarned = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 10) : 0
+    resultXp.value = xpEarned
+
+    // 同步到后端
+    try {
+      const userStore = useUserStore()
+      const userId = userStore.user?.userId
+      if (userId) {
+        await request.post('/vocabtest/cardresult', {
+          userId,
+          correct: totalCorrect,
+          total: totalQuestions,
+          realCorrect: realCorrect.value,
+          realTotal: realTotal.value,
+          pseudoCorrect: pseudoCorrect.value,
+          pseudoTotal: pseudoTotal.value,
+          estimatedVocab: vocab,
+          cefrLevel: cefr,
+        })
+        // 同步经验值
+        if (xpEarned > 0) {
+          const xpParams = new URLSearchParams()
+          xpParams.append('userId', String(userId))
+          xpParams.append('xp', String(xpEarned))
+          await request.post('/user/experience', xpParams)
+        }
+        await userStore.fetchProfile()
+      }
+    } catch (_) {}
+
+    phase.value = 'result'
   } catch (e) {
     console.error('提交结果失败:', e)
     alert('提交结果失败，请重试')

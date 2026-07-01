@@ -239,6 +239,7 @@ import ArticleSidePanel from '@/components/ArticleSidePanel.vue'
 import ParagraphTranslationPopover from '@/components/ParagraphTranslationPopover.vue'
 import { useRequireAuth } from '@/composables/useAuth'
 import { addToHistory } from '@/utils/historyDB'
+import { canUseAIArticle, recordAIArticle, remainingAIArticles } from '@/utils/dailyLimit'
 import { parseInlineMarkdown } from '@/utils/markdown'
 
 const route = useRoute()
@@ -623,11 +624,18 @@ async function initArticle(articleId) {
     addToHistory(articleId, readerStore.article.title).catch(err => {
       console.error('记录浏览历史失败:', err)
     })
-    // 后台预取 AI 文化背景分析和阅读理解选择题
+    // 后台预取 AI 文化背景分析和阅读理解选择题（非VIP每日限3篇）
     const content = readerStore.article?.content
+    const isVip = userStore.user?.profile === 'vip'
     if (content) {
-      readerStore.prefetchCulturalNotes(articleId, content)
-      readerStore.prefetchQuiz(articleId, content)
+      if (canUseAIArticle(isVip)) {
+        readerStore.prefetchCulturalNotes(articleId, content)
+        readerStore.prefetchQuiz(articleId, content)
+        recordAIArticle(isVip)
+      } else {
+        readerStore.culturalNotesCache = { articleId, notes: [], loading: false, error: null, vipLimited: true }
+        readerStore.quizCache = { articleId, questions: [], loading: false, error: null, vipLimited: true }
+      }
     }
 
     // 初始化每日任务（阅读完成标记在答题完成后触发）

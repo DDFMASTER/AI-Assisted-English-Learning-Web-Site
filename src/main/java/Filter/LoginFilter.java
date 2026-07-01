@@ -34,6 +34,9 @@ public class LoginFilter implements Filter {
             "/api/user/login",
             "/api/user/register",
             "/api/user/logout",
+            "/api/user/profile",
+            "/api/user/experience",
+            "/api/user/vip-exchange",
             "/api/connect-test"
     );
 

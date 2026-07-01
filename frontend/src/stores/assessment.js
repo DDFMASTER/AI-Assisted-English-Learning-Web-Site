@@ -66,6 +66,36 @@ export const useAssessmentStore = defineStore('assessment', () => {
     })
   })
 
+  // ========== CEFR → 难度映射 ==========
+
+  /** 读取用户当前 CEFR 等级 */
+  function getUserCefrLevel() {
+    try {
+      const userId = JSON.parse(localStorage.getItem('user') || '{}').userId
+      if (userId) {
+        const raw = localStorage.getItem(`aael_vocab_result_${userId}`)
+        if (raw) {
+          const vr = JSON.parse(raw)
+          if (vr.cefrLevel) return vr.cefrLevel.toUpperCase()
+        }
+      }
+    } catch (_) {}
+    return 'B1' // 默认中级
+  }
+
+  /** CEFR 等级 → 出题难度 */
+  function cefrToDifficulty(cefr) {
+    const map = {
+      'A1': '初中',
+      'A2': '高中',
+      'B1': '四级',
+      'B2': '六级',
+      'C1': '考研',
+      'C2': '托福',
+    }
+    return map[cefr] || '四级'
+  }
+
   // ========== 动作 ==========
 
   /**
@@ -78,7 +108,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
     try {
       const { useUserStore } = await import('@/stores/user')
       const userStore = useUserStore()
-      const studyPurpose = userStore.user?.studyPurpose || '四级'
+      const studyPurpose = cefrToDifficulty(getUserCefrLevel())
 
       const data = await request.post('/assessment/generate',
         { studyPurpose },

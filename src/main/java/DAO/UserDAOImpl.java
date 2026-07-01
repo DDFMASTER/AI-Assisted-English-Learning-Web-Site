@@ -270,6 +270,23 @@ public class UserDAOImpl implements UserDAO {
         }
     }
 
+    @Override
+    public int updateVip(Long userId, String vipStatus, LocalDateTime vipExpireAt, int newExperience) {
+        String sql = "UPDATE user SET profile = ?, last_checkin = ?, experience = ? WHERE user_id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, vipStatus);
+            ps.setTimestamp(2, toTimestamp(vipExpireAt));
+            ps.setInt(3, newExperience);
+            ps.setLong(4, userId);
+            return ps.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException("VIP兑换失败: " + userId, e);
+        }
+    }
+
     private LocalDateTime toLocalDateTime(Timestamp ts) {
         return ts != null ? ts.toLocalDateTime() : null;
     }

@@ -146,8 +146,8 @@
     </div>
   </main>
 
-  <!-- 词汇量测试弹窗（literacy === 0 时自动弹出） -->
-  <VocabTestModal
+  <!-- 初次词汇量检测弹窗（literacy === 0 时自动弹出） -->
+  <FirstVocabTestModal
     :visible="showVocabTest"
     @done="onVocabTestDone"
   />
@@ -160,7 +160,7 @@ import { Icon } from '@iconify/vue'
 import { useTaskStore } from '@/stores/task'
 import { useUserStore } from '@/stores/user'
 import ArticleCard from '@/components/ArticleCard.vue'
-import VocabTestModal from '@/components/VocabTestModal.vue'
+import FirstVocabTestModal from '@/components/FirstVocabTestModal.vue'
 import request from '@/utils/request'
 import { getRecentHistory, relativeTime } from '@/utils/historyDB'
 import { userKey } from '@/utils/storage'
@@ -405,9 +405,8 @@ async function fetchHistory() {
   }
 }
 
-function onVocabTestDone(result) {
+function onVocabTestDone() {
   showVocabTest.value = false
-  // 刷新用户信息以更新 literacy 和等级显示
   userStore.fetchProfile()
 }
 

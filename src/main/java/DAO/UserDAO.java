@@ -68,4 +68,14 @@ public interface UserDAO {
      * @return 影响行数
      */
     int updateRole(Long userId, String role);
+
+    /**
+     * VIP 兑换：同时更新 profile、到期时间和经验值
+     * @param userId 用户ID
+     * @param vipStatus VIP 状态（"vip" 或 ""）
+     * @param vipExpireAt VIP 到期时间
+     * @param newExperience 扣除后的经验值
+     * @return 影响行数
+     */
+    int updateVip(Long userId, String vipStatus, LocalDateTime vipExpireAt, int newExperience);
 }

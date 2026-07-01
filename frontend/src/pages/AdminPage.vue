@@ -39,7 +39,6 @@
               <th class="py-2 px-3">用户名</th>
               <th class="py-2 px-3">角色</th>
               <th class="py-2 px-3">学习阶段</th>
-              <th class="py-2 px-3">识字量</th>
               <th class="py-2 px-3">经验值</th>
               <th class="py-2 px-3">最近登录</th>
               <th class="py-2 px-3">操作</th>
@@ -56,11 +55,10 @@
               <td class="py-2 px-3">
                 <span
                   class="text-xs px-1.5 py-0.5 rounded-full"
-                  :class="u.role === 'admin' ? 'bg-red-100 text-red-600' : u.role === 'vip' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'"
+                  :class="u.role === 'admin' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'"
                 >{{ u.role || 'normal' }}</span>
               </td>
               <td class="py-2 px-3 text-gray-500">{{ u.studyPurpose || '-' }}</td>
-              <td class="py-2 px-3 text-gray-500">{{ u.literacy || 0 }}</td>
               <td class="py-2 px-3 text-gray-500">{{ u.experience || 0 }}</td>
               <td class="py-2 px-3 text-gray-400 text-xs">{{ u.lastLogin || '-' }}</td>
               <td class="py-2 px-3">
@@ -75,10 +73,6 @@
                     class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
                     @click="resetPwd(u)"
                   >重置密码</button>
-                  <button
-                    class="text-xs px-2 py-0.5 rounded bg-yellow-50 text-yellow-600 hover:bg-yellow-100 transition-colors"
-                    @click="toggleVip(u)"
-                  >{{ u.role === 'vip' ? '取消VIP' : '设VIP' }}</button>
                 </div>
               </td>
             </tr>
@@ -594,24 +588,7 @@ async function resetPwd(u) {
   })
 }
 
-async function toggleVip(u) {
-  const newRole = u.role === 'vip' ? 'normal' : 'vip'
-  try {
-    const params = new URLSearchParams()
-    params.append('adminUserId', String(adminUserId()))
-    params.append('userId', String(u.userId))
-    params.append('role', newRole)
-    const data = await request.post('/admin/user/set-role', params)
-    if (data.success) {
-      u.role = newRole
-    } else {
-      alert(data.message || '操作失败')
-    }
-  } catch (e) {
-    console.error('设置角色失败:', e)
-    alert('操作失败')
-  }
-}
+
 
 async function kickUser(u) {
   showConfirm(`确定强制下线用户 "${u.username}" 吗？`, async () => {

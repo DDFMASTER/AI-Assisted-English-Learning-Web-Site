@@ -82,7 +82,7 @@ public class UserService {
         user.setRole("normal");
         user.setStudyPurpose(studyPurpose);
         user.setLiteracy(0);
-        user.setExperience(0);
+        user.setExperience(1000);
         user.setCreatedAt(LocalDateTime.now());
 
         int rows = userDAO.insert(user);
@@ -130,6 +130,56 @@ public class UserService {
         int newExp = user.getExperience() + 10;
         userDAO.updateCheckin(userId, LocalDateTime.now(), newExp);
         return 10;
+    }
+
+    private static final int VIP_COST_PER_DAY = 180;
+
+    /**
+     * 经验值兑换 VIP。
+     * @param userId 用户 ID
+     * @param days 兑换天数
+     * @return 结果消息：null=成功，"INSUFFICIENT_XP"=经验不足，"USER_NOT_FOUND"=用户不存在
+     */
+    public String exchangeVip(Long userId, int days) {
+        if (days < 1) return "兑换天数至少为 1";
+
+        User user = userDAO.findById(userId);
+        if (user == null) return "USER_NOT_FOUND";
+
+        int cost = days * VIP_COST_PER_DAY;
+        int currentXp = user.getExperience() != null ? user.getExperience() : 0;
+        if (currentXp < cost) return "INSUFFICIENT_XP";
+
+        // 计算 VIP 到期时间（在现有到期时间基础上叠加，避免覆盖未用完的 VIP）
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime currentExpire = user.getLastCheckin();
+        boolean isCurrentlyVip = "vip".equals(user.getProfile()) && currentExpire != null && currentExpire.isAfter(now);
+        LocalDateTime newExpire;
+        if (isCurrentlyVip) {
+            // 已是 VIP 且未过期：叠加天数
+            newExpire = currentExpire.plusDays(days);
+        } else {
+            newExpire = now.plusDays(days);
+        }
+
+        int newXp = currentXp - cost;
+        userDAO.updateVip(userId, "vip", newExpire, newXp);
+        return null; // 成功
+    }
+
+    /**
+     * 检查并自动撤销已过期的 VIP。
+     * @return true 如果 VIP 被撤销
+     */
+    public boolean checkVipExpired(User user) {
+        if (user == null || !"vip".equals(user.getProfile())) return false;
+        LocalDateTime expireAt = user.getLastCheckin();
+        if (expireAt != null && expireAt.isBefore(LocalDateTime.now())) {
+            user.setProfile("");
+            userDAO.updateVip(user.getUserId(), "", expireAt, user.getExperience() != null ? user.getExperience() : 0);
+            return true;
+        }
+        return false;
     }
 
     private boolean isBlank(String s) {

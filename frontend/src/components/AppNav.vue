@@ -112,19 +112,6 @@
 
       <!-- 右侧操作 -->
       <div class="flex items-center gap-4 shrink-0">
-        <!-- 铃铛通知 -->
-        <button
-          class="p-2 text-gray-400 hover:text-gray-600 relative"
-          @click="showNotifications = !showNotifications; showResult = false"
-        >
-          <Icon icon="ph:bell-bold" class="text-2xl" />
-          <span
-            v-if="unreadCount > 0"
-            class="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center"
-          >
-            {{ unreadCount }}
-          </span>
-        </button>
 
         <!-- 头像 -->
         <router-link
@@ -144,16 +131,6 @@
       </div>
     </div>
 
-    <!-- 通知浮窗 -->
-    <div
-      v-if="showNotifications"
-      class="absolute right-0 top-16 w-80 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 mr-6"
-    >
-      <div class="text-sm font-bold mb-3">通知</div>
-      <div class="text-xs text-gray-400 text-center py-4">
-        暂无新通知
-      </div>
-    </div>
   </nav>
 </template>
 
@@ -166,8 +143,6 @@ import { useReaderStore } from '@/stores/reader'
 const userStore = useUserStore()
 const readerStore = useReaderStore()
 
-const showNotifications = ref(false)
-const unreadCount = ref(0)
 const searchContainer = ref(null)
 
 // 搜索相关
@@ -205,6 +180,8 @@ function onAvatarChanged() {
 onMounted(() => {
   document.addEventListener('click', onClickOutside)
   window.addEventListener('avatar-changed', onAvatarChanged)
+  // 刷新用户数据确保 role 等字段最新
+  userStore.fetchProfile()
 })
 
 onUnmounted(() => {
@@ -212,15 +189,10 @@ onUnmounted(() => {
   window.removeEventListener('avatar-changed', onAvatarChanged)
 })
 
-// 点击外部关闭搜索卡片和通知面板
+// 点击外部关闭搜索卡片
 function onClickOutside(e) {
   if (searchContainer.value && !searchContainer.value.contains(e.target)) {
     showResult.value = false
-  }
-  // 通知面板的关闭逻辑：点击非铃铛区域时关闭
-  const bellBtn = e.target.closest('button[class*="p-2 text-gray-400"]')
-  if (!bellBtn && showNotifications.value) {
-    showNotifications.value = false
   }
 }
 

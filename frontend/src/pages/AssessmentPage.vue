@@ -56,8 +56,18 @@
         {{ store.loading ? '正在生成题目...' : '开始测评' }}
       </button>
 
+      <!-- VIP 限制提示 -->
+      <div v-if="vipLimitError" class="mt-8 text-center">
+        <Icon icon="ph:crown-simple-bold" class="text-5xl text-yellow-500 mx-auto mb-3" />
+        <h3 class="text-lg font-bold text-gray-700 mb-2">今日免费次数已用尽</h3>
+        <p class="text-sm text-gray-400 mb-4">非VIP用户每天仅可进行 1 次测评</p>
+        <router-link to="/profile" class="inline-block px-6 py-2.5 bg-yellow-400 text-white rounded-xl text-sm font-bold hover:bg-yellow-500 transition-colors">
+          ⭐ 立即兑换 VIP，不限次数
+        </router-link>
+      </div>
+
       <!-- 错误提示 -->
-      <div v-if="error" class="mt-6">
+      <div v-else-if="error" class="mt-6">
         <div class="inline-flex items-center gap-2 px-5 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
           <Icon icon="ph:warning-circle-bold" class="text-lg" />
           <span>{{ error }}</span>
@@ -228,6 +238,7 @@ import { Icon } from '@iconify/vue'
 import { useAssessmentStore } from '@/stores/assessment'
 import { useUserStore } from '@/stores/user'
 import { useTaskStore } from '@/stores/task'
+import { canTakeAssessment, recordAssessment } from '@/utils/dailyLimit'
 
 const store = useAssessmentStore()
 const userStore = useUserStore()
@@ -237,14 +248,23 @@ const router = useRouter()
 const showExitConfirm = ref(false)
 const savedProgress = ref(null)
 const error = ref('')
+const vipLimitError = ref(false)
 const submitting = ref(false)
 
 async function handleStart() {
+  const isVip = userStore.user?.profile === 'vip'
+  if (!canTakeAssessment(isVip)) {
+    vipLimitError.value = true
+    error.value = ''
+    return
+  }
+  vipLimitError.value = false
   error.value = ''
   store.clearProgress()
   savedProgress.value = null
   try {
     await store.startAssessment()
+    recordAssessment(isVip)
   } catch (err) {
     error.value = err.message || '生成测评题目失败，请稍后重试'
   }

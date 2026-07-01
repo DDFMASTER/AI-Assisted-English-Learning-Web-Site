@@ -11,8 +11,18 @@
         <h3 class="text-sm font-bold text-gray-700">文化背景讲解</h3>
       </div>
 
+      <!-- VIP 限制提示 -->
+      <div v-if="culturalNotes?.vipLimited" class="text-center py-6">
+        <Icon icon="ph:crown-simple-bold" class="text-3xl text-yellow-500 mx-auto mb-2" />
+        <p class="text-sm font-bold text-yellow-600 mb-1">今日免费次数已用尽</p>
+        <p class="text-xs text-gray-400 mb-3">非VIP用户每天可享受 3 篇文章的 AI 讲解</p>
+        <router-link to="/profile" class="inline-block px-4 py-1.5 bg-yellow-400 text-white text-xs font-bold rounded-lg hover:bg-yellow-500 transition-colors">
+          ⭐ 立即兑换 VIP
+        </router-link>
+      </div>
+
       <!-- 加载中 -->
-      <div v-if="culturalNotes?.loading" class="flex items-center justify-center py-6">
+      <div v-else-if="culturalNotes?.loading" class="flex items-center justify-center py-6">
         <Icon icon="ph:spinner-bold" class="text-base text-amber-500 animate-spin" />
         <span class="text-xs text-gray-400 ml-2">AI 正在分析全文...</span>
       </div>
@@ -85,8 +95,18 @@
         <h3 class="text-sm font-bold text-gray-700">阅读选择题</h3>
       </div>
 
+      <!-- VIP 限制提示 -->
+      <div v-if="quizData?.vipLimited" class="text-center py-6">
+        <Icon icon="ph:crown-simple-bold" class="text-3xl text-yellow-500 mx-auto mb-2" />
+        <p class="text-sm font-bold text-yellow-600 mb-1">今日免费次数已用尽</p>
+        <p class="text-xs text-gray-400 mb-3">非VIP用户每天可享受 3 篇文章的 AI 出题</p>
+        <router-link to="/profile" class="inline-block px-4 py-1.5 bg-yellow-400 text-white text-xs font-bold rounded-lg hover:bg-yellow-500 transition-colors">
+          ⭐ 立即兑换 VIP
+        </router-link>
+      </div>
+
       <!-- 加载中 -->
-      <div v-if="quizData?.loading" class="flex items-center justify-center py-6">
+      <div v-else-if="quizData?.loading" class="flex items-center justify-center py-6">
         <Icon icon="ph:spinner-bold" class="text-base text-[#2563EB] animate-spin" />
         <span class="text-xs text-gray-400 ml-2">AI 正在阅读全文并出题...</span>
       </div>
