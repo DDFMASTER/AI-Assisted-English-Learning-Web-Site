@@ -4,6 +4,7 @@ import DAO.UserDAOImpl;
 import Service.VocabTestService;
 import Service.VocabTestService.EstimateResult;
 import Service.VocabTestService.TestWord;
+import Utils.ConfigUtil;
 import Utils.JsonUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -28,9 +29,10 @@ import java.util.List;
 @WebServlet("/api/vocabtest/submit")
 public class VocabTestSubmitServlet extends HttpServlet {
 
-    private static final String AI_API_URL = "https://api.deepseek.com/chat/completions";
-    private static final String AI_API_KEY = "sk-a74d91663df347dd92087fdac3d8aa9e";
-    private static final String AI_MODEL = "deepseek-v4-flash";
+    private static final String AI_API_URL = ConfigUtil.get("ai.api.url");
+    private static final String AI_API_KEY = ConfigUtil.get("vocabtest.ai.api.key",
+            ConfigUtil.get("ai.api.key"));
+    private static final String AI_MODEL = ConfigUtil.get("ai.api.model", "deepseek-v4-flash");
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)

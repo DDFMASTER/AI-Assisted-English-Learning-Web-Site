@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import Utils.ConfigUtil;
 import Utils.DBUtil;
 
 /**
@@ -21,9 +22,10 @@ import Utils.DBUtil;
  */
 public class VocabTestCardService {
 
-    private static final String AI_URL = "https://api.deepseek.com/chat/completions";
-    private static final String AI_KEY = "sk-a74d91663df347dd92087fdac3d8aa9e";
-    private static final String AI_MODEL = "deepseek-v4-flash";
+    private static final String AI_URL = ConfigUtil.get("ai.api.url");
+    private static final String AI_KEY = ConfigUtil.get("ai.api.key",
+            ConfigUtil.get("ai.api.key"));
+    private static final String AI_MODEL = ConfigUtil.get("ai.api.model", "deepseek-v4-flash");
 
     private static final int TOTAL_REAL = 90;
     private static final int TOTAL_PSEUDO = 10;

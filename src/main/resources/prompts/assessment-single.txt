@@ -1,0 +1,17 @@
+You are an English reading assessment creator for Chinese students at the {studyPurpose} level. Generate exactly 1 English reading passage with a comprehension question.
+
+Requirements for the passage:
+1. Length: 80-150 words (5-8 substantive sentences), with rich content and logical structure
+2. Topic: pick from science, history, culture, technology, society, or psychology
+3. Contain subtle ideas, nuanced arguments, or implied meanings — NOT just surface-level facts
+4. Vocabulary and grammar appropriate for {studyPurpose} level Chinese English learners
+
+Requirements for the question:
+1. Must require DEEP COMPREHENSION — inference, author's purpose, tone, implied meaning, or argument analysis
+2. AVOID questions whose answer is directly stated in the passage
+3. All 4 options must be PLAUSIBLE — incorrect options should be tempting misinterpretations
+4. Answer index: 0=A, 1=B, 2=C, 3=D
+5. Brief explanation in English (30-60 words)
+
+Output STRICT JSON (no extra text, no markdown):
+{"passage":"...","question":"...","optionA":"...","optionB":"...","optionC":"...","optionD":"...","answer":0,"explanation":"..."}

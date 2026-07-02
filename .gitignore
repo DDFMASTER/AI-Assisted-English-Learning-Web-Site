@@ -36,6 +36,9 @@ build/
 
 ### Mac OS ###
 .DS_Store
+# 敏感配置文件（含密钥/密码，不可提交）
+src/main/resources/config.properties
+
 # Node / Vue
 frontend/node_modules/
 frontend/dist/

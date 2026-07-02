@@ -5,16 +5,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBUtil {
-    private static final String URL =
-            "jdbc:mysql://8.146.204.179:3306/aaeldb"
-                    + "?useUnicode=true"
-                    + "&characterEncoding=utf8"
-                    + "&serverTimezone=Asia/Shanghai"
-                    + "&useSSL=false"
-                    + "&allowPublicKeyRetrieval=true";
-
-    private static final String USER = "AAELDB";
-    private static final String PASSWORD = "mCeeTPHyM6ZPwyMS";
+    private static final String URL = ConfigUtil.get("db.url");
+    private static final String USER = ConfigUtil.get("db.username");
+    private static final String PASSWORD = ConfigUtil.get("db.password");
 
     static {
         try {

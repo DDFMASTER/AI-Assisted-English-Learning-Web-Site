@@ -9,34 +9,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 
+import Utils.ConfigUtil;
+
 /**
  * AI 服务 — 调用 DeepSeek API 为英文单词生成例句。
  * 使用 Java 内置 HttpClient，无需额外依赖。
  */
 public class AIService {
 
-    private static final String API_URL = "https://api.deepseek.com/chat/completions";
-    private static final String API_KEY = "sk-***"+ ""; // 部署时替换为真实 key
-    private static final String MODEL = "deepseek-v4-flash";
-    private static final int TIMEOUT_SECONDS = 15;
+    private static final String API_URL = ConfigUtil.get("ai.api.url");
+    private static final String API_KEY = ConfigUtil.get("ai.api.key");
+    private static final String MODEL = ConfigUtil.get("ai.api.model", "deepseek-v4-flash");
+    private static final int TIMEOUT_SECONDS = ConfigUtil.getInt("ai.api.timeout_seconds", 15);
 
     private static final String SYSTEM_PROMPT =
-            "用户将向你提供一个英文单词。请为该单词生成 3 个不同难度/场景的英文例句，每个例句附带中文翻译。\n" +
-            "\n" +
-            "要求：\n" +
-            "1. 例句应覆盖不同语境（如日常对话、学术写作、新闻阅读）\n" +
-            "2. 例句长度适中（10-25 个单词）\n" +
-            "3. 中文翻译准确自然\n" +
-            "\n" +
-            "请严格以如下 JSON 格式输出（不要输出其他内容）：\n" +
-            "{\n" +
-            "  \"word\": \"单词\",\n" +
-            "  \"examples\": [\n" +
-            "    { \"en\": \"英文例句1\", \"zh\": \"中文翻译1\" },\n" +
-            "    { \"en\": \"英文例句2\", \"zh\": \"中文翻译2\" },\n" +
-            "    { \"en\": \"英文例句3\", \"zh\": \"中文翻译3\" }\n" +
-            "  ]\n" +
-            "}";
+            ConfigUtil.readResourceText("prompts/word-examples.txt");
 
     private final HttpClient httpClient;
 
@@ -49,59 +36,17 @@ public class AIService {
     // ========== AI 单词释义查词 ==========
 
     private static final String WORD_LOOKUP_PROMPT =
-            "你是一个专业的英语词典助手。用户会给你一个英文单词，请返回该单词的音标、中文释义和详细解释。\n" +
-            "\n" +
-            "要求：\n" +
-            "1. 音标使用国际音标（IPA）\n" +
-            "2. translation 为简洁的中文释义（取最常用义项）\n" +
-            "3. explanation 包含词性、用法说明、常见搭配等\n" +
-            "\n" +
-            "请严格以如下 JSON 格式输出（不要输出其他内容）：\n" +
-            "{\n" +
-            "  \"word\": \"单词\",\n" +
-            "  \"phonetic\": \"/音标/\",\n" +
-            "  \"translation\": \"中文释义\",\n" +
-            "  \"explanation\": \"详细解释\"\n" +
-            "}";
+            ConfigUtil.readResourceText("prompts/word-lookup.txt");
 
     // ========== 段落翻译 ==========
 
     private static final String TRANSLATION_SYSTEM_PROMPT =
-            "你是一个专业的中英翻译助手。请将用户提供的英文段落翻译成流畅、准确的中文。\n" +
-            "\n" +
-            "要求：\n" +
-            "1. 翻译自然流畅，符合中文表达习惯\n" +
-            "2. 保留原文的语气和风格\n" +
-            "3. 直接返回中文译文，不要添加任何解释或说明\n" +
-            "\n" +
-            "请严格以如下 JSON 格式输出（不要输出其他内容）：\n" +
-            "{\n" +
-            "  \"translation\": \"中文译文\"\n" +
-            "}";
+            ConfigUtil.readResourceText("prompts/translation.txt");
 
     // ========== 文化背景分析 ==========
 
     private static final String CULTURE_SYSTEM_PROMPT =
-            "你是一位文化教育助手。用户将提供一篇英文文章。请分析文章中任何值得向中国英语学习者解释"
-            + "的背景知识，包括但不限于：\n"
-            + "- 西方节日、习俗、礼仪\n"
-            + "- 历史事件、人物\n"
-            + "- 地理、地名、建筑\n"
-            + "- 品牌、机构、组织\n"
-            + "- 饮食、艺术、体育等文化现象\n"
-            + "- 任何对非英语母语者可能不熟悉的内容\n\n"
-            + "要求：\n"
-            + "1. 只要有值得讲解的内容就必须列出，宁多勿漏\n"
-            + "2. 标题用中文（10字以内）\n"
-            + "3. 英文讲解约50词，精炼清晰\n"
-            + "4. 同时提供中文翻译\n"
-            + "5. 如果文章完全没有文化背景知识则返回空数组\n\n"
-            + "请严格以如下 JSON 格式输出：\n"
-            + "{\n"
-            + "  \"notes\": [\n"
-            + "    { \"title\": \"文化点标题\", \"content\": \"English explanation (~50 words)\", \"zh\": \"中文翻译\" }\n"
-            + "  ]\n"
-            + "}";
+            ConfigUtil.readResourceText("prompts/culture-analysis.txt");
 
     /**
      * 分析文章中的文化背景知识。
@@ -151,128 +96,22 @@ public class AIService {
     // ========== 阅读理解出题 ==========
 
     private static final String QUIZ_SYSTEM_PROMPT =
-            "You are an English reading comprehension teacher. Follow these steps:\n\n"
-            + "Step 1: Read the article carefully and identify its MAIN IDEA "
-            + "(the author's primary argument, thesis, or central message).\n\n"
-            + "Step 2: Based on the main idea, create 2-3 reading comprehension questions. "
-            + "Questions MUST be about:\n"
-            + "  - What is the main idea / author's primary argument?\n"
-            + "  - Which part of the text best supports or reveals the main idea?\n"
-            + "  - What can be inferred from the author's tone or choice of evidence?\n\n"
-            + "Rules:\n"
-            + "1. All questions and options MUST be in ENGLISH\n"
-            + "2. Each question has 4 options (A/B/C/D), only one correct\n"
-            + "3. Answer: 0=A, 1=B, 2=C, 3=D\n"
-            + "4. Brief explanation in English (60 words max)\n"
-            + "5. Generate at least 2 questions, max 3\n\n"
-            + "Output STRICT JSON (NO spaces after colons):\n"
-            + "{\n"
-            + "  \"mainIdea\":\"One sentence summary.\",\n"
-            + "  \"questions\":[\n"
-            + "    {\n"
-            + "      \"question\":\"What is the main argument?\",\n"
-            + "      \"optionA\":\"First option\",\n"
-            + "      \"optionB\":\"Second option\",\n"
-            + "      \"optionC\":\"Third option\",\n"
-            + "      \"optionD\":\"Fourth option\",\n"
-            + "      \"answer\":0,\n"
-            + "      \"explanation\":\"The answer is A because...\"\n"
-            + "    }\n"
-            + "  ]\n"
-            + "}";
+            ConfigUtil.readResourceText("prompts/quiz-generation.txt");
 
     // ========== 测评出题（单题快速版本） ==========
 
     private static final String ASSESSMENT_SINGLE_PROMPT =
-            "You are an English reading assessment creator for Chinese students at the {studyPurpose} level. "
-            + "Generate exactly 1 English reading passage with a comprehension question.\n\n"
-            + "Requirements for the passage:\n"
-            + "1. Length: 80-150 words (5-8 substantive sentences), with rich content and logical structure\n"
-            + "2. Topic: pick from science, history, culture, technology, society, or psychology\n"
-            + "3. Contain subtle ideas, nuanced arguments, or implied meanings — NOT just surface-level facts\n"
-            + "4. Vocabulary and grammar appropriate for {studyPurpose} level Chinese English learners\n\n"
-            + "Requirements for the question:\n"
-            + "1. Must require DEEP COMPREHENSION — inference, author's purpose, tone, implied meaning, or argument analysis\n"
-            + "2. AVOID questions whose answer is directly stated in the passage\n"
-            + "3. All 4 options must be PLAUSIBLE — incorrect options should be tempting misinterpretations\n"
-            + "4. Answer index: 0=A, 1=B, 2=C, 3=D\n"
-            + "5. Brief explanation in English (30-60 words)\n\n"
-            + "Output STRICT JSON (no extra text, no markdown):\n"
-            + "{\"passage\":\"...\",\"question\":\"...\",\"optionA\":\"...\",\"optionB\":\"...\",\"optionC\":\"...\",\"optionD\":\"...\",\"answer\":0,\"explanation\":\"...\"}";
+            ConfigUtil.readResourceText("prompts/assessment-single.txt");
 
     // ========== 测评出题 ==========
 
     private static final String ASSESSMENT_GENERATE_PROMPT =
-            "You are an English reading assessment creator for Chinese students at the {studyPurpose} level. "
-            + "Generate exactly 10 English reading passages with comprehension questions.\n\n"
-            + "Requirements for each passage:\n"
-            + "1. Length: 80-150 words (5-8 substantive sentences), with rich content and logical structure\n"
-            + "2. Topics: diverse and engaging — science, history, culture, technology, society, psychology, environment, literature, economics, philosophy\n"
-            + "3. The passage should contain subtle ideas, nuanced arguments, or implied meanings — NOT just surface-level facts\n"
-            + "4. Vocabulary and grammar must be appropriate for {studyPurpose} level Chinese English learners\n\n"
-            + "Requirements for each question:\n"
-            + "1. Questions must require DEEP COMPREHENSION — inference, author's purpose, tone, implied meaning, text structure, argument analysis\n"
-            + "2. AVOID questions whose answer is directly stated in the passage\n"
-            + "3. All 4 options must be PLAUSIBLE and GRAMMATICALLY CORRECT — a student who didn't read carefully should find all options tempting\n"
-            + "4. The 3 incorrect options (distractors) must each be based on:\n"
-            + "   - A common misinterpretation of the passage\n"
-            + "   - A plausible but wrong inference\n"
-            + "   - An idea that seems right but contradicts a subtle detail\n"
-            + "5. Answer index: 0=A, 1=B, 2=C, 3=D\n"
-            + "6. Explanation in English (40-80 words) explaining why the correct answer is right AND why each distractor is wrong\n\n"
-            + "Question types to vary across the 10 questions:\n"
-            + "- Main idea / central argument\n"
-            + "- Author's tone or attitude\n"
-            + "- Inference from implied information\n"
-            + "- Purpose of a specific paragraph or sentence\n"
-            + "- Text structure / logical relationship\n"
-            + "- Vocabulary meaning in context\n\n"
-            + "Output STRICT JSON (no extra text, no markdown):\n"
-            + "{\n"
-            + "  \"questions\":[\n"
-            + "    {\n"
-            + "      \"passage\":\"80-150 word passage text...\",\n"
-            + "      \"question\":\"Which of the following best describes...?\",\n"
-            + "      \"optionA\":\"Plausible but incorrect interpretation\",\n"
-            + "      \"optionB\":\"Another tempting wrong answer\",\n"
-            + "      \"optionC\":\"The correct answer (subtle)\",\n"
-            + "      \"optionD\":\"Also plausible but wrong\",\n"
-            + "      \"answer\":2,\n"
-            + "      \"explanation\":\"C is correct because... A is wrong because... B fails to account for... D contradicts...\"\n"
-            + "    }\n"
-            + "  ]\n"
-            + "}";
+            ConfigUtil.readResourceText("prompts/assessment-generate.txt");
 
     // ========== 测评评估 ==========
 
     private static final String ASSESSMENT_EVALUATE_PROMPT =
-            "You are an English proficiency evaluator. You will receive 10 reading comprehension questions "
-            + "with the correct answers, and the student's selected answers.\n\n"
-            + "Evaluate the student's performance and return:\n"
-            + "1. overallScore (0-100): overall reading comprehension score based on correct/incorrect answers\n"
-            + "2. cefrLevel (string): One of A1, A2, B1, B2, C1, C2\n"
-            + "3. dimensions (object): five ability dimension scores (each 0-100)\n"
-            + "   - vocabulary: vocabulary knowledge and word recognition\n"
-            + "   - grammar: grammatical understanding and sentence structure\n"
-            + "   - reading: reading comprehension ability\n"
-            + "   - culture: cultural background knowledge\n"
-            + "   - logic: logical analysis and inference ability\n\n"
-            + "Base your evaluation on:\n"
-            + "- How many questions the student answered correctly vs incorrectly\n"
-            + "- The type of each question (main idea, detail, inference, vocabulary-in-context, tone, etc.)\n"
-            + "- The difficulty of the passages and questions\n\n"
-            + "Output STRICT JSON (no extra text, no markdown):\n"
-            + "{\n"
-            + "  \"overallScore\":68,\n"
-            + "  \"cefrLevel\":\"B1\",\n"
-            + "  \"dimensions\":{\n"
-            + "    \"vocabulary\":68,\n"
-            + "    \"grammar\":72,\n"
-            + "    \"reading\":65,\n"
-            + "    \"culture\":55,\n"
-            + "    \"logic\":70\n"
-            + "  }\n"
-            + "}";
+            ConfigUtil.readResourceText("prompts/assessment-evaluate.txt");
 
     /**
      * 基于文章生成阅读理解选择题。
