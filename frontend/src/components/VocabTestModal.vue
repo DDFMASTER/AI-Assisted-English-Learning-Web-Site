@@ -60,6 +60,12 @@
                 :style="{ width: ((currentIndex + 1) / totalWords * 100) + '%' }"
               ></div>
             </div>
+            <button
+              class="text-xs font-bold text-gray-400 hover:text-red-500 transition-colors whitespace-nowrap"
+              @click="abandonTest"
+            >
+              放弃测试
+            </button>
           </div>
 
           <div class="text-center mb-6" :key="'card-' + currentIndex">
@@ -200,7 +206,8 @@ const emit = defineEmits(['close'])
 
 const optionLabels = ['A', 'B', 'C', 'D']
 const PREFETCH_AHEAD = 8
-const FEEDBACK_SECONDS = 1.5
+const FEEDBACK_CORRECT = 1
+const FEEDBACK_INCORRECT = 2
 
 const phase = ref('start')
 const loadingStatus = ref('正在获取测试词汇...')
@@ -213,7 +220,7 @@ const currentIndex = ref(0)
 const selectedOptionIdx = ref(-1)
 const selectedAnswer = ref('')
 const answered = ref(false)
-const countdown = ref(FEEDBACK_SECONDS)
+const countdown = ref(0)
 let countdownTimer = null
 let autoAdvanceTimer = null
 const prefetching = ref(false)
@@ -372,7 +379,8 @@ function scheduleNext() {
 
   prefetchBatch(currentIndex.value + 1)
 
-  countdown.value = FEEDBACK_SECONDS
+  const delay = isCurrentCorrect.value ? FEEDBACK_CORRECT : FEEDBACK_INCORRECT
+  countdown.value = delay
   countdownTimer = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
@@ -383,7 +391,7 @@ function scheduleNext() {
   autoAdvanceTimer = setTimeout(async () => {
     clearInterval(countdownTimer)
     await tryAdvance()
-  }, FEEDBACK_SECONDS * 1000)
+  }, delay * 1000)
 }
 
 /** 尝试推进到下一题，若下一题选项未就绪则等待 */
@@ -488,6 +496,11 @@ async function submitResults() {
 function clearTimers() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
   if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null }
+}
+
+function abandonTest() {
+  clearTimers()
+  emit('close')
 }
 
 function getOptBtnClass(idx) {

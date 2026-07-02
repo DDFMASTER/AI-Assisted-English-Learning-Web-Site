@@ -16,7 +16,7 @@ import java.util.concurrent.CompletionException;
 public class AIService {
 
     private static final String API_URL = "https://api.deepseek.com/chat/completions";
-    private static final String API_KEY = "sk-xxx"+ ""; // 部署时替换为真实 key
+    private static final String API_KEY = "sk-***"+ ""; // 部署时替换为真实 key
     private static final String MODEL = "deepseek-v4-flash";
     private static final int TIMEOUT_SECONDS = 15;
 
@@ -364,7 +364,17 @@ public class AIService {
      * 快速生成单道测评题（用于首题即时返回）。
      */
     public AssessmentQuestion generateSingleQuestion(String studyPurpose) {
+        return generateSingleQuestion(studyPurpose, null);
+    }
+
+    /** 生成单道题，可指定必须避开的答案索引（连续 3 题同答案时使用） */
+    public AssessmentQuestion generateSingleQuestion(String studyPurpose, Integer avoidAnswer) {
         String prompt = ASSESSMENT_SINGLE_PROMPT.replace("{studyPurpose}", studyPurpose);
+        if (avoidAnswer != null && avoidAnswer >= 0 && avoidAnswer <= 3) {
+            char avoid = (char) ('A' + avoidAnswer);
+            prompt += "\nIMPORTANT: Do NOT set answer to " + avoid
+                    + ". Previous 3 questions all had answer " + avoid + ".";
+        }
         String userContent = "Generate 1 reading passage for " + studyPurpose + " level.";
 
         String responseContent = callDeepSeek(prompt, userContent, 20, new AIResultBase());

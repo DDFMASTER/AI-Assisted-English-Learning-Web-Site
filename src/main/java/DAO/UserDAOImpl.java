@@ -148,12 +148,13 @@ public class UserDAOImpl implements UserDAO {
         }
     }
 
-    // ========== CEFR 进度存储（profile 字段存 JSON） ==========
+    // ========== profile 字段统一存储（JSON 格式，同时存 CEFR 进度和 VIP 状态） ==========
 
+    /** 从 profile JSON 中提取 CEFR 进度（兼容旧格式 "vip" 字符串） */
     static int readProgressFromProfile(String profile) {
         if (profile == null || profile.isBlank()) return 0;
+        if ("vip".equals(profile)) return 0; // 旧格式：纯 VIP 字符串，无进度
         try {
-            // profile 存 JSON: {"cefrProgress": 65}
             int idx = profile.indexOf("\"cefrProgress\"");
             if (idx < 0) return 0;
             int colon = profile.indexOf(":", idx);
@@ -166,16 +167,42 @@ public class UserDAOImpl implements UserDAO {
         }
     }
 
-    static String buildProfileJson(int progress) {
+    /** 判断 profile 是否表示 VIP（兼容旧格式 "vip" 和新 JSON 格式） */
+    static boolean isVipInProfile(String profile) {
+        if (profile == null) return false;
+        if ("vip".equals(profile)) return true;
+        return profile.contains("\"vip\":true");
+    }
+
+    /** 构建统一的 profile JSON */
+    static String buildProfileJson(int progress, boolean isVip) {
+        if (isVip) {
+            return "{\"cefrProgress\":" + progress + ",\"vip\":true}";
+        }
         return "{\"cefrProgress\":" + progress + "}";
     }
 
     @Override
     public int updateCefrProgress(Long userId, int progress) {
+        // 读取当前 profile 以保留 VIP 状态
+        boolean isVip = false;
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT profile FROM user WHERE user_id = ?")) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    isVip = isVipInProfile(rs.getString("profile"));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("读取用户profile失败: userId=" + userId, e);
+        }
+
         String sql = "UPDATE user SET profile = ? WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, buildProfileJson(progress));
+            ps.setString(1, buildProfileJson(progress, isVip));
             ps.setLong(2, userId);
             return ps.executeUpdate();
         } catch (Exception e) {
@@ -189,7 +216,7 @@ public class UserDAOImpl implements UserDAO {
         user.setUsername(rs.getString("username"));
         user.setPassword(rs.getString("password"));
         user.setSalt(rs.getString("salt"));
-        user.setProfile(rs.getString("profile"));
+        user.setProfile(isVipInProfile(rs.getString("profile")) ? "vip" : "");
         user.setRole(rs.getString("role"));
         user.setStudyPurpose(rs.getString("study_purpose"));
         user.setLiteracy(rs.getInt("literacy"));
@@ -256,6 +283,19 @@ public class UserDAOImpl implements UserDAO {
     }
 
     @Override
+    public int updateStudyPurpose(Long userId, String studyPurpose) {
+        String sql = "UPDATE user SET study_purpose = ? WHERE user_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, studyPurpose);
+            ps.setLong(2, userId);
+            return ps.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException("更新学习阶段失败: " + userId, e);
+        }
+    }
+
+    @Override
     public int updateRole(Long userId, String role) {
         String sql = "UPDATE user SET role = ? WHERE user_id = ?";
 
@@ -272,12 +312,30 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public int updateVip(Long userId, String vipStatus, LocalDateTime vipExpireAt, int newExperience) {
+        // 读取当前 profile 以保留 CEFR 进度
+        int currentProgress = 0;
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT profile FROM user WHERE user_id = ?")) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    currentProgress = readProgressFromProfile(rs.getString("profile"));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("读取用户profile失败: userId=" + userId, e);
+        }
+
+        boolean isVip = "vip".equals(vipStatus);
+        String profile = buildProfileJson(currentProgress, isVip);
+
         String sql = "UPDATE user SET profile = ?, last_checkin = ?, experience = ? WHERE user_id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, vipStatus);
+            ps.setString(1, profile);
             ps.setTimestamp(2, toTimestamp(vipExpireAt));
             ps.setInt(3, newExperience);
             ps.setLong(4, userId);

@@ -117,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
@@ -125,6 +125,14 @@ import { useUserStore } from '@/stores/user'
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+
+onMounted(() => {
+  const reason = sessionStorage.getItem('kickReason')
+  if (reason) {
+    errorMsg.value = reason
+    sessionStorage.removeItem('kickReason')
+  }
+})
 
 // 随机双色渐变
 const colorPairs = [

@@ -118,11 +118,6 @@
         <p class="text-[10px] text-gray-400 mt-1">请检查 Tomcat 是否已重启</p>
       </div>
 
-      <!-- 空状态 -->
-      <div v-else-if="!quizData?.questions || quizData.questions.length === 0" class="text-center py-4">
-        <p class="text-xs text-gray-400">暂无题目</p>
-      </div>
-
       <!-- 题目列表 -->
       <div v-else class="space-y-4">
         <div

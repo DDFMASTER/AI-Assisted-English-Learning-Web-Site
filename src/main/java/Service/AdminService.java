@@ -304,14 +304,19 @@ public class AdminService {
      */
     public void logAction(Long adminUserId, String targetType, Long targetId,
                           String actionType, String parameter) {
-        AdminActionLog log = new AdminActionLog();
-        log.setUserId(adminUserId);
-        log.setTargetType(targetType);
-        log.setTargetId(targetId);
-        log.setActionType(actionType);
-        log.setParameter(parameter);
-        log.setTimestamp(LocalDateTime.now());
-        logDAO.insert(log);
+        try {
+            AdminActionLog log = new AdminActionLog();
+            log.setUserId(adminUserId);
+            log.setTargetType(targetType);
+            log.setTargetId(targetId);
+            log.setActionType(actionType);
+            log.setParameter(parameter);
+            log.setTimestamp(LocalDateTime.now());
+            logDAO.insert(log);
+        } catch (Exception e) {
+            // 日志记录失败不应影响主业务流程
+            System.err.println("[AAEL] 记录管理员操作日志失败: " + e.getMessage());
+        }
     }
 
     // ==================== 工具方法 ====================

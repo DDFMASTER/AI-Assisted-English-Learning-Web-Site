@@ -386,7 +386,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import request from '@/utils/request'
 
@@ -671,15 +671,37 @@ async function deleteArticle(a) {
 
 // ========== 监听 Tab 切换自动加载数据 ==========
 // （简单实现：切换到文章 tab 时首次加载）
+let onlineRefreshTimer = null
+
 watch(activeTab, (tab) => {
   if (tab === 'articles' && articles.value.length === 0) {
     loadArticles()
   }
-  if (tab === 'online' && onlineUsers.value.length === 0) {
-    loadOnlineUsers()
+  if (tab === 'online') {
+    if (onlineUsers.value.length === 0) {
+      loadOnlineUsers()
+    }
+    // 每分钟自动刷新在线用户
+    if (!onlineRefreshTimer) {
+      onlineRefreshTimer = setInterval(() => {
+        loadOnlineUsers()
+      }, 60000)
+    }
+  } else {
+    if (onlineRefreshTimer) {
+      clearInterval(onlineRefreshTimer)
+      onlineRefreshTimer = null
+    }
   }
   if (tab === 'logs' && logs.value.length === 0) {
     loadLogs()
+  }
+})
+
+onUnmounted(() => {
+  if (onlineRefreshTimer) {
+    clearInterval(onlineRefreshTimer)
+    onlineRefreshTimer = null
   }
 })
 

@@ -67,9 +67,6 @@ public class VocabTestSubmitServlet extends HttpServlet {
 
         // 更新 literacy
         new UserDAOImpl().updateLiteracy(userId, result.estimatedVocabulary);
-        // 清除 session 中的词表
-        session.removeAttribute("vocabTestWords");
-
         // 构建响应
         String extra = "\"estimatedVocab\":" + JsonUtil.numVal(result.estimatedVocabulary)
                 + ",\"lowerCI\":" + JsonUtil.numVal((int) result.lowerCI)

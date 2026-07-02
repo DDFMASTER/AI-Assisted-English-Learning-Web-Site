@@ -30,8 +30,8 @@
         <span class="flex items-center gap-1">
           <Icon icon="ph:text-t-bold" /> {{ article.wordCount || '850 words' }}
         </span>
-        <span class="flex items-center gap-1">
-          <Icon icon="ph:translate-bold" /> {{ article.newWords || '12 New Words' }}
+        <span v-if="article.newWords" class="flex items-center gap-1">
+          <Icon icon="ph:translate-bold" /> {{ article.newWords }}
         </span>
       </div>
     </div>

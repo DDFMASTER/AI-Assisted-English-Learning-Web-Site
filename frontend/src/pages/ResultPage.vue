@@ -27,14 +27,33 @@
 
         <!-- 结果描述 -->
         <div class="flex-1">
-          <div class="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-bold mb-4">
-            <Icon icon="ph:party-bold" />
+          <div v-if="result.leveledUp" class="inline-flex items-center gap-2 px-3 py-1 bg-yellow-50 text-yellow-600 rounded-full text-xs font-bold mb-4">
+            <Icon icon="ph:crown-simple-bold" />
+            成功晋级
+          </div>
+          <div v-else-if="result.tooLow" class="inline-flex items-center gap-2 px-3 py-1 bg-red-50 text-red-500 rounded-full text-xs font-bold mb-4">
+            <Icon icon="ph:warning-circle-bold" />
+            分数过低
+          </div>
+          <div v-else class="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-bold mb-4">
+            <Icon icon="ph:check-circle-bold" />
             测评已通过
           </div>
-          <h1 v-if="result.leveledUp" class="text-3xl font-bold mb-4">🎉 恭喜！你已成功晋级 {{ result.level }} 阶段</h1>
+          <h1 v-if="result.leveledUp" class="text-3xl font-bold mb-4">🎉 恭喜！你已成功晋级至 {{ result.level }}！</h1>
+          <h1 v-else-if="result.tooLow" class="text-3xl font-bold mb-4">很遗憾，本次得分偏低</h1>
           <h1 v-else class="text-3xl font-bold mb-4">测评完成！当前等级 {{ result.level }}</h1>
-          <p class="text-gray-500 leading-relaxed mb-8">
-            根据你的答题表现，AI 系统从词汇、语法、阅读理解、文化背景和逻辑分析五个维度评估了你的英语能力。{{ result.leveledUp ? '你已升级到新阶段！' : '继续加油，下一阶段目标是 ' + result.nextLevel + '！' }}
+          <p v-if="result.tooLow" class="text-gray-500 leading-relaxed mb-2">
+            你的得分（{{ result.score }} 分）低于 30 分，本次不会增加英语水平进度。继续努力，多加练习！
+          </p>
+          <p v-else class="text-gray-500 leading-relaxed mb-2">
+            根据你的答题表现（{{ result.score }} 分），本次测评获得
+            <span class="font-bold text-[#2563EB]">+{{ result.progressGained || 0 }}%</span> 英语水平进度。
+          </p>
+          <p v-if="result.leveledUp" class="text-green-600 font-bold leading-relaxed mb-6">
+            🎊 进度已满，恭喜晋级至 {{ result.level }}！新阶段从 0% 开始，继续加油！
+          </p>
+          <p v-else-if="!result.tooLow" class="text-gray-400 text-sm leading-relaxed mb-8">
+            继续加油，距下一阶段 {{ result.nextLevel }} 还需积累更多进度。
           </p>
           <div class="flex items-center gap-4">
             <router-link
@@ -463,11 +482,14 @@ function getOptionDotClass(optionId, item) {
 }
 
 // ========== 结果数据 ==========
-const result = reactive({
+const result = computed(() => ({
   level: storeResult?.level || 'A1',
   nextLevel: storeResult?.nextLevel || 'A2',
   score: storeResult?.score || 0,
-})
+  leveledUp: storeResult?.leveledUp || false,
+  progressGained: storeResult?.progressGained || 0,
+  tooLow: storeResult?.tooLow || false,
+}))
 
 // 分项能力详情（从 store 动态读取）
 const abilityDetails = computed(() => {

@@ -37,6 +37,8 @@ public class LoginFilter implements Filter {
             "/api/user/profile",
             "/api/user/experience",
             "/api/user/vip-exchange",
+            "/api/user/cefr-progress",
+            "/api/user/update-study-purpose",
             "/api/connect-test"
     );
 
@@ -69,23 +71,9 @@ public class LoginFilter implements Filter {
         String contextPath = request.getContextPath();
         String relativePath = path.substring(contextPath.length());
 
-        // 1. 公开路径直接放行
-        if (isPublicPath(relativePath)) {
-            chain.doFilter(req, res);
-            return;
-        }
-
-        // 2. API 路径需要校验登录状态
-        if (relativePath.startsWith("/api/")) {
-            HttpSession session = request.getSession(false);
-
-            if (session == null || session.getAttribute("userId") == null) {
-                // 未登录，返回 401
-                sendUnauthorized(response, "请先登录");
-                return;
-            }
-
-            // 3. 检查是否被管理员强制下线
+        // 1. 优先检查是否被管理员强制下线（对所有请求生效，不区分公开/私有路径）
+        HttpSession session = request.getSession(false);
+        if (session != null) {
             Long userId = (Long) session.getAttribute("userId");
             if (isKicked(request.getServletContext(), userId)) {
                 // 清理会话并移除下线标记
@@ -93,10 +81,23 @@ public class LoginFilter implements Filter {
                 session.removeAttribute("username");
                 session.removeAttribute("role");
                 session.invalidate();
-
                 clearKickedFlag(request.getServletContext(), userId);
-
                 sendUnauthorized(response, "您已被管理员强制下线，请重新登录");
+                return;
+            }
+        }
+
+        // 2. 公开路径直接放行
+        if (isPublicPath(relativePath)) {
+            chain.doFilter(req, res);
+            return;
+        }
+
+        // 3. API 路径需要校验登录状态
+        if (relativePath.startsWith("/api/")) {
+            if (session == null || session.getAttribute("userId") == null) {
+                // 未登录，返回 401
+                sendUnauthorized(response, "请先登录");
                 return;
             }
         }

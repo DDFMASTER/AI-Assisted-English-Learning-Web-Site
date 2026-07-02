@@ -52,27 +52,43 @@ public class AssessmentGenerateServlet extends HttpServlet {
         SESSIONS.put(sessionId, questions);
 
         // 2. 后台线程逐道生成剩余 9 道题，失败自动重试
+        //    追踪最近 3 题答案，若连续相同则要求 AI 避开
         final AIService svc = aiService;
+        final List<AIService.AssessmentQuestion> firstList = new ArrayList<>();
+        if (first != null) firstList.add(first);
+        SESSIONS.put(sessionId, firstList);
+
         new Thread(() -> {
             try {
                 List<AIService.AssessmentQuestion> list = SESSIONS.get(sessionId);
                 int failures = 0;
+                int[] lastThree = new int[3]; // 环形记录最近 3 题答案
+                int ltIdx = 0;
+                if (first != null) { lastThree[ltIdx++ % 3] = first.answer; }
+
                 for (int i = 0; i < 9; i++) {
+                    // 检查是否连续 3 题同答案，若是一定要避开
+                    Integer avoid = null;
+                    if (i >= 2) {
+                        int a0 = lastThree[0], a1 = lastThree[1], a2 = lastThree[2];
+                        if (a0 == a1 && a1 == a2) avoid = a0;
+                    }
+
                     AIService.AssessmentQuestion q = null;
-                    // 每题最多重试 3 次
-                    for (int retry = 0; retry < 3; retry++) {
+                    for (int retry = 0; retry < 2; retry++) {
                         try {
-                            q = svc.generateSingleQuestion(sp);
+                            q = svc.generateSingleQuestion(sp, avoid);
                             if (q != null) break;
                         } catch (Exception e) {
-                            System.err.println("[Assessment] 第" + (i + 2) + "题生成失败(重试" + (retry + 1) + "/3): " + e.getMessage());
+                            System.err.println("[Assessment] 第" + (i + 2) + "题生成失败(重试" + (retry + 1) + "/2): " + e.getMessage());
                         }
-                        if (retry < 2) Thread.sleep(3000);
+                        if (retry < 1) Thread.sleep(2000);
                     }
                     if (q != null && list != null) {
                         synchronized (list) {
                             list.add(q);
                         }
+                        lastThree[ltIdx++ % 3] = q.answer;
                     } else {
                         failures++;
                         System.err.println("[Assessment] 第" + (i + 2) + "题最终生成失败，跳过");

@@ -19,7 +19,11 @@ public class AdminActionLogDAOImpl implements AdminActionLogDAO {
 
             ps.setLong(1, log.getUserId());
             ps.setString(2, log.getTargetType());
-            ps.setLong(3, log.getTargetId());
+            if (log.getTargetId() != null) {
+                ps.setLong(3, log.getTargetId());
+            } else {
+                ps.setNull(3, java.sql.Types.BIGINT);
+            }
             ps.setString(4, log.getActionType());
             ps.setString(5, log.getParameter());
             ps.setTimestamp(6, log.getTimestamp() != null

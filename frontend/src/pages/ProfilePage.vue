@@ -417,6 +417,18 @@
                 <span class="text-xs text-gray-400">分钟/天</span>
               </div>
             </div>
+            <!-- 学习阶段 -->
+            <div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors">
+              <span class="text-sm font-medium text-gray-700">学习阶段</span>
+              <select
+                :value="userStore.user?.studyPurpose || ''"
+                class="text-sm text-gray-500 border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                @change="updateStudyPurpose($event.target.value)"
+              >
+                <option value="" disabled>请选择</option>
+                <option v-for="s in allStages" :key="s" :value="s">{{ s }}</option>
+              </select>
+            </div>
             <!-- 关于我们 -->
             <div
               class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
@@ -715,6 +727,25 @@ const showVipExchange = ref(false)
 const vipSelectedDays = ref(1)
 const vipExchanging = ref(false)
 const vipDayOptions = [1, 3, 7, 30]
+const allStages = ['初中', '高中', '四级', '六级', '考研', '托福', '期刊', '原著', '网络新闻']
+
+async function updateStudyPurpose(value) {
+  if (!value) return
+  try {
+    const params = new URLSearchParams()
+    params.append('userId', String(userStore.user?.userId))
+    params.append('studyPurpose', value)
+    const data = await request.post('/user/update-study-purpose', params)
+    if (data.success) {
+      showToast('学习阶段已更新为 ' + value)
+      await userStore.fetchProfile()
+    } else {
+      showToast(data.message || '更新失败', 'error')
+    }
+  } catch (e) {
+    showToast('更新失败，请重试', 'error')
+  }
+}
 const toastMsg = ref('')
 const toastType = ref('success')
 let toastTimer = null

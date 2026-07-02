@@ -292,16 +292,24 @@ export const useAssessmentStore = defineStore('assessment', () => {
 
       // 计算 CEFR 进度增值并保存到后端
       let leveledUp = false
+      let progressGained = 0
+      let scoreTooLow = false
       try {
         const progressResult = await saveCefrProgress(data.overallScore || 0, data.cefrLevel)
         if (progressResult) {
-          assessmentResult.value.level = progressResult.level
-          assessmentResult.value.nextLevel = progressResult.nextLevel
-          assessmentResult.value.leveledUp = progressResult.leveledUp
-          leveledUp = progressResult.leveledUp
+          assessmentResult.value.level = progressResult.level || data.cefrLevel || 'A1'
+          assessmentResult.value.nextLevel = progressResult.nextLevel || getNextLevel(data.cefrLevel)
+          assessmentResult.value.leveledUp = progressResult.leveledUp || false
+          assessmentResult.value.progressGained = progressResult.progressGained || 0
+          assessmentResult.value.tooLow = progressResult.tooLow || false
+          leveledUp = progressResult.leveledUp || false
+          progressGained = progressResult.progressGained || 0
+          scoreTooLow = progressResult.tooLow || false
         }
       } catch (_) { /* 非关键 */ }
       assessmentResult.value.leveledUp = leveledUp
+      assessmentResult.value.progressGained = progressGained
+      assessmentResult.value.tooLow = scoreTooLow
 
       clearProgress()
       return { success: true, result: assessmentResult.value }
@@ -342,17 +350,22 @@ export const useAssessmentStore = defineStore('assessment', () => {
     return level
   }
 
-  /** 保存 CEFR 进度到后端，单次最多+20，最多升一级，返回 { level, nextLevel, leveledUp } */
+  /** 保存 CEFR 进度到后端，单次获得 score/5 进度，溢出不保留，每次最多升一级，返回 { level, nextLevel, leveledUp } */
   async function saveCefrProgress(score, aiCefrLevel) {
     const { useUserStore } = await import('@/stores/user')
     const userStore = useUserStore()
     const userId = userStore.user?.userId
     if (!userId) return null
 
+    // 分数低于 30 分不增加进度
+    if ((score || 0) < 30) {
+      return { level: null, nextLevel: null, leveledUp: false, progressGained: 0, tooLow: true }
+    }
+
     const vocabBases = { A1: 500, A2: 1500, B1: 3000, B2: 5000, C1: 8000, C2: 12000 }
     const cefrLabels = { A1: '初级', A2: '初级上', B1: '中级', B2: '中高级', C1: '高级', C2: '精通' }
 
-    // 读取用户当前 CEFR 等级（从本地或后端，而非 AI 返回值）
+    // 读取用户当前 CEFR 等级
     let currentLevel = null
     try {
       const raw = localStorage.getItem(`aael_vocab_result_${userId}`)
@@ -361,7 +374,6 @@ export const useAssessmentStore = defineStore('assessment', () => {
         if (vocabResult.cefrLevel) currentLevel = vocabResult.cefrLevel.toUpperCase()
       }
     } catch (_) {}
-    // 回退：从 literacy 推算 CEFR 等级
     if (!currentLevel) {
       const literacy = userStore.user?.literacy || 0
       if (literacy >= 12000) currentLevel = 'C2'
@@ -378,27 +390,26 @@ export const useAssessmentStore = defineStore('assessment', () => {
       if (data.success) currentProgress = data.cefrProgress || 0
     } catch (_) {}
 
-    const increment = Math.min(20, Math.max(5, Math.round(score * 0.2)))
+    // 单次评分 / 5 = 获得的进度（满分 100 → 20%，5 次满分晋升一级）
+    const increment = Math.round((score || 0) / 5)
     let newProgress = currentProgress + increment
     let newLevel = currentLevel
     let leveledUp = false
 
-    // 进度 >= 100 时晋级（每次最多升一级）
+    // 进度 >= 100 时晋级，溢出进度不保留，每次最多升一级
     if (newProgress >= 100) {
-      newProgress = newProgress - 100
+      newProgress = 0  // 溢出丢弃
       newLevel = getNextLevel(currentLevel)
       leveledUp = true
-      try {
-        const p = new URLSearchParams()
-        p.append('userId', String(userId))
-        p.append('literacy', String(vocabBases[newLevel] || 3000))
-        await request.post('/user/cefr-progress', p)
-      } catch (_) {}
     }
 
+    // 合并发送 literacy（升级时）和 progress
     try {
       const params = new URLSearchParams()
       params.append('userId', String(userId))
+      if (leveledUp && vocabBases[newLevel]) {
+        params.append('literacy', String(vocabBases[newLevel]))
+      }
       params.append('progress', String(newProgress))
       await request.post('/user/cefr-progress', params)
     } catch (_) {}
@@ -415,7 +426,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
       cefrLabel: cefrLabels[newLevel] || '中级',
     }))
 
-    return { level: newLevel, nextLevel: getNextLevel(newLevel), leveledUp }
+    return { level: newLevel, nextLevel: getNextLevel(newLevel), leveledUp, progressGained: increment }
   }
 
   // ========== 进度持久化 ==========

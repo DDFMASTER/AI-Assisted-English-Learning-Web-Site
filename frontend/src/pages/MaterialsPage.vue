@@ -6,151 +6,185 @@
       <p class="text-gray-500">
         基于你的当前水平
         <span class="font-bold text-[#2563EB]">{{ userLevel }}</span>
-        ，AI 为你精准推荐
+        ，AI 为你推荐
       </p>
     </div>
 
     <div class="grid grid-cols-12 gap-8">
-      <!-- 左栏：文章列表 -->
+      <!-- 左栏：文章区 -->
       <div class="col-span-8">
-        <!-- Tab 切换 -->
-        <div class="flex p-1 bg-white rounded-xl mb-8 w-fit shadow-sm">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            class="px-6 py-2 rounded-lg text-sm font-medium transition-all"
-            :class="activeCategory === tab.key ? 'tab-active' : 'text-gray-500 hover:bg-gray-50'"
-            @click="activeCategory = tab.key"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
+        <!-- ====== 推荐区 ====== -->
+        <section class="mb-10">
+          <h2 class="text-lg font-bold text-gray-700 mb-4">
+            📚 为你推荐
+            <span class="text-sm font-normal text-gray-400 ml-2">（{{ recommendLabel }}）</span>
+          </h2>
 
-        <!-- 加载骨架屏 -->
-        <div v-if="loadingArticles" class="space-y-6">
-          <div v-for="n in 3" :key="'skel-'+n" class="card flex gap-6 animate-pulse">
-            <div class="w-48 h-32 rounded-xl bg-gray-200 flex-none" />
-            <div class="flex-1 space-y-3 py-2">
-              <div class="h-4 w-20 bg-gray-200 rounded" />
-              <div class="h-6 w-3/4 bg-gray-200 rounded" />
-              <div class="h-4 w-full bg-gray-200 rounded" />
-              <div class="h-4 w-1/3 bg-gray-200 rounded" />
+          <div v-if="recommendLoading" class="space-y-6">
+            <div v-for="n in 3" :key="'skel-r'+n" class="card flex gap-6 animate-pulse">
+              <div class="w-48 h-32 rounded-xl bg-gray-200 flex-none" />
+              <div class="flex-1 space-y-3 py-2">
+                <div class="h-4 w-20 bg-gray-200 rounded" />
+                <div class="h-6 w-3/4 bg-gray-200 rounded" />
+                <div class="h-4 w-full bg-gray-200 rounded" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- 文章卡片列表 -->
-        <div v-else class="space-y-6">
-          <ArticleCard
-            v-for="article in filteredArticles"
-            :key="article.id"
-            :article="article"
-          />
-          <div
-            v-if="filteredArticles.length === 0"
-            class="card text-center text-gray-400 py-12"
-          >
-            <Icon icon="ph:book-open-bold" class="text-4xl mb-3 opacity-30" />
-            <p>暂无此类文章，敬请期待</p>
+          <div v-else-if="recommendArticles.length > 0" class="space-y-6">
+            <ArticleCard
+              v-for="article in recommendArticles"
+              :key="'rec-'+article.id"
+              :article="article"
+            />
           </div>
-        </div>
 
-        <!-- 底部提示条 -->
-        <div class="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-4">
-          <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#2563EB] shadow-sm">
-            <Icon icon="ph:sparkle-bold" class="text-xl animate-pulse" />
+          <div v-else class="card text-center text-gray-400 py-10">
+            <Icon icon="ph:hard-drives-bold" class="text-4xl mb-3 opacity-30" />
+            <p>文章数据库建设中，敬请期待</p>
           </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-[#2563EB] text-sm">难度动态调整中</h4>
-            <p class="text-[11px] text-blue-600/70">
-              AI 正在根据你最近 3 天的阅读速度和查词频率调整推荐权重，当前的素材更贴合你的"舒适区+1"学习曲线。
-            </p>
+        </section>
+
+        <!-- ====== 文章目录 ====== -->
+        <section>
+          <h2 class="text-lg font-bold text-gray-700 mb-4">📖 文章目录</h2>
+
+          <!-- 分类 Tab -->
+          <div class="flex p-1 bg-white rounded-xl mb-6 w-fit shadow-sm">
+            <button
+              v-for="tab in catalogTabs"
+              :key="tab.key"
+              class="px-5 py-2 rounded-lg text-sm font-medium transition-all"
+              :class="activeCategory === tab.key ? 'tab-active' : 'text-gray-500 hover:bg-gray-50'"
+              @click="switchCategory(tab.key)"
+            >
+              {{ tab.label }}
+            </button>
           </div>
-        </div>
+
+          <!-- 加载中 -->
+          <div v-if="catalogLoading" class="space-y-6">
+            <div v-for="n in 3" :key="'skel-c'+n" class="card flex gap-6 animate-pulse">
+              <div class="w-48 h-32 rounded-xl bg-gray-200 flex-none" />
+              <div class="flex-1 space-y-3 py-2">
+                <div class="h-4 w-20 bg-gray-200 rounded" />
+                <div class="h-6 w-3/4 bg-gray-200 rounded" />
+                <div class="h-4 w-full bg-gray-200 rounded" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 文章列表 -->
+          <div v-else class="space-y-6">
+            <ArticleCard
+              v-for="article in catalogArticles"
+              :key="'cat-'+article.id"
+              :article="article"
+            />
+            <div
+              v-if="catalogArticles.length === 0"
+              class="card text-center text-gray-400 py-12"
+            >
+              <Icon icon="ph:book-open-bold" class="text-4xl mb-3 opacity-30" />
+              <p>暂无此类文章</p>
+            </div>
+          </div>
+
+          <!-- 分页 -->
+          <div v-if="catalogTotalPages > 1" class="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-gray-100">
+            <button
+              class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+              :disabled="catalogPage <= 1"
+              @click="goPage(catalogPage - 1)"
+            >上一页</button>
+            <button
+              v-for="p in visiblePages"
+              :key="p"
+              class="px-3 py-1.5 text-xs rounded-lg transition-colors"
+              :class="p === catalogPage ? 'bg-[#2563EB] text-white' : 'text-gray-500 hover:bg-gray-100'"
+              @click="goPage(p)"
+            >{{ p }}</button>
+            <button
+              class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+              :disabled="catalogPage >= catalogTotalPages"
+              @click="goPage(catalogPage + 1)"
+            >下一页</button>
+          </div>
+        </section>
       </div>
 
-      <!-- 右栏：边栏 -->
+      <!-- 右栏 -->
       <div class="col-span-4 space-y-8">
         <!-- 今日任务 -->
         <div class="card">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold">🎯 今日任务</h3>
-            <div class="flex items-center gap-2">
-              <div class="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  class="h-full bg-[#10B981] transition-all"
-                  :style="{ width: taskProgressPercent + '%' }"
-                ></div>
-              </div>
-              <span class="text-sm font-medium text-[#10B981]">
-                {{ taskStore.todayDoneCount }}/{{ taskStore.todayTotalCount }}
-              </span>
-            </div>
+            <span class="text-xs text-gray-400">{{ taskStore.todayDoneCount }}/{{ taskStore.todayTotalCount }}</span>
           </div>
-          <div class="space-y-3">
+          <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
+            <div
+              class="h-full bg-[#2563EB] rounded-full transition-all"
+              :style="{ width: taskProgressPercent + '%' }"
+            ></div>
+          </div>
+          <div v-if="taskStore.todayTotalCount === 0" class="text-xs text-gray-400">
+            完成一篇文章的阅读与练习以开始
+          </div>
+          <div v-else class="space-y-2">
             <div
               v-for="task in taskStore.todayTasks"
               :key="task.id"
               class="flex items-center gap-3 text-sm"
+              :class="task.done ? 'text-gray-400' : 'text-gray-700'"
             >
               <span
-                v-if="task.done"
-                class="w-5 h-5 rounded bg-[#10B981] flex items-center justify-center flex-none"
+                class="w-5 h-5 rounded border-2 flex items-center justify-center flex-none cursor-pointer"
+                :class="task.done ? 'bg-green-400 border-green-400 text-white' : 'border-gray-300'"
+                @click="taskStore.toggleTask(task.id)"
               >
-                <Icon icon="ph:check-bold" class="text-white text-[10px]" />
+                <Icon v-if="task.done" icon="ph:check-bold" class="text-xs" />
               </span>
-              <span v-else class="w-5 h-5 rounded border-2 border-gray-200 flex-none"></span>
-              <span :class="{ 'text-gray-500 line-through': task.done }">{{ task.name }}</span>
+              <span :class="task.done ? 'line-through' : ''">{{ task.name }}</span>
+              <span class="ml-auto text-xs font-bold" :class="task.done ? 'text-green-500' : 'text-orange-400'">+{{ task.xp }}XP</span>
             </div>
           </div>
         </div>
 
         <!-- 浏览历史 -->
         <div class="card">
-          <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-            <Icon icon="ph:history-bold" class="text-[#2563EB]" />
-            浏览历史
-          </h3>
-          <div class="space-y-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">📜 最近浏览</h3>
+          </div>
+          <div v-if="historyItems.length === 0" class="text-xs text-gray-400">暂无浏览记录</div>
+          <div v-else class="space-y-3">
             <div
-              v-for="item in historyItems"
-              :key="item.id"
-              class="flex gap-3 cursor-pointer group"
+              v-for="(item, idx) in historyItems"
+              :key="idx"
+              class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-1 -mx-1 transition-colors"
               @click="goToReader(item.articleId)"
             >
-              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center flex-none">
-                <Icon :icon="item.icon" class="text-lg opacity-50" :class="item.iconColor" />
-              </div>
+              <Icon :icon="item.icon" :class="item.iconColor" class="text-xl flex-none" />
               <div class="flex-1 min-w-0">
-                <h4 class="text-sm font-bold truncate group-hover:text-[#2563EB] transition-colors">
-                  {{ item.title }}
-                </h4>
-                <div class="flex items-center gap-2 mt-1">
-                  <span :class="item.statusClass">{{ item.status }}</span>
-                  <span class="text-[10px] text-gray-400">{{ item.time }}</span>
-                </div>
+                <p class="text-sm text-gray-700 truncate">{{ item.title }}</p>
+                <p class="text-xs text-gray-400">{{ item.time }}</p>
               </div>
+              <span :class="item.statusClass">{{ item.status }}</span>
             </div>
-            <div v-if="historyItems.length === 0" class="text-center text-gray-400 text-xs py-4">
-              暂无浏览记录
-            </div>
+            <button
+              class="w-full text-xs text-[#2563EB] hover:underline mt-2"
+              @click="router.push('/profile?tab=records')"
+            >查看全部记录 →</button>
           </div>
-          <button
-            class="w-full py-3 mt-5 border border-gray-100 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-all"
-            @click="guard(loadMoreHistory)"
-          >
-            查看全部历史
-          </button>
         </div>
       </div>
     </div>
-  </main>
 
-  <!-- 初次词汇量检测弹窗（literacy === 0 时自动弹出） -->
-  <FirstVocabTestModal
-    :visible="showVocabTest"
-    @done="onVocabTestDone"
-  />
+    <!-- 词汇量测试弹窗 -->
+    <FirstVocabTestModal
+      :visible="showVocabTest"
+      @done="onVocabTestDone"
+    />
+  </main>
 </template>
 
 <script setup>
@@ -163,29 +197,34 @@ import ArticleCard from '@/components/ArticleCard.vue'
 import FirstVocabTestModal from '@/components/FirstVocabTestModal.vue'
 import request from '@/utils/request'
 import { getRecentHistory, relativeTime } from '@/utils/historyDB'
-import { userKey } from '@/utils/storage'
-import { useRequireAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const taskStore = useTaskStore()
 const userStore = useUserStore()
-const { guard } = useRequireAuth()
 
-// 词汇量测试弹窗
-const showVocabTest = ref(false)
-
-// CEFR 等级 → 中文标签映射
-function literacyToLevel(literacy) {
-  if (!literacy || literacy === 0) return null
-  if (literacy < 1500) return 'A1 · 初级'
-  if (literacy < 3000) return 'A2 · 初级上'
-  if (literacy < 5000) return 'B1 · 中级'
-  if (literacy < 8000) return 'B2 · 中高级'
-  if (literacy < 12000) return 'C1 · 高级'
-  return 'C2 · 精通'
+// ====== CEFR 映射 ======
+const CEFR_DIFFICULTY = {
+  'A1': '初中',
+  'A2': '高中',
+  'B1': '四级',
+  'B2': '六级',
+  'C1': '考研',
+  'C2': '托福,期刊,原著',
+}
+const CEFR_LABEL = {
+  'A1': '初中', 'A2': '高中', 'B1': '四级', 'B2': '六级', 'C1': '考研', 'C2': '托福/期刊/原著',
 }
 
-// 从本地读取词汇量测试结果（按用户 ID 隔离）
+const DIFFICULTY_LABEL = {
+  '期刊': '期刊', '原著': '原著', '网络新闻': '网络新闻',
+  '初中': '初中', '高中': '高中',
+  '四级': 'CET-4', '六级': 'CET-6',
+  '考研': '考研', '托福': 'TOEFL',
+}
+
+// ====== 词汇量测试弹窗 ======
+const showVocabTest = ref(false)
+
 function getLocalVocabResult() {
   try {
     const uid = userStore.user?.userId
@@ -195,201 +234,152 @@ function getLocalVocabResult() {
   } catch { return null }
 }
 
-// Tab 状态
-const tabs = [
-  { key: 'advanced', label: '进阶类 (期刊/原著)' },
-  { key: 'exam', label: '应试类 (考研/四六级)' },
-  { key: 'basic', label: '基础类 (日常/故事)' },
-]
-const activeCategory = ref('advanced')
-
-// 文章数据
-const articles = ref([])
-const loadingArticles = ref(true)
-const historyItems = ref([])
-const readArticleIds = ref(new Set())
-
-/** 从每日任务系统读取已读文章 ID（做完题才算已读） */
-function loadReadIdsFromTask() {
-  try {
-    const raw = localStorage.getItem(userKey('engliai_read_articles_today'))
-    if (!raw) { readArticleIds.value = new Set(); return }
-    const data = JSON.parse(raw)
-    const ids = new Set()
-    const articles = data.articles || {}
-    for (const cat of Object.values(articles)) {
-      for (const id of cat) { ids.add(Number(id)) }
-    }
-    readArticleIds.value = ids
-  } catch { readArticleIds.value = new Set() }
+function getUserCefr() {
+  const local = getLocalVocabResult()
+  if (local?.cefrLevel) return local.cefrLevel.toUpperCase()
+  const lit = userStore.user?.literacy || 0
+  if (lit >= 12000) return 'C2'
+  if (lit >= 8000) return 'C1'
+  if (lit >= 5000) return 'B2'
+  if (lit >= 3000) return 'B1'
+  if (lit >= 1500) return 'A2'
+  return 'A1'
 }
 
-// 用户水平
+const userCefr = computed(() => getUserCefr())
 const userLevel = computed(() => {
-  // 优先本地存储（避免 session 过期拿不到服务端数据）
   const local = getLocalVocabResult()
   if (local) return `${local.cefrLevel} · ${local.cefrLabel}`
-  return literacyToLevel(userStore.user?.literacy) || 'B1 · 中级'
+  const lit = userStore.user?.literacy || 0
+  if (lit >= 12000) return 'C2 · 精通'
+  if (lit >= 8000) return 'C1 · 高级'
+  if (lit >= 5000) return 'B2 · 中高级'
+  if (lit >= 3000) return 'B1 · 中级'
+  if (lit >= 1500) return 'A2 · 初级上'
+  return 'A1 · 初级'
 })
 
-// Task 进度
-const taskProgressPercent = computed(() => {
-  if (taskStore.todayTotalCount === 0) return 0
-  return Math.round((taskStore.todayDoneCount / taskStore.todayTotalCount) * 100)
+const recommendLabel = computed(() => CEFR_LABEL[userCefr.value] || '四级')
+
+// ====== 推荐区 ======
+const recommendArticles = ref([])
+const recommendLoading = ref(true)
+
+async function fetchRecommend() {
+  recommendLoading.value = true
+  try {
+    const diff = CEFR_DIFFICULTY[userCefr.value] || '四级'
+    const data = await request.get('/article/list', { params: { difficulty: diff, limit: 3 } })
+    if (data.success && Array.isArray(data.articles)) {
+      recommendArticles.value = data.articles.map(mapArticle)
+    }
+  } catch (_) {
+    recommendArticles.value = []
+  } finally {
+    recommendLoading.value = false
+  }
+}
+
+// ====== 文章目录 ======
+const catalogTabs = [
+  { key: 'advanced', label: '进阶类' },
+  { key: 'exam', label: '应试类' },
+  { key: 'basic', label: '基础类' },
+  { key: 'extended', label: '拓展类' },
+]
+const activeCategory = ref('advanced')
+const catalogArticles = ref([])
+const catalogLoading = ref(false)
+const catalogPage = ref(1)
+const catalogTotalPages = ref(1)
+const catalogPageSize = 3
+
+const visiblePages = computed(() => {
+  const pages = []
+  const tp = catalogTotalPages.value
+  const cp = catalogPage.value
+  const start = Math.max(1, cp - 2)
+  const end = Math.min(tp, cp + 2)
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
 })
 
-/**
- * 难度 → 分类映射
- *   进阶类: 托福
- *   应试类: 考研, 四级, 六级
- *   基础类: 初中, 高中
- */
-const DIFFICULTY_CATEGORY = {
-  '期刊': 'advanced',
-  '原著': 'advanced',
-  '网络新闻': 'advanced',
-  '托福': 'advanced',
-  '考研': 'exam',
-  '四级': 'exam',
-  '六级': 'exam',
-  '故事': 'basic',
-  '日常': 'basic',
-  '初中': 'basic',
-  '高中': 'basic',
+async function fetchCatalog() {
+  catalogLoading.value = true
+  try {
+    const data = await request.get('/article/list', {
+      params: {
+        category: activeCategory.value,
+        page: catalogPage.value,
+        pageSize: catalogPageSize,
+      }
+    })
+    if (data.success && Array.isArray(data.articles)) {
+      catalogArticles.value = data.articles.map(mapArticle)
+      catalogTotalPages.value = data.totalPages || 1
+    }
+  } catch (_) {
+    catalogArticles.value = []
+  } finally {
+    catalogLoading.value = false
+  }
 }
 
-/**
- * 难度 → 显示简称（用于卡片徽章）
- */
-const DIFFICULTY_LABEL = {
-  '期刊': '期刊',
-  '原著': '原著',
-  '网络新闻': '网络新闻',
-  '初中': '初中',
-  '高中': '高中',
-  '四级': 'CET-4',
-  '六级': 'CET-6',
-  '考研': '考研',
-  '托福': 'TOEFL',
-  '故事': '故事',
-  '日常': '日常',
+function switchCategory(key) {
+  if (activeCategory.value === key) return
+  activeCategory.value = key
+  catalogPage.value = 1
+  fetchCatalog()
 }
 
-// 按分类展示文章（已在 pickPerCategory 中排除已读）
-const filteredArticles = computed(() => {
-  if (articles.value.length === 0) return articles.value
-  return articles.value.filter(a => a.category === activeCategory.value)
-})
-
-// 跳转到阅读器
-function goToReader(articleId) {
-  router.push(`/reader?id=${articleId}`)
+function goPage(p) {
+  if (p < 1 || p > catalogTotalPages.value) return
+  catalogPage.value = p
+  fetchCatalog()
 }
 
-// 跳转到个人中心学习记录
-function loadMoreHistory() {
-  router.push('/profile?tab=records')
-}
-
-/**
- * 将 API 返回的文章数据映射为 ArticleCard 所需格式
- */
+// ====== 文章映射 ======
 function mapArticle(raw) {
   const difficulty = raw.difficulty || '四级'
-  const category = DIFFICULTY_CATEGORY[difficulty] || 'basic'
   const vocquizNum = raw.vocquizNum || 0
-
   return {
     id: raw.articleId,
     article_id: raw.articleId,
     title: raw.title || 'Untitled',
     source: raw.source || '未知来源',
     difficulty: DIFFICULTY_LABEL[difficulty] || difficulty,
-    category,
+    category: getCategory(difficulty),
     readTime: (raw.readTime || 5) + ' min read',
     wordCount: (raw.wordCount || 500) + ' words',
-    newWords: vocquizNum > 0 ? vocquizNum + ' 道词汇题' : '暂无题目',
+    newWords: vocquizNum > 0 ? vocquizNum + ' 道词汇题' : '',
     abstract: '难度: ' + (DIFFICULTY_LABEL[difficulty] || difficulty)
-            + ' · 来源: ' + (raw.source || '未知')
-            + (vocquizNum > 0 ? ' · 含 ' + vocquizNum + ' 道词汇题' : ''),
+            + ' · 来源: ' + (raw.source || '未知'),
     articleLikeCount: raw.articleLikeCount || 0,
   }
 }
 
-/**
- * 数组洗牌
- */
-function shuffle(arr) {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
+function getCategory(difficulty) {
+  if (['考研', '托福', '期刊', '原著'].includes(difficulty)) return 'advanced'
+  if (['四级', '六级'].includes(difficulty)) return 'exam'
+  if (['初中', '高中'].includes(difficulty)) return 'basic'
+  if (['网络新闻'].includes(difficulty)) return 'extended'
+  return 'advanced'
 }
 
-/**
- * 每类随机抽取最多 N 篇
- */
-function pickPerCategory(all, readIds, perCategory = 3) {
-  const groups = { advanced: [], exam: [], basic: [] }
-  all.forEach(a => {
-    const cat = a.category || 'basic'
-    if (groups[cat] && !readIds.has(Number(a.id))) {
-      groups[cat].push(a)
-    }
-  })
-  const picked = []
-  for (const cat of ['advanced', 'exam', 'basic']) {
-    picked.push(...shuffle(groups[cat]).slice(0, perCategory))
-  }
-  return picked
-}
-
-// 获取文章列表（骨架屏占位 → API 响应 → 展示真实数据）
-async function fetchArticles() {
-  loadingArticles.value = true
-  try {
-    loadReadIdsFromTask()  // 每次加载文章前刷新已读列表
-    const data = await request.get('/article/list')
-    if (data.success && Array.isArray(data.articles)) {
-      // 调试：打印所有文章的难度和分类
-      console.table(data.articles.map(a => ({
-        id: a.articleId,
-        title: (a.title || '').substring(0, 30),
-        difficulty: a.difficulty,
-      })))
-      const mapped = data.articles.map(mapArticle)
-      const byCat = { advanced: [], exam: [], basic: [] }
-      mapped.forEach(a => { if (byCat[a.category]) byCat[a.category].push(a.title) })
-      console.log('按分类:', JSON.stringify(byCat, null, 2))
-      console.log('已读IDs:', [...readArticleIds.value])
-      articles.value = pickPerCategory(mapped, readArticleIds.value, 3)
-      console.log('最终展示:', articles.value.map(a => a.title))
-    }
-  } catch (err) {
-    console.warn('从后端获取文章失败:', err.message)
-  } finally {
-    loadingArticles.value = false
-  }
-}
-
-/** 历史记录图标列表（用于前 3 条做视觉区分） */
+// ====== 浏览历史 ======
 const HISTORY_ICONS = [
   { icon: 'ph:book-open-bold', color: 'text-[#2563EB]' },
   { icon: 'ph:bookmark-simple-bold', color: 'text-green-500' },
   { icon: 'ph:books-bold', color: 'text-yellow-500' },
 ]
+const historyItems = ref([])
 
-// 获取浏览历史（从 IndexedDB 读取最近 3 条）
 async function fetchHistory() {
   try {
     const records = await getRecentHistory(3)
-    console.log('[MaterialsPage] 读取到浏览历史:', records.length, '条', records)
     historyItems.value = records.map((r, i) => {
       const iconCfg = HISTORY_ICONS[i] || HISTORY_ICONS[HISTORY_ICONS.length - 1]
       return {
-        id: r.articleId,
         articleId: r.articleId,
         title: r.title,
         icon: iconCfg.icon,
@@ -399,10 +389,19 @@ async function fetchHistory() {
         time: relativeTime(r.visitedAt),
       }
     })
-  } catch (err) {
-    console.error('读取浏览历史失败:', err)
+  } catch (_) {
     historyItems.value = []
   }
+}
+
+// ====== 任务进度 ======
+const taskProgressPercent = computed(() => {
+  if (taskStore.todayTotalCount === 0) return 0
+  return Math.round((taskStore.todayDoneCount / taskStore.todayTotalCount) * 100)
+})
+
+function goToReader(articleId) {
+  router.push(`/reader?id=${articleId}`)
 }
 
 function onVocabTestDone() {
@@ -410,20 +409,18 @@ function onVocabTestDone() {
   userStore.fetchProfile()
 }
 
+// ====== 初始化 ======
 onMounted(async () => {
-  // 检查是否需要弹出词汇量测试
+  // 词汇量测试
   const local = getLocalVocabResult()
   const lit = userStore.user?.literacy
-  // 本地已有结果 或 服务端 literacy > 0 → 跳过
   if (!local && (lit == null || lit === 0)) {
     showVocabTest.value = true
   }
 
-  // 所有数据并行加载，不阻塞页面渲染
-  fetchArticles()
+  fetchRecommend()
+  fetchCatalog()
   taskStore.initDailyTasks()
   fetchHistory()
-  // 加载已读文章 ID 用于过滤（从每日任务系统读取，只有做完题才算已读）
-  loadReadIdsFromTask()
 })
 </script>

@@ -69,6 +69,8 @@ public interface UserDAO {
      */
     int updateRole(Long userId, String role);
 
+    int updateStudyPurpose(Long userId, String studyPurpose);
+
     /**
      * VIP 兑换：同时更新 profile、到期时间和经验值
      * @param userId 用户ID
