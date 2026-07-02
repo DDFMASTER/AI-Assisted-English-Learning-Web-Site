@@ -96,7 +96,7 @@
             + 上传文章
           </button>
           <span class="text-xs text-gray-400">
-            第 {{ articlePage }} / {{ Math.max(1, Math.ceil(articleTotal / articlePageSize)) }} 页
+            第 {{ articlePage }} / {{ articleTotalPages }} 页
           </span>
           <button
             class="px-3 py-1.5 text-xs bg-[#2563EB] text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -133,34 +133,79 @@
               </td>
               <td class="py-2 px-3 text-gray-400 text-xs">{{ a.source || '-' }}</td>
               <td class="py-2 px-3">
-                <button
-                  class="text-xs px-2 py-0.5 rounded bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
-                  @click="deleteArticle(a)"
-                >删除</button>
+                <div class="flex gap-1">
+                  <button
+                    class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-500 hover:bg-blue-100 transition-colors"
+                    @click="openEditModal(a)"
+                  >修改</button>
+                  <button
+                    class="text-xs px-2 py-0.5 rounded bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                    @click="deleteArticle(a)"
+                  >删除</button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
 
         <!-- 分页 -->
-        <div v-if="articleTotal > articlePageSize" class="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-gray-100">
-          <button
-            class="px-3 py-1 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
-            :disabled="articlePage <= 1"
-            @click="articlePage--; loadArticles()"
-          >上一页</button>
-          <span
-            v-for="p in getPageNumbers()"
-            :key="p"
-            class="px-2.5 py-0.5 text-xs rounded-lg cursor-pointer transition-colors"
-            :class="p === articlePage ? 'bg-[#2563EB] text-white' : 'text-gray-500 hover:bg-gray-100'"
-            @click="articlePage = p; loadArticles()"
-          >{{ p }}</span>
-          <button
-            class="px-3 py-1 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
-            :disabled="articlePage >= Math.ceil(articleTotal / articlePageSize)"
-            @click="articlePage++; loadArticles()"
-          >下一页</button>
+        <div v-if="articleTotalPages > 1" class="mt-4 pt-4 border-t border-gray-100">
+          <div class="flex items-center justify-center gap-2 flex-wrap">
+            <button
+              class="px-3 py-1 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+              :disabled="articlePage <= 1"
+              @click="articlePage--; loadArticles()"
+            >上一页</button>
+
+            <template v-if="articleVisiblePages[0] > 1">
+              <button
+                class="px-2.5 py-0.5 text-xs rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                @click="articlePage = 1; loadArticles()"
+              >1</button>
+              <span v-if="articleVisiblePages[0] > 2" class="px-1 text-xs text-gray-300">…</span>
+            </template>
+
+            <button
+              v-for="p in articleVisiblePages"
+              :key="p"
+              class="px-2.5 py-0.5 text-xs rounded-lg transition-colors"
+              :class="p === articlePage ? 'bg-[#2563EB] text-white' : 'text-gray-500 hover:bg-gray-100'"
+              @click="articlePage = p; loadArticles()"
+            >{{ p }}</button>
+
+            <template v-if="articleVisiblePages[articleVisiblePages.length - 1] < articleTotalPages">
+              <span v-if="articleVisiblePages[articleVisiblePages.length - 1] < articleTotalPages - 1" class="px-1 text-xs text-gray-300">…</span>
+              <button
+                class="px-2.5 py-0.5 text-xs rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                @click="articlePage = articleTotalPages; loadArticles()"
+              >{{ articleTotalPages }}</button>
+            </template>
+
+            <button
+              class="px-3 py-1 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+              :disabled="articlePage >= articleTotalPages"
+              @click="articlePage++; loadArticles()"
+            >下一页</button>
+          </div>
+
+          <!-- 跳转至第 N 页 -->
+          <div class="flex items-center justify-center gap-1.5 mt-3">
+            <span class="text-xs text-gray-400">跳至第</span>
+            <input
+              v-model="articleJumpPageInput"
+              type="number"
+              :min="1"
+              :max="articleTotalPages"
+              class="w-14 h-7 text-center text-xs border border-gray-200 rounded-lg outline-none focus:border-[#2563EB] transition-colors"
+              @keyup.enter="handleArticleJumpPage"
+            />
+            <span class="text-xs text-gray-400">页</span>
+            <button
+              class="text-xs px-2.5 py-1 bg-gray-100 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+              :disabled="!isArticleJumpValid"
+              @click="handleArticleJumpPage"
+            >GO</button>
+          </div>
         </div>
       </div>
     </div>
@@ -297,16 +342,34 @@
           <h3 class="text-lg font-bold text-gray-800 mb-4">上传文章</h3>
 
           <!-- 标题 -->
-          <label class="block text-sm text-gray-600 mb-1">标题</label>
-          <textarea
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-sm text-gray-600">标题</label>
+            <button
+              class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-500 hover:bg-blue-100 transition-colors disabled:opacity-40"
+              :disabled="uploadAiTitle.loading"
+              @click="fetchAiTitle('upload')"
+            >
+              {{ uploadAiTitle.loading ? 'AI 生成中...' : '✨ AI 生成标题' }}
+            </button>
+          </div>
+          <input
             v-model="uploadModal.title"
-            rows="2"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-3"
-          ></textarea>
+            type="text"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-2"
+            placeholder="请输入或使用 AI 生成标题"
+          />
+          <!-- AI 生成标题结果 -->
+          <div v-if="uploadAiTitle.result && !uploadAiTitle.loading" class="flex items-center gap-2 mb-3 p-2 bg-blue-50 rounded-lg">
+            <span class="text-sm text-gray-700 flex-1 truncate">{{ uploadAiTitle.result }}</span>
+            <button
+              class="text-xs px-2 py-0.5 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors flex-none"
+              @click="applyAiTitle('upload')"
+            >直接应用</button>
+          </div>
 
-          <!-- 内容（TXT 文件） -->
-          <label class="block text-sm text-gray-600 mb-1">文章内容（.txt 文件）</label>
-          <div class="flex items-center gap-2 mb-3">
+          <!-- 内容 -->
+          <label class="block text-sm text-gray-600 mb-1">文章内容</label>
+          <div class="flex items-center gap-2 mb-2">
             <input
               ref="fileInput"
               type="file"
@@ -315,13 +378,20 @@
               @change="handleFileSelect"
             />
             <button
-              class="px-3 py-1.5 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+              class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
               @click="fileInput?.click()"
-            >选择文件</button>
+            >导入 .txt 文件</button>
             <span class="text-xs text-gray-400 truncate flex-1">
-              {{ uploadModal.fileName || '未选择文件' }}
+              {{ uploadModal.fileName || '或直接在下方输入内容' }}
             </span>
           </div>
+          <textarea
+            v-model="uploadModal.content"
+            rows="10"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-1 resize-y"
+            placeholder="粘贴或输入文章正文..."
+          ></textarea>
+          <div class="text-right text-xs text-gray-400 mb-3">{{ uploadModal.content.length }} 字符</div>
 
           <!-- 来源 -->
           <label class="block text-sm text-gray-600 mb-1">来源</label>
@@ -360,6 +430,88 @@
       </div>
     </Teleport>
 
+    <!-- 修改文章弹窗 -->
+    <Teleport to="body">
+      <div
+        v-if="editModal.show"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/30"
+        @click.self="editModal.show = false"
+      >
+        <div class="bg-white rounded-xl shadow-xl p-6 w-[560px] max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">修改文章</h3>
+
+          <!-- 标题 -->
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-sm text-gray-600">标题</label>
+            <button
+              class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-500 hover:bg-blue-100 transition-colors disabled:opacity-40"
+              :disabled="editAiTitle.loading"
+              @click="fetchAiTitle('edit')"
+            >
+              {{ editAiTitle.loading ? 'AI 生成中...' : '✨ AI 生成标题' }}
+            </button>
+          </div>
+          <input
+            v-model="editModal.title"
+            type="text"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-2"
+            placeholder="请输入或使用 AI 生成标题"
+          />
+          <!-- AI 生成标题结果 -->
+          <div v-if="editAiTitle.result && !editAiTitle.loading" class="flex items-center gap-2 mb-3 p-2 bg-blue-50 rounded-lg">
+            <span class="text-sm text-gray-700 flex-1 truncate">{{ editAiTitle.result }}</span>
+            <button
+              class="text-xs px-2 py-0.5 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors flex-none"
+              @click="applyAiTitle('edit')"
+            >直接应用</button>
+          </div>
+
+          <!-- 内容 -->
+          <label class="block text-sm text-gray-600 mb-1">文章内容</label>
+          <textarea
+            v-model="editModal.content"
+            rows="12"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-1 resize-y"
+          ></textarea>
+          <div class="text-right text-xs text-gray-400 mb-3">{{ editModal.content.length }} 字符</div>
+
+          <!-- 来源 -->
+          <label class="block text-sm text-gray-600 mb-1">来源</label>
+          <input
+            v-model="editModal.source"
+            type="text"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-3"
+            placeholder="如：BBC News / 新概念英语 / 自定义"
+          />
+
+          <!-- 难度 -->
+          <label class="block text-sm text-gray-600 mb-1">难度等级</label>
+          <select
+            v-model="editModal.difficulty"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-4"
+          >
+            <option value="" disabled>请选择难度</option>
+            <option v-for="d in difficultyOptions" :key="d" :value="d">{{ d }}</option>
+          </select>
+
+          <!-- 操作按钮 -->
+          <div class="flex justify-end gap-2">
+            <button
+              class="px-4 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"
+              @click="editModal.show = false"
+            >取消</button>
+            <button
+              class="px-4 py-1.5 text-xs rounded-lg bg-[#2563EB] text-white hover:bg-blue-600 disabled:opacity-50"
+              :disabled="editModal.submitting"
+              @click="submitEditArticle"
+            >
+              {{ editModal.submitting ? '提交中...' : '保存修改' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- 确认弹窗 -->
     <Teleport to="body">
       <div
@@ -386,7 +538,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import request from '@/utils/request'
 
@@ -479,7 +631,7 @@ const uploadModal = ref({
   show: false,
   title: '',
   fileName: '',
-  fileContent: '',
+  content: '',
   source: '',
   difficulty: '',
   submitting: false,
@@ -490,11 +642,12 @@ function openUploadModal() {
     show: true,
     title: '',
     fileName: '',
-    fileContent: '',
+    content: '',
     source: '',
     difficulty: '',
     submitting: false,
   }
+  uploadAiTitle.value = { loading: false, result: '' }
 }
 
 function handleFileSelect(e) {
@@ -503,7 +656,7 @@ function handleFileSelect(e) {
   uploadModal.value.fileName = file.name
   const reader = new FileReader()
   reader.onload = () => {
-    uploadModal.value.fileContent = reader.result
+    uploadModal.value.content = reader.result
   }
   reader.readAsText(file, 'UTF-8')
 }
@@ -511,7 +664,7 @@ function handleFileSelect(e) {
 async function submitArticle() {
   const m = uploadModal.value
   if (!m.title.trim()) return showToast('请输入标题', 'error')
-  if (!m.fileContent.trim()) return showToast('请选择文章内容文件', 'error')
+  if (!m.content.trim()) return showToast('请输入文章内容或导入文件', 'error')
   if (!m.source.trim()) return showToast('请输入来源', 'error')
   if (!m.difficulty) return showToast('请选择难度等级', 'error')
 
@@ -520,7 +673,7 @@ async function submitArticle() {
     const formData = new FormData()
     formData.append('adminUserId', String(userStore.user?.userId))
     formData.append('title', m.title.trim())
-    formData.append('content', m.fileContent)
+    formData.append('content', m.content)
     formData.append('source', m.source.trim())
     formData.append('difficulty', m.difficulty)
     const data = await request.post('/admin/article/create', formData)
@@ -634,15 +787,164 @@ async function loadArticles() {
   }
 }
 
-function getPageNumbers() {
-  const totalPages = Math.max(1, Math.ceil(articleTotal.value / articlePageSize))
-  const pages = []
-  const start = Math.max(1, articlePage.value - 2)
-  const end = Math.min(totalPages, articlePage.value + 2)
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
+const articleTotalPages = computed(() => Math.max(1, Math.ceil(articleTotal.value / articlePageSize)))
+
+const articleVisiblePages = computed(() => {
+  const tp = articleTotalPages.value
+  const cp = articlePage.value
+
+  if (tp <= 5) {
+    const pages = []
+    for (let i = 1; i <= tp; i++) pages.push(i)
+    return pages
   }
+
+  let start
+  if (cp <= 3) {
+    start = 1
+  } else if (cp >= tp - 2) {
+    start = tp - 4
+  } else {
+    start = cp - 2
+  }
+
+  const pages = []
+  for (let i = start; i < start + 5; i++) pages.push(i)
   return pages
+})
+
+// ====== 跳转至第 N 页 ======
+const articleJumpPageInput = ref(1)
+
+const isArticleJumpValid = computed(() => {
+  const v = parseInt(articleJumpPageInput.value, 10)
+  return !isNaN(v) && v >= 1 && v <= articleTotalPages.value
+})
+
+function handleArticleJumpPage() {
+  if (!isArticleJumpValid.value) return
+  const target = parseInt(articleJumpPageInput.value, 10)
+  articlePage.value = target
+  loadArticles()
+}
+
+// ====== 修改文章弹窗 ======
+const editModal = ref({
+  show: false,
+  articleId: null,
+  title: '',
+  content: '',
+  source: '',
+  difficulty: '',
+  submitting: false,
+})
+
+async function openEditModal(a) {
+  editModal.value = {
+    show: true,
+    articleId: a.articleId,
+    title: a.title || '',
+    content: '',
+    source: a.source || '',
+    difficulty: a.difficulty || '',
+    submitting: false,
+  }
+  editAiTitle.value = { loading: false, result: '' }
+
+  // 从后端获取完整内容
+  try {
+    const adminUserId = userStore.user?.userId
+    const data = await request.get('/admin/article/get', {
+      params: { id: a.articleId, adminUserId }
+    })
+    if (data.success && data.article) {
+      editModal.value.title = data.article.title || ''
+      editModal.value.content = data.article.content || ''
+      editModal.value.source = data.article.source || ''
+      editModal.value.difficulty = data.article.difficulty || ''
+    }
+  } catch (_) {
+    // 保持从列表获取的基础信息
+  }
+}
+
+async function submitEditArticle() {
+  const m = editModal.value
+  if (!m.title.trim()) return showToast('请输入标题', 'error')
+  if (!m.content.trim()) return showToast('请输入文章内容', 'error')
+  if (!m.difficulty) return showToast('请选择难度等级', 'error')
+
+  m.submitting = true
+  try {
+    const params = new URLSearchParams()
+    params.append('adminUserId', String(userStore.user?.userId))
+    params.append('articleId', String(m.articleId))
+    params.append('title', m.title.trim())
+    params.append('content', m.content.trim())
+    params.append('source', (m.source || '').trim())
+    params.append('difficulty', m.difficulty)
+    const data = await request.post('/admin/article/update', params)
+    if (data.success) {
+      showToast('文章修改成功')
+      editModal.value.show = false
+      loadArticles()
+    } else {
+      showToast(data.message || '修改失败', 'error')
+    }
+  } catch (e) {
+    console.error('修改文章失败:', e)
+    const msg = e?.response?.data?.message || e?.message || '修改失败'
+    showToast(msg, 'error')
+  } finally {
+    m.submitting = false
+  }
+}
+
+// ====== AI 标题生成 ======
+const uploadAiTitle = ref({ loading: false, result: '' })
+const editAiTitle = ref({ loading: false, result: '' })
+
+function getAiTitleState(modal) {
+  return modal === 'upload' ? uploadAiTitle.value : editAiTitle.value
+}
+
+async function fetchAiTitle(modal) {
+  const state = getAiTitleState(modal)
+  const m = modal === 'upload' ? uploadModal.value : editModal.value
+
+  if (!m.content || m.content.trim().length < 50) {
+    showToast('文章内容过短，无法生成标题', 'error')
+    return
+  }
+
+  state.loading = true
+  state.result = ''
+  try {
+    const params = new URLSearchParams()
+    params.append('content', m.content.trim())
+    const data = await request.post('/clickbait/generate-title', params)
+    if (data.success && data.title) {
+      state.result = data.title
+    } else {
+      showToast(data.message || 'AI 标题生成失败', 'error')
+    }
+  } catch (e) {
+    console.error('AI 标题生成失败:', e)
+    showToast('AI 标题生成失败，请稍后重试', 'error')
+  } finally {
+    state.loading = false
+  }
+}
+
+function applyAiTitle(modal) {
+  const state = getAiTitleState(modal)
+  if (!state.result) return
+  if (modal === 'upload') {
+    uploadModal.value.title = state.result
+  } else {
+    editModal.value.title = state.result
+  }
+  state.result = ''
 }
 
 async function deleteArticle(a) {

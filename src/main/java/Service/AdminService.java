@@ -239,6 +239,52 @@ public class AdminService {
     }
 
     /**
+     * 更新文章
+     * @return 错误消息，null 表示成功
+     */
+    public String updateArticle(Long articleId, String title, String content,
+                                String source, String difficulty) {
+        if (articleId == null) {
+            return "缺少文章ID";
+        }
+        if (isBlank(title)) {
+            return "文章标题不能为空";
+        }
+        if (isBlank(content)) {
+            return "文章内容不能为空";
+        }
+        if (isBlank(difficulty)) {
+            return "请选择难度等级";
+        }
+
+        boolean valid = false;
+        for (String s : VALID_STAGES) {
+            if (s.equals(difficulty)) {
+                valid = true;
+                break;
+            }
+        }
+        if (!valid) {
+            return "无效的难度等级";
+        }
+
+        Article existing = articleDAO.findById(articleId);
+        if (existing == null) {
+            return "文章不存在";
+        }
+
+        Article article = new Article();
+        article.setArticleId(articleId);
+        article.setTitle(title);
+        article.setContent(content);
+        article.setSource(source);
+        article.setDifficulty(difficulty);
+
+        int rows = articleDAO.update(article);
+        return rows > 0 ? null : "更新文章失败，请稍后重试";
+    }
+
+    /**
      * 删除文章（级联清理关联数据）
      * @return 错误消息，null 表示成功
      */

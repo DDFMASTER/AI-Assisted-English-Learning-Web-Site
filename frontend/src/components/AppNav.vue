@@ -30,10 +30,13 @@
       <!-- 中间：搜索框 -->
       <div class="relative flex-1 max-w-md mx-8" ref="searchContainer">
         <div class="relative">
-          <Icon
-            icon="ph:magnifying-glass-bold"
-            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg pointer-events-none"
-          />
+          <button
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#2563EB] transition-colors"
+            @click="handleSearch"
+            :disabled="searching"
+          >
+            <Icon icon="ph:magnifying-glass-bold" class="text-lg" />
+          </button>
           <input
             v-model="searchQuery"
             type="text"

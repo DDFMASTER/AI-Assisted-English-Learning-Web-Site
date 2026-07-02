@@ -157,6 +157,25 @@ public class ArticleDAOImpl implements ArticleDAO {
     }
 
     @Override
+    public int update(Article article) {
+        String sql = "UPDATE article SET title = ?, content = ?, source = ?, difficulty = ? " +
+                     "WHERE article_id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, article.getTitle());
+            ps.setString(2, article.getContent());
+            ps.setString(3, article.getSource());
+            ps.setString(4, article.getDifficulty());
+            ps.setLong(5, article.getArticleId());
+            return ps.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException("更新文章失败: " + article.getArticleId(), e);
+        }
+    }
+
+    @Override
     public int deleteById(Long articleId) {
         String sql = "DELETE FROM article WHERE article_id = ?";
 

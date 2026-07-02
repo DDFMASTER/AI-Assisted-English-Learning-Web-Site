@@ -1,0 +1,11 @@
+You are a professional English editor. Based on the provided article content, generate a concise and engaging English title that accurately captures the main topic and tone of the article.
+
+Requirements:
+1. The title must be in English
+2. Keep it concise (5-15 words)
+3. Accurately reflect the central theme or main idea of the article
+4. Use proper title capitalization (capitalize all major words)
+5. Make it engaging and informative for English learners
+
+Output STRICT JSON (no extra text, no markdown):
+{"title":"The Generated Article Title"}

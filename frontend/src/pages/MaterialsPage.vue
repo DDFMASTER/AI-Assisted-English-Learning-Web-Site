@@ -91,24 +91,63 @@
           </div>
 
           <!-- 分页 -->
-          <div v-if="catalogTotalPages > 1" class="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-gray-100">
-            <button
-              class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
-              :disabled="catalogPage <= 1"
-              @click="goPage(catalogPage - 1)"
-            >上一页</button>
-            <button
-              v-for="p in visiblePages"
-              :key="p"
-              class="px-3 py-1.5 text-xs rounded-lg transition-colors"
-              :class="p === catalogPage ? 'bg-[#2563EB] text-white' : 'text-gray-500 hover:bg-gray-100'"
-              @click="goPage(p)"
-            >{{ p }}</button>
-            <button
-              class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
-              :disabled="catalogPage >= catalogTotalPages"
-              @click="goPage(catalogPage + 1)"
-            >下一页</button>
+          <div v-if="catalogTotalPages > 1" class="mt-6 pt-4 border-t border-gray-100">
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+              <button
+                class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+                :disabled="catalogPage <= 1"
+                @click="goPage(catalogPage - 1)"
+              >上一页</button>
+
+              <template v-if="visiblePages[0] > 1">
+                <button
+                  class="px-3 py-1.5 text-xs rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                  @click="goPage(1)"
+                >1</button>
+                <span v-if="visiblePages[0] > 2" class="px-1 text-xs text-gray-300">…</span>
+              </template>
+
+              <button
+                v-for="p in visiblePages"
+                :key="p"
+                class="px-3 py-1.5 text-xs rounded-lg transition-colors"
+                :class="p === catalogPage ? 'bg-[#2563EB] text-white' : 'text-gray-500 hover:bg-gray-100'"
+                @click="goPage(p)"
+              >{{ p }}</button>
+
+              <template v-if="visiblePages[visiblePages.length - 1] < catalogTotalPages">
+                <span v-if="visiblePages[visiblePages.length - 1] < catalogTotalPages - 1" class="px-1 text-xs text-gray-300">…</span>
+                <button
+                  class="px-3 py-1.5 text-xs rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                  @click="goPage(catalogTotalPages)"
+                >{{ catalogTotalPages }}</button>
+              </template>
+
+              <button
+                class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+                :disabled="catalogPage >= catalogTotalPages"
+                @click="goPage(catalogPage + 1)"
+              >下一页</button>
+            </div>
+
+            <!-- 跳转至第 N 页 -->
+            <div class="flex items-center justify-center gap-1.5 mt-3">
+              <span class="text-xs text-gray-400">跳至第</span>
+              <input
+                v-model="jumpPageInput"
+                type="number"
+                :min="1"
+                :max="catalogTotalPages"
+                class="w-14 h-7 text-center text-xs border border-gray-200 rounded-lg outline-none focus:border-[#2563EB] transition-colors"
+                @keyup.enter="handleJumpPage"
+              />
+              <span class="text-xs text-gray-400">页</span>
+              <button
+                class="text-xs px-2.5 py-1 bg-gray-100 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+                :disabled="!isValidJumpPage"
+                @click="handleJumpPage"
+              >GO</button>
+            </div>
           </div>
         </section>
       </div>
@@ -184,6 +223,20 @@
       :visible="showVocabTest"
       @done="onVocabTestDone"
     />
+
+    <!-- 页脚 -->
+    <footer class="mt-12 pt-6 pb-8 border-t border-gray-100">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
+        <div class="flex items-center gap-4">
+          <span>EngliAI — 智能英语学习平台</span>
+          <router-link to="/materials" class="hover:text-[#2563EB] transition-colors">读物匹配</router-link>
+          <router-link to="/profile" class="hover:text-[#2563EB] transition-colors">个人中心</router-link>
+        </div>
+        <div>
+          <span>&copy; {{ new Date().getFullYear() }} EngliAI. All rights reserved.</span>
+        </div>
+      </div>
+    </footer>
   </main>
 </template>
 
@@ -295,14 +348,44 @@ const catalogTotalPages = ref(1)
 const catalogPageSize = 3
 
 const visiblePages = computed(() => {
-  const pages = []
   const tp = catalogTotalPages.value
   const cp = catalogPage.value
-  const start = Math.max(1, cp - 2)
-  const end = Math.min(tp, cp + 2)
-  for (let i = start; i <= end; i++) pages.push(i)
+
+  // 总页数不足 5 时全部显示
+  if (tp <= 5) {
+    const pages = []
+    for (let i = 1; i <= tp; i++) pages.push(i)
+    return pages
+  }
+
+  // 总页数 ≥ 5，始终显示固定 5 个连续页码
+  let start
+  if (cp <= 3) {
+    start = 1
+  } else if (cp >= tp - 2) {
+    start = tp - 4
+  } else {
+    start = cp - 2
+  }
+
+  const pages = []
+  for (let i = start; i < start + 5; i++) pages.push(i)
   return pages
 })
+
+// ====== 跳转至第 N 页 ======
+const jumpPageInput = ref(1)
+
+const isValidJumpPage = computed(() => {
+  const v = parseInt(jumpPageInput.value, 10)
+  return !isNaN(v) && v >= 1 && v <= catalogTotalPages.value
+})
+
+function handleJumpPage() {
+  if (!isValidJumpPage.value) return
+  const target = parseInt(jumpPageInput.value, 10)
+  goPage(target)
+}
 
 async function fetchCatalog() {
   catalogLoading.value = true

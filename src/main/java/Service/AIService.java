@@ -474,6 +474,36 @@ public class AIService {
         }
     }
 
+    // ========== AI 标题生成 ==========
+
+    private static final String TITLE_GENERATION_PROMPT =
+            ConfigUtil.readResourceText("prompts/title-generation.txt");
+
+    /**
+     * 根据文章内容生成英文标题。
+     * @param articleContent 文章全文
+     * @return 生成的标题，失败返回 null
+     */
+    public String generateTitle(String articleContent) {
+        AIResultBase result = new AIResultBase();
+        String content = callDeepSeek(TITLE_GENERATION_PROMPT, articleContent, 15, result);
+
+        if (content != null) {
+            // 提取 title 字段
+            for (String key : new String[]{"\"title\":\"", "\"title\": \"", "\"title\" :\""}) {
+                int start = content.indexOf(key);
+                if (start != -1) {
+                    start += key.length();
+                    String title = extractStringValue(content, start);
+                    if (title != null && !title.isBlank()) {
+                        return title.trim();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     // ========== 单词例句生成 ==========
 
     /**

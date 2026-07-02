@@ -52,7 +52,8 @@ public class LoginFilter implements Filter {
             "/api/article/cultural-notes",
             "/api/assessment/",
             "/api/admin/",
-            "/api/vocabtest/"
+            "/api/vocabtest/",
+            "/api/clickbait/"
     };
 
     @Override

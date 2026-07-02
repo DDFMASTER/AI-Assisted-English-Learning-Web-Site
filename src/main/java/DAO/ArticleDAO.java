@@ -43,6 +43,13 @@ public interface ArticleDAO {
     int insert(Article article);
 
     /**
+     * 更新文章（标题、内容、来源、难度）
+     * @param article 文章对象，需含 articleId 及要更新的字段
+     * @return 影响行数
+     */
+    int update(Article article);
+
+    /**
      * 删除文章
      * @param articleId 文章ID
      * @return 影响行数
