@@ -8,7 +8,6 @@ import java.util.Properties;
 
 /**
  * 配置工具类 — 加载 classpath 下的 config.properties 和文本资源文件。
- *
  * 使用方式：
  *   String url = ConfigUtil.get("ai.api.url");
  *   String prompt = ConfigUtil.readResourceText("prompts/word-examples.txt");
