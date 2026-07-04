@@ -222,6 +222,7 @@
     <FirstVocabTestModal
       :visible="showVocabTest"
       @done="onVocabTestDone"
+      @skip="showVocabTest = false"
     />
 
     <!-- 页脚 -->

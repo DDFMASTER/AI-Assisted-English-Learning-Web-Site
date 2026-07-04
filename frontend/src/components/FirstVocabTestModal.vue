@@ -14,7 +14,8 @@
           <p class="text-gray-500 text-sm leading-relaxed mb-4">
             欢迎使用 AAEL！在开始学习之前，请先完成一次词汇量检测。<br/>
             系统将展示 <strong>100 个单词</strong>，请勾选你<strong>认识</strong>的单词。<br/>
-            测试中包含部分伪词用于诚信检测——不认识请勿勾选。
+            测试中包含部分伪词用于诚信检测——不认识请勿勾选。<br/>
+            在您成功完成一次测试之前，此弹窗会经常弹出。<strong>完成测试以永久禁用此弹窗。</strong>
           </p>
           <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-left">
             <p class="text-xs text-blue-700 font-bold mb-1">📌 操作说明</p>
@@ -24,12 +25,20 @@
               <li>· 可点击"更多单词"增加测试量提升准确度</li>
             </ul>
           </div>
-          <button
-            class="px-8 py-3 bg-[#2563EB] text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform"
-            @click="startTest"
-          >
-            开始检测
-          </button>
+          <div class="flex gap-3 justify-center">
+            <button
+              class="px-6 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+              @click="$emit('skip')"
+            >
+              跳过
+            </button>
+            <button
+              class="px-8 py-3 bg-[#2563EB] text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform"
+              @click="startTest"
+            >
+              开始检测
+            </button>
+          </div>
         </div>
 
         <!-- ========== 测试中 ========== -->
@@ -127,7 +136,7 @@ const props = defineProps({
   visible: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['done', 'close'])
+const emit = defineEmits(['done', 'close', 'skip'])
 
 const phase = ref('start')
 const words = ref([])

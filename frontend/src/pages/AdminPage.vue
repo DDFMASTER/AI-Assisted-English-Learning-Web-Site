@@ -623,6 +623,9 @@ async function deleteArticle(a) {
 let onlineRefreshTimer = null
 
 watch(activeTab, (tab) => {
+  if (tab === 'users' && users.value.length === 0) {
+    loadUsers()
+  }
   if (tab === 'articles' && articles.value.length === 0) {
     loadArticles()
   }
@@ -654,8 +657,10 @@ onUnmounted(() => {
   }
 })
 
-// 初始化加载
-loadUsers()
+
+// 初始化：默认 tab 为 users 时加载用户列表
+if (activeTab.value === 'users') loadUsers()
+
 </script>
 
 <style scoped>

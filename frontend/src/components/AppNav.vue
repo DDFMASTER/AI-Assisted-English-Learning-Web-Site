@@ -290,6 +290,17 @@ async function loadNavStats() {
 const checkinLoading = ref(false)
 const checkinDone = ref(false)
 
+function initCheckinState() {
+  const lc = userStore.user?.lastCheckin
+  if (lc) {
+    const last = new Date(lc.replace(' ', 'T'))
+    const today = new Date()
+    if (last.toDateString() === today.toDateString()) {
+      checkinDone.value = true
+    }
+  }
+}
+
 async function doCheckin() {
   if (checkinLoading.value || checkinDone.value) return
   checkinLoading.value = true
@@ -319,7 +330,7 @@ function onAvatarChanged() {
 onMounted(() => {
   document.addEventListener('click', onClickOutside)
   window.addEventListener('avatar-changed', onAvatarChanged)
-  userStore.fetchProfile()
+  userStore.fetchProfile().then(() => initCheckinState())
   loadNavStats()
 })
 

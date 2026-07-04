@@ -27,16 +27,7 @@ public class SessionListener implements HttpSessionListener, HttpSessionAttribut
     @Override
     public void sessionCreated(HttpSessionEvent se) {
         HttpSession session = se.getSession();
-        ServletContext ctx = session.getServletContext();
-
-        AtomicInteger count = (AtomicInteger) ctx.getAttribute(AppContextListener.ONLINE_COUNT);
-        if (count != null) {
-            int current = count.incrementAndGet();
-            System.out.println("[AAEL] 会话创建: " + session.getId()
-                    + " | 当前在线会话数: " + current);
-        }
-
-        // 记录会话创建时间
+        // 记录会话创建时间（不在此处计数，等用户登录后再计数）
         session.setAttribute("__sessionCreatedAt", System.currentTimeMillis());
     }
 
@@ -86,6 +77,15 @@ public class SessionListener implements HttpSessionListener, HttpSessionAttribut
             HttpSession session = se.getSession();
             ServletContext ctx = session.getServletContext();
 
+            // 用户登录时增加在线计数
+            AtomicInteger count = (AtomicInteger) ctx.getAttribute(AppContextListener.ONLINE_COUNT);
+            if (count != null) {
+                int current = count.incrementAndGet();
+                System.out.println("[AAEL] 用户上线: userId=" + userId
+                        + " | sessionId=" + session.getId()
+                        + " | 当前在线用户数: " + current);
+            }
+
             @SuppressWarnings("unchecked")
             ConcurrentHashMap<Long, String> map =
                     (ConcurrentHashMap<Long, String>) ctx.getAttribute(AppContextListener.USER_SESSION_MAP);
@@ -102,9 +102,6 @@ public class SessionListener implements HttpSessionListener, HttpSessionAttribut
 
             // 记录用户上线时间
             session.setAttribute("__userLoginTime", System.currentTimeMillis());
-
-            System.out.println("[AAEL] 用户上线: userId=" + userId
-                    + " | sessionId=" + session.getId());
         }
     }
 

@@ -296,7 +296,19 @@ public class AIQuizService {
         public int vocabulary, grammar, reading, culture, logic;
 
         public String toJson() {
-            return GsonUtil.toJson(this);
+            var map = new java.util.LinkedHashMap<String, Object>();
+            map.put("success", error == null);
+            map.put("httpStatus", httpStatus);
+            map.put("duration", duration);
+            if (error != null) map.put("message", error);
+            map.put("overallScore", overallScore);
+            map.put("cefrLevel", cefrLevel);
+            map.put("vocabulary", vocabulary);
+            map.put("grammar", grammar);
+            map.put("reading", reading);
+            map.put("culture", culture);
+            map.put("logic", logic);
+            return GsonUtil.toJson(map);
         }
     }
 }

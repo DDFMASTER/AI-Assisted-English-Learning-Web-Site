@@ -61,7 +61,7 @@ public class UserDAOImpl implements UserDAO {
         String sql = "INSERT INTO user (username, password, salt, profile, role, " +
                      "study_purpose, literacy, experience, " +
                      "last_checkin, created_at, last_login, vip_until, cefr_progress) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
