@@ -1,6 +1,6 @@
 <template>
   <main class="max-w-[1200px] mx-auto px-6 py-8 overflow-x-auto">
-    <h1 class="text-2xl font-bold text-[#1F2937] mb-6">管理后台</h1>
+    <h1 class="text-2xl font-bold text-[#1F2937] dark:text-gray-200 mb-6">管理后台</h1>
 
     <!-- Tab 切换 -->
     <div class="flex gap-1 mb-6 border-b border-gray-200">

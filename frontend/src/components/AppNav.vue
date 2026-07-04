@@ -1,5 +1,5 @@
 <template>
-  <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+  <nav class="sticky top-0 z-50 bg-white/80 dark:bg-[#1E1E1E]/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
     <div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
       <!-- 左侧：Logo + 导航链接 -->
       <div class="flex items-center gap-6">
@@ -7,7 +7,7 @@
           <div class="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center">
             <Icon icon="ph:book-open-text-bold" class="text-white text-xl" />
           </div>
-          <span class="text-xl font-bold tracking-tight text-[#1F2937]">EngliAI</span>
+          <span class="text-xl font-bold tracking-tight text-[#1F2937] dark:text-gray-200">EngliAI</span>
         </router-link>
 
         <!-- 导航链接（桌面端可见） -->
@@ -45,7 +45,7 @@
             type="text"
             placeholder="搜索单词..."
             aria-label="搜索单词"
-            class="w-full h-10 pl-10 pr-4 bg-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
+            class="w-full h-10 pl-10 pr-4 bg-gray-100 dark:bg-[#333] rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:bg-white dark:focus:bg-[#3C3C3C] focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
             @keydown.enter="handleSearch"
             @focus="onSearchFocus"
           />
@@ -66,7 +66,7 @@
         <!-- 搜索结果卡片 -->
         <div
           v-if="showResult && searchResult"
-          class="absolute top-full mt-2 left-0 right-0 bg-white rounded-xl shadow-xl border border-gray-100 p-5 z-50"
+          class="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-[#252526] rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-5 z-50"
         >
           <!-- 未找到 -->
           <div v-if="!searchResult.found" class="text-center py-2">
@@ -120,6 +120,26 @@
       <!-- 右侧操作 -->
       <div class="flex items-center gap-4 shrink-0">
 
+        <!-- 主题切换 -->
+        <div class="relative" @mouseenter="showThemeCardFn" @mouseleave="hideThemeCard">
+          <button class="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="切换显示模式">
+            <Icon :icon="themeIcon" class="text-lg text-gray-500 dark:text-gray-300" />
+          </button>
+          <Transition name="popover">
+            <div v-if="showThemeCard" class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-3 z-50"
+              @mouseenter="showThemeCard = true" @mouseleave="hideThemeCard">
+              <p class="text-xs font-bold text-gray-400 dark:text-gray-500 mb-2">显示模式</p>
+              <div class="space-y-1">
+                <button v-for="opt in themeOptions" :key="opt.value"
+                  class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  :class="theme === opt.value ? 'bg-blue-50 dark:bg-blue-900 text-[#2563EB] dark:text-blue-300' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                  @click="setTheme(opt.value); showThemeCard = false"
+                ><Icon :icon="opt.icon" class="text-base" />{{ opt.label }}</button>
+              </div>
+            </div>
+          </Transition>
+        </div>
+
         <!-- 头像（悬浮显示信息卡片） -->
         <div class="relative" @mouseenter="showCard" @mouseleave="hideCard">
           <router-link
@@ -142,7 +162,7 @@
           <Transition name="popover">
             <div
               v-if="showAvatarCard"
-              class="absolute right-0 top-full mt-1 w-60 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50"
+              class="absolute right-0 top-full mt-1 w-60 bg-white dark:bg-[#252526] rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-4 z-50"
               @mouseenter="showCard"
               @mouseleave="hideCard"
             >
@@ -188,7 +208,10 @@ import { useReaderStore } from '@/stores/reader'
 import { getAvatarSrc } from '@/constants/avatars.js'
 import { getStreak } from '@/utils/onlineTimeDB'
 import { countHistory } from '@/utils/historyDB'
+import { useTheme } from '@/composables/useTheme'
 import request from '@/utils/request'
+
+const { theme, setTheme } = useTheme()
 
 const userStore = useUserStore()
 const readerStore = useReaderStore()
@@ -229,6 +252,27 @@ function showCard() {
 function hideCard() {
   cardTimer = setTimeout(() => { showAvatarCard.value = false }, 200)
 }
+
+// 主题切换卡片
+const showThemeCard = ref(false)
+let themeCardTimer = null
+function showThemeCardFn() {
+  clearTimeout(themeCardTimer)
+  showThemeCard.value = true
+}
+function hideThemeCard() {
+  themeCardTimer = setTimeout(() => { showThemeCard.value = false }, 200)
+}
+const themeOptions = [
+  { value: 'light', label: '浅色模式', icon: 'ph:sun-bold' },
+  { value: 'dark', label: '深色模式', icon: 'ph:moon-bold' },
+  { value: 'system', label: '跟随系统', icon: 'ph:monitor-bold' },
+]
+const themeIcon = computed(() => {
+  if (theme.value === 'dark') return 'ph:moon-bold'
+  if (theme.value === 'light') return 'ph:sun-bold'
+  return 'ph:monitor-bold'
+})
 
 // 导航栏用户统计
 const navStreak = ref(0)

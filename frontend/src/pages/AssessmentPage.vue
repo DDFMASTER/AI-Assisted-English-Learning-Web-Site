@@ -207,7 +207,7 @@
           <div class="w-14 h-14 bg-red-50 text-red-400 rounded-2xl flex items-center justify-center mx-auto mb-5">
             <Icon icon="ph:warning-bold" class="text-3xl" />
           </div>
-          <h3 class="text-lg font-bold text-[#1F2937] mb-2">确定退出测评？</h3>
+          <h3 class="text-lg font-bold text-[#1F2937] dark:text-gray-200 mb-2">确定退出测评？</h3>
           <p class="text-sm text-gray-400 mb-6">
             当前进度已自动保存，下次进入时可以从第 <strong class="text-[#2563EB]">{{ store.currentIndex + 1 }}</strong> 题继续。
           </p>

@@ -2,19 +2,129 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ========== 全局样式 (匹配 HTML 原型) ========== */
+/* ========== 配色变量 (参考 VS Code 现代深色) ========== */
+:root {
+  --bg-page: #F8F7F4;
+  --bg-card: #FFFFFF;
+  --bg-input: #F3F4F6;
+  --bg-hover: #F9FAFB;
+  --bg-code: #F3F4F6;
+  --text-primary: #1F2937;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  --border-light: #E5E7EB;
+  --border-card: rgba(0,0,0,0.06);
+  --nav-bg: rgba(255,255,255,0.8);
+  --nav-border: #F3F4F6;
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.dark {
+  --bg-page: #1E1E1E;
+  --bg-card: #252526;
+  --bg-input: #333333;
+  --bg-hover: #2D2D2D;
+  --bg-code: #2D2D2D;
+  --text-primary: #D4D4D4;
+  --text-secondary: #A0A0A0;
+  --text-muted: #6A6A6A;
+  --border-light: #3E3E3E;
+  --border-card: rgba(255,255,255,0.04);
+  --nav-bg: rgba(30,30,30,0.85);
+  --nav-border: #333333;
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+/* ========== 深色模式全局覆盖 ========== */
+/* 统一将 Tailwind 灰色文本/背景在深色下自动切换 */
+.dark .text-gray-700 { color: #E0E0E0 !important; }
+.dark .text-gray-600 { color: #C8C8C8 !important; }
+.dark .text-gray-500 { color: #f3efef !important; }
+.dark .text-gray-400 { color: #9A9A9A !important; }
+.dark .text-gray-300 { color: #606060 !important; }
+.dark .text-gray-200 { color: #505050 !important; }
+.dark .text-gray-100 { color: #404040 !important; }
+.dark h1, .dark h2, .dark h3 { color: #E0E0E0; }
+.dark .article-p { color: #D4D4D4; }
+.dark .reader-container { color: #D4D4D4; }
+.dark .interactive-word:hover { background-color: #1E3A5F; }
+.dark .bg-white { background-color: #252526 !important; }
+.dark .bg-gray-50 { background-color: #2D2D2D !important; }
+.dark .bg-gray-100 { background-color: #333333 !important; }
+.dark .bg-gray-200 { background-color: #3C3C3C !important; }
+.dark .border-gray-100 { border-color: #333333 !important; }
+.dark .border-gray-200 { border-color: #3E3E3E !important; }
+.dark .border-gray-300 { border-color: #4A4A4A !important; }
+.dark .hover\:bg-gray-50:hover { background-color: #2D2D2D !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #3C3C3C !important; }
+.dark .hover\:bg-gray-200:hover { background-color: #454545 !important; }
+.dark .hover\:text-gray-500:hover { color: #B0B0B0 !important; }
+.dark .hover\:text-gray-700:hover { color: #E0E0E0 !important; }
+/* 表格斑马纹 */
+.dark .hover\:bg-gray-50:hover, .dark tr:hover td { background-color: #2D2D2D !important; }
+.dark table { color: #D4D4D4; }
+.dark thead { color: #909090; }
+/* 页脚 */
+.dark footer { color: #808080; border-color: #333333; }
+/* 生词本卡片 */
+.dark .bg-blue-50 { background-color: #1A2744 !important; }
+.dark .bg-indigo-50 { background-color: #1E2240 !important; }
+.dark .bg-yellow-50 { background-color: #2D2818 !important; }
+.dark .bg-green-50 { background-color: #1A2820 !important; }
+.dark .bg-red-50 { background-color: #2D1E1E !important; }
+.dark .bg-amber-50 { background-color: #2D2418 !important; }
+.dark .text-blue-500 { color: #6BA1F7 !important; }
+.dark .text-blue-600 { color: #7DB1FF !important; }
+.dark .text-yellow-600 { color: #E5C056 !important; }
+.dark .text-yellow-700 { color: #EDD174 !important; }
+.dark .text-gray-800 { color: #EAEAEA !important; }
+.dark .text-gray-900 { color: #F0F0F0 !important; }
+.dark .text-gray-300 { color: #606060 !important; }
+.dark .bg-blue-50\\\/50 { background-color: #838e9d80 !important; }
+.dark .hover\:text-gray-600:hover { color: #C0C0C0 !important; }
+.dark .shadow-lg { box-shadow: 0 10px 15px rgba(0,0,0,0.4) !important; }
+.dark .shadow-xl { box-shadow: 0 20px 25px rgba(0,0,0,0.4) !important; }
+.dark .shadow-2xl { box-shadow: 0 25px 50px rgba(0,0,0,0.5) !important; }
+.dark .shadow-blue-200 { box-shadow: none !important; }
+.dark .animate-pulse .bg-gray-200 { background-color: #3C3C3C !important; }
+.dark .opacity-50 { opacity: 0.7; }
+
+/* 文章卡片/阅读器深色 */
+.dark .article-p { color: #D4D4D4; }
+.dark .reader-container { color: #D4D4D4; }
+.dark .interactive-word:hover { background-color: #1E3A5F; }
+.dark .culture-mark { background: #C0841C; }
+
+/* 弹窗/模态框 */
+.dark .glass-popover { background: #2D2D2D; border-color: #3E3E3E; }
+
+/* 输入框 */
+.dark input, .dark textarea, .dark select {
+  background-color: #333333;
+  color: #D4D4D4;
+  border-color: #3E3E3E;
+}
+.dark input::placeholder, .dark textarea::placeholder { color: #606060; }
+.dark input:focus, .dark textarea:focus, .dark select:focus {
+  background-color: #3C3C3C;
+}
+
+/* 按钮 */
+.dark .disabled\:opacity-30:disabled { opacity: 0.2; }
+
+/* ========== 全局样式 ========== */
 body {
-  background-color: #F8F7F4;
-  color: #1F2937;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
   font-family: 'Inter', 'Noto Sans SC', sans-serif;
   min-height: 100vh;
 }
 
 /* 卡片样式 */
 .card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-card);
   padding: 24px;
 }
 
@@ -64,7 +174,7 @@ body {
 .progress-bar {
   height: 8px;
   border-radius: 99px;
-  background: #F3F4F6;
+  background: var(--bg-input);
   overflow: hidden;
 }
 .progress-inner {
@@ -174,10 +284,10 @@ body {
   vertical-align: middle;
 }
 .glass-popover {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--bg-card);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.8);
-  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-card);
   border-radius: 12px;
 }
 /* 阅读器容器：控制行长在 65-75 字符 */
@@ -190,17 +300,17 @@ body {
   font-size: 19px;
   line-height: 1.9;
   margin-bottom: 28px;
-  color: #374151;
+  color: var(--text-secondary);
   text-align: justify;
   word-break: break-word;
   hyphens: auto;
 }
 .socratic-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-card);
   padding: 32px;
-  border: 1px solid rgba(59,130,246,0.1);
+  border: 1px solid var(--border-light);
 }
 
 /* 行截断 */

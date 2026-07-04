@@ -25,7 +25,7 @@
           <div class="w-12 h-12 bg-blue-50 text-[#2563EB] rounded-xl flex items-center justify-center mx-auto mb-4">
             <Icon icon="ph:book-open-text-bold" class="text-2xl" />
           </div>
-          <h2 class="text-2xl font-bold text-[#1F2937]">
+          <h2 class="text-2xl font-bold text-[#1F2937] dark:text-gray-200">
             {{ isRegisterMode ? '创建账号' : '欢迎回来' }}
           </h2>
           <p class="text-sm text-gray-400 mt-1">
