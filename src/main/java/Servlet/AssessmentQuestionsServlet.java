@@ -1,6 +1,6 @@
 package Servlet;
 
-import Service.AIService;
+import Service.AIQuizService;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,7 +29,7 @@ public class AssessmentQuestionsServlet extends HttpServlet {
             return;
         }
 
-        List<AIService.AssessmentQuestion> questions =
+        List<AIQuizService.AssessmentQuestion> questions =
                 AssessmentGenerateServlet.SESSIONS.get(sessionId);
 
         if (questions == null) {
@@ -44,7 +44,7 @@ public class AssessmentQuestionsServlet extends HttpServlet {
         sb.append(",\"sessionId\":\"").append(AssessmentGenerateServlet.esc(sessionId)).append("\"");
 
         // 线程安全地复制列表
-        List<AIService.AssessmentQuestion> snapshot;
+        List<AIQuizService.AssessmentQuestion> snapshot;
         synchronized (questions) {
             snapshot = List.copyOf(questions);
         }

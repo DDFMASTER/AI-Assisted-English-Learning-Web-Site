@@ -3,7 +3,9 @@
     <div
       v-if="visible"
       class="fixed inset-0 z-[200] flex items-center justify-center"
+      tabindex="-1"
       @click.self="handleClose"
+      @keydown.escape="handleClose"
     >
       <!-- 背景遮罩 -->
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>

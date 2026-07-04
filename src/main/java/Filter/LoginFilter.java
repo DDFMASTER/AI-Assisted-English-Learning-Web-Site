@@ -1,11 +1,14 @@
 package Filter;
 
 import Listener.AppContextListener;
+import Utils.JsonUtil;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Set;
@@ -15,19 +18,20 @@ import java.util.Set;
  *
  * 公开路径（无需登录）：
  *   /api/user/login, /api/user/register, /api/user/logout, /api/connect-test,
- *   /api/word/*（含 search, lookup, ai-examples）,
- *   /api/article/list, /api/article/detail,
+ *   /api/word/*, /api/article/list, /api/article/detail,
  *   /api/article/translate-paragraph, /api/article/quiz, /api/article/cultural-notes,
- *   /api/assessment/*（含 generate, questions, evaluate）
+ *   /api/assessment/*, /api/vocabtest/*, /api/clickbait/*
+ *
+ * 管理路径 /api/admin/* 需要登录且 role == "admin"。
+ * 用户写操作 /api/user/* 需要登录。
  *
  * 其余 /api/* 路径均需登录后才能访问。
  * 静态资源（非 /api/ 前缀）直接放行。
- *
- * 额外检查：若用户已被管理员强制下线（userId 在 kickedUserIds 集合中），
- * 则销毁其会话并返回 401。
  */
 @WebFilter("/*")
 public class LoginFilter implements Filter {
+
+    private static final Logger logger = LoggerFactory.getLogger(LoginFilter.class);
 
     /** 无需登录即可访问的 API 路径（精确匹配） */
     private static final Set<String> PUBLIC_API_PATHS = Set.of(
@@ -35,10 +39,6 @@ public class LoginFilter implements Filter {
             "/api/user/register",
             "/api/user/logout",
             "/api/user/profile",
-            "/api/user/experience",
-            "/api/user/vip-exchange",
-            "/api/user/cefr-progress",
-            "/api/user/update-study-purpose",
             "/api/connect-test"
     );
 
@@ -51,14 +51,13 @@ public class LoginFilter implements Filter {
             "/api/article/quiz",
             "/api/article/cultural-notes",
             "/api/assessment/",
-            "/api/admin/",
             "/api/vocabtest/",
             "/api/clickbait/"
     };
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        System.out.println("[AAEL] LoginFilter 初始化完成");
+        logger.info("LoginFilter 初始化完成");
     }
 
     @Override
@@ -72,12 +71,11 @@ public class LoginFilter implements Filter {
         String contextPath = request.getContextPath();
         String relativePath = path.substring(contextPath.length());
 
-        // 1. 优先检查是否被管理员强制下线（对所有请求生效，不区分公开/私有路径）
+        // 1. 优先检查是否被管理员强制下线
         HttpSession session = request.getSession(false);
         if (session != null) {
             Long userId = (Long) session.getAttribute("userId");
             if (isKicked(request.getServletContext(), userId)) {
-                // 清理会话并移除下线标记
                 session.removeAttribute("userId");
                 session.removeAttribute("username");
                 session.removeAttribute("role");
@@ -94,48 +92,53 @@ public class LoginFilter implements Filter {
             return;
         }
 
-        // 3. API 路径需要校验登录状态
+        // 3. 管理路径：需要登录 + admin 角色
+        if (relativePath.startsWith("/api/admin/")) {
+            if (session == null || session.getAttribute("userId") == null) {
+                sendUnauthorized(response, "请先登录");
+                return;
+            }
+            String role = (String) session.getAttribute("role");
+            if (!"admin".equals(role)) {
+                sendForbidden(response, "无管理员权限");
+                return;
+            }
+            chain.doFilter(req, res);
+            return;
+        }
+
+        // 4. API 路径需要校验登录状态
         if (relativePath.startsWith("/api/")) {
             if (session == null || session.getAttribute("userId") == null) {
-                // 未登录，返回 401
+                logger.info("拒绝未登录请求: path={}, hasSession={}, userId={}",
+                        relativePath, session != null,
+                        session != null ? session.getAttribute("userId") : "N/A");
                 sendUnauthorized(response, "请先登录");
                 return;
             }
         }
 
-        // 4. 放行
+        // 5. 放行
         chain.doFilter(req, res);
     }
 
     @Override
     public void destroy() {
-        System.out.println("[AAEL] LoginFilter 销毁");
+        logger.info("LoginFilter 销毁");
     }
 
-    /**
-     * 判断路径是否为公开路径（无需登录）
-     */
     private boolean isPublicPath(String path) {
-        // 精确匹配
         if (PUBLIC_API_PATHS.contains(path)) {
             return true;
         }
-        // 前缀匹配（公开 API）
         for (String prefix : PUBLIC_API_PREFIXES) {
             if (path.startsWith(prefix)) {
                 return true;
             }
         }
-        // 非 API 路径（静态资源、页面等）直接放行
-        if (!path.startsWith("/api/")) {
-            return true;
-        }
-        return false;
+        return !path.startsWith("/api/");
     }
 
-    /**
-     * 检查用户是否已被管理员强制下线
-     */
     private boolean isKicked(ServletContext ctx, Long userId) {
         if (userId == null) return false;
         @SuppressWarnings("unchecked")
@@ -143,9 +146,6 @@ public class LoginFilter implements Filter {
         return kickedSet != null && kickedSet.contains(userId);
     }
 
-    /**
-     * 清除用户的强制下线标记
-     */
     private void clearKickedFlag(ServletContext ctx, Long userId) {
         if (userId == null) return;
         @SuppressWarnings("unchecked")
@@ -155,14 +155,19 @@ public class LoginFilter implements Filter {
         }
     }
 
-    /**
-     * 发送 401 未授权响应
-     */
     private void sendUnauthorized(HttpServletResponse response, String message)
             throws IOException {
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.getWriter().write(
-                "{\"success\":false,\"message\":\"" + message + "\",\"code\":401}");
+                "{\"success\":false,\"message\":" + JsonUtil.strVal(message) + ",\"code\":401}");
+    }
+
+    private void sendForbidden(HttpServletResponse response, String message)
+            throws IOException {
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.getWriter().write(
+                "{\"success\":false,\"message\":" + JsonUtil.strVal(message) + ",\"code\":403}");
     }
 }

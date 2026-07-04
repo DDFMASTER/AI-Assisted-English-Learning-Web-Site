@@ -1,6 +1,7 @@
 package Servlet;
 
-import Service.AIService;
+import Service.AIClient;
+import Service.AIQuizService;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +19,8 @@ import java.io.IOException;
 @WebServlet("/api/article/quiz")
 public class ArticleQuizServlet extends HttpServlet {
 
-    private final AIService aiService = new AIService();
+    private final AIClient aiClient = new AIClient();
+    private final AIQuizService aiQuizService = new AIQuizService(aiClient);
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -34,7 +36,7 @@ public class ArticleQuizServlet extends HttpServlet {
             return;
         }
 
-        AIService.QuizResult result = aiService.generateQuiz(content);
+        AIQuizService.QuizResult result = aiQuizService.generateQuiz(content);
         response.getWriter().write(result.toJson());
     }
 

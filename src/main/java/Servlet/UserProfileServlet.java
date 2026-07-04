@@ -67,8 +67,8 @@ public class UserProfileServlet extends HttpServlet {
 
         // VIP 到期时间
         String vipExpireAt = "";
-        if ("vip".equals(user.getProfile()) && user.getLastCheckin() != null) {
-            vipExpireAt = user.getLastCheckin().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        if ("vip".equals(user.getProfile()) && user.getVipUntil() != null) {
+            vipExpireAt = user.getVipUntil().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
         }
 
         // 构建用户信息 JSON
@@ -82,6 +82,9 @@ public class UserProfileServlet extends HttpServlet {
                 + ",\"cefrProgress\":" + JsonUtil.numVal(user.getCefrProgress())
                 + ",\"literacy\":" + JsonUtil.numVal(user.getLiteracy())
                 + ",\"vipExpireAt\":" + JsonUtil.strVal(vipExpireAt)
+                + ",\"lastCheckin\":" + (user.getLastCheckin() != null
+                    ? "\"" + user.getLastCheckin().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "\""
+                    : "null")
                 + "}";
 
         response.getWriter().write(

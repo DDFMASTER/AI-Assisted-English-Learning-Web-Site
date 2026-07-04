@@ -1,5 +1,6 @@
 package Servlet;
 
+import Service.AIClient;
 import Service.AIService;
 import Utils.JsonUtil;
 import jakarta.servlet.annotation.WebServlet;
@@ -17,7 +18,8 @@ import java.io.IOException;
  */
 @WebServlet("/api/clickbait/generate-title")
 public class AITitleServlet extends HttpServlet {
-    private final AIService aiService = new AIService();
+    private final AIClient aiClient = new AIClient();
+    private final AIService aiService = new AIService(aiClient);
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)

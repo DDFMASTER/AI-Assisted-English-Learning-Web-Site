@@ -3,6 +3,7 @@ package Servlet;
 import Service.AdminService;
 import Service.MonitorService;
 import Utils.JsonUtil;
+import Utils.ServletUtil;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -32,11 +33,8 @@ public class AdminOnlineUsersServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
 
         // 管理员身份校验
-        Long adminUserId = parseLong(request.getParameter("adminUserId"));
-        if (!adminService.isAdmin(adminUserId)) {
-            response.getWriter().write(JsonUtil.error("无管理员权限"));
-            return;
-        }
+        Long adminUserId = Utils.ServletUtil.authenticateAdmin(request, response, adminService);
+        if (adminUserId == null) return;
 
         ServletContext ctx = getServletContext();
 
@@ -84,14 +82,5 @@ public class AdminOnlineUsersServlet extends HttpServlet {
         // 记录操作日志
         adminService.logAction(adminUserId, "monitor", null,
                 "view_online_users", "count=" + onlineCount);
-    }
-
-    private Long parseLong(String s) {
-        if (s == null || s.isBlank()) return null;
-        try {
-            return Long.parseLong(s);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 }

@@ -1,5 +1,6 @@
 <template>
   <div id="engli-app">
+    <ToastContainer />
     <AppNav v-if="$route.name !== 'Login'" />
     <router-view />
     <LoginModal
@@ -15,6 +16,7 @@ import { onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppNav from '@/components/AppNav.vue'
 import LoginModal from '@/components/LoginModal.vue'
+import ToastContainer from '@/components/ToastContainer.vue'
 import { useUserStore } from '@/stores/user'
 import { startOnlineTimer, pauseTimer, resumeTimer } from '@/composables/useOnlineTimer'
 import request from '@/utils/request'

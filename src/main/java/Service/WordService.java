@@ -5,6 +5,9 @@ import DAO.WordDAOImpl;
 import Entities.AiWordDic;
 import Entities.WordBase;
 
+import Utils.GsonUtil;
+import Utils.JsonUtil;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -185,8 +188,9 @@ public class WordService {
         }
 
         // 4) ai_word_dic 也未命中 → AI 介入搜索并写入数据库
-        Service.AIService aiService = new Service.AIService();
-        Service.AIService.AiWordLookupResult aiResult = aiService.lookupWordByAI(word);
+        Service.AIClient aiClient = new Service.AIClient();
+        Service.AIWordService aiWordService = new Service.AIWordService(aiClient);
+        Service.AIWordService.AiWordLookupResult aiResult = aiWordService.lookupWordByAI(word);
         if (aiResult.translation != null && !aiResult.translation.isBlank()) {
             // 写入 ai_word_dic 表
             AiWordDic newAiDic = new AiWordDic();
@@ -243,62 +247,46 @@ public class WordService {
 
         public String toJson() {
             if (error != null) {
-                return "{\"success\":false,\"message\":\"" + escape(error) + "\"}";
+                return "{\"success\":false,\"message\":" + JsonUtil.strVal(error) + "}";
             }
+            // Gson 直接序列化类中的 public 字段，嵌套的 WordBase/AiWordDic 需要手动构建
+            com.google.gson.JsonObject obj = new com.google.gson.JsonObject();
+            obj.addProperty("success", true);
+            obj.addProperty("word", word);
+            obj.addProperty("studyPurpose", studyPurpose);
+            obj.addProperty("foundInStage", foundInStage);
+            obj.addProperty("isBeyondStage", isBeyondStage);
+            obj.addProperty("multiMeaning", multiMeaning);
 
-            StringBuilder sb = new StringBuilder();
-            sb.append("{\"success\":true");
-            sb.append(",\"word\":\"").append(escape(word)).append("\"");
-            sb.append(",\"studyPurpose\":\"").append(escape(studyPurpose)).append("\"");
-            sb.append(",\"foundInStage\":").append(foundInStage);
-            sb.append(",\"isBeyondStage\":").append(isBeyondStage);
-            sb.append(",\"multiMeaning\":").append(multiMeaning);
-
-            // 阶段词库结果
-            sb.append(",\"stageResults\":[");
-            if (stageResults != null && !stageResults.isEmpty()) {
-                for (int i = 0; i < stageResults.size(); i++) {
-                    if (i > 0) sb.append(",");
-                    WordBase w = stageResults.get(i);
-                    sb.append("{");
-                    sb.append("\"id\":").append(w.getId()).append(",");
-                    sb.append("\"word\":\"").append(escape(w.getWord())).append("\",");
-                    sb.append("\"phonetic\":\"").append(escape(w.getPhonetic())).append("\",");
-                    sb.append("\"translation\":\"").append(escape(w.getTranslation())).append("\"");
-                    sb.append("}");
+            com.google.gson.JsonArray stageArr = new com.google.gson.JsonArray();
+            if (stageResults != null) {
+                for (WordBase w : stageResults) {
+                    com.google.gson.JsonObject wObj = new com.google.gson.JsonObject();
+                    wObj.addProperty("id", w.getId());
+                    wObj.addProperty("word", w.getWord());
+                    wObj.addProperty("phonetic", w.getPhonetic());
+                    wObj.addProperty("translation", w.getTranslation());
+                    stageArr.add(wObj);
                 }
             }
-            sb.append("]");
-
-            // AI 词典结果
-            sb.append(",\"foundInAiDic\":").append(foundInAiDic);
+            obj.add("stageResults", stageArr);
+            obj.addProperty("foundInAiDic", foundInAiDic);
             if (aiResult != null) {
-                sb.append(",\"aiResult\":{");
-                sb.append("\"aidicId\":").append(aiResult.getAidicId()).append(",");
-                sb.append("\"word\":\"").append(escape(aiResult.getWord())).append("\",");
-                sb.append("\"phonetic\":\"").append(escape(aiResult.getPhonetic())).append("\",");
-                sb.append("\"translation\":\"").append(escape(aiResult.getTranslation())).append("\",");
-                sb.append("\"explanation\":\"").append(escape(aiResult.getExplanation())).append("\",");
-                sb.append("\"likeCount\":").append(aiResult.getLikeCount()).append(",");
-                sb.append("\"dislikeCount\":").append(aiResult.getDislikeCount());
-                sb.append("}");
+                com.google.gson.JsonObject aiObj = new com.google.gson.JsonObject();
+                aiObj.addProperty("aidicId", aiResult.getAidicId());
+                aiObj.addProperty("word", aiResult.getWord());
+                aiObj.addProperty("phonetic", aiResult.getPhonetic());
+                aiObj.addProperty("translation", aiResult.getTranslation());
+                aiObj.addProperty("explanation", aiResult.getExplanation());
+                aiObj.addProperty("likeCount", aiResult.getLikeCount());
+                aiObj.addProperty("dislikeCount", aiResult.getDislikeCount());
+                obj.add("aiResult", aiObj);
             }
-
-            sb.append("}");
-            return sb.toString();
-        }
-
-        private String escape(String s) {
-            if (s == null) return "";
-            return s.replace("\\", "\\\\")
-                    .replace("\"", "\\\"")
-                    .replace("\n", "\\n")
-                    .replace("\r", "\\r")
-                    .replace("\t", "\\t");
+            return GsonUtil.GSON.toJson(obj);
         }
     }
 
-    /** 全词库查词结果封装（用于阅读器点击查词） */
+    /** 全词库查词结果封装 */
     public static class WordLookupResult {
         public String word;
         public String phonetic;
@@ -309,60 +297,41 @@ public class WordService {
 
         public String toJson() {
             if (error != null) {
-                return "{\"success\":false,\"message\":\"" + escape(error) + "\"}";
+                return "{\"success\":false,\"message\":" + JsonUtil.strVal(error) + "}";
             }
-
-            StringBuilder sb = new StringBuilder();
-            sb.append("{\"success\":true");
-            sb.append(",\"word\":\"").append(escape(word)).append("\"");
-
+            com.google.gson.JsonObject obj = new com.google.gson.JsonObject();
+            obj.addProperty("success", true);
+            obj.addProperty("word", word);
             if (phonetic != null && !phonetic.isBlank()) {
-                sb.append(",\"phonetic\":\"").append(escape(phonetic)).append("\"");
+                obj.addProperty("phonetic", phonetic);
             }
+            obj.addProperty("found", found);
+            obj.addProperty("crossStage", crossStage);
 
-            sb.append(",\"found\":").append(found);
-            sb.append(",\"crossStage\":").append(crossStage);
-            sb.append(",\"results\":[");
-
-            boolean firstStage = true;
+            com.google.gson.JsonArray results = new com.google.gson.JsonArray();
             if (stageResults != null) {
-                for (Map.Entry<String, List<WordBase>> stageEntry : stageResults.entrySet()) {
-                    if (!firstStage) sb.append(",");
-                    firstStage = false;
-
-                    sb.append("{\"source\":\"").append(escape(stageEntry.getKey())).append("\",");
-                    sb.append("\"entries\":[");
-
-                    List<WordBase> entries = stageEntry.getValue();
-                    for (int i = 0; i < entries.size(); i++) {
-                        if (i > 0) sb.append(",");
-                        WordBase w = entries.get(i);
-                        sb.append("{");
-                        sb.append("\"id\":").append(w.getId()).append(",");
-                        sb.append("\"word\":\"").append(escape(w.getWord())).append("\",");
-                        sb.append("\"phonetic\":\"").append(escape(w.getPhonetic())).append("\",");
-                        sb.append("\"translation\":\"").append(escape(w.getTranslation())).append("\"");
+                for (Map.Entry<String, List<WordBase>> entry : stageResults.entrySet()) {
+                    com.google.gson.JsonObject stageObj = new com.google.gson.JsonObject();
+                    stageObj.addProperty("source", entry.getKey());
+                    com.google.gson.JsonArray entries = new com.google.gson.JsonArray();
+                    for (WordBase w : entry.getValue()) {
+                        com.google.gson.JsonObject wObj = new com.google.gson.JsonObject();
+                        wObj.addProperty("id", w.getId());
+                        wObj.addProperty("word", w.getWord());
+                        wObj.addProperty("phonetic", w.getPhonetic());
+                        wObj.addProperty("translation", w.getTranslation());
                         if (w.getExplanation() != null && !w.getExplanation().isBlank()) {
-                            sb.append(",\"explanation\":\"").append(escape(w.getExplanation())).append("\"");
+                            wObj.addProperty("explanation", w.getExplanation());
                         }
-                        sb.append("}");
+                        entries.add(wObj);
                     }
-
-                    sb.append("]}");
+                    stageObj.add("entries", entries);
+                    results.add(stageObj);
                 }
             }
-
-            sb.append("]}");
-            return sb.toString();
+            obj.add("results", results);
+            return GsonUtil.GSON.toJson(obj);
         }
 
-        private String escape(String s) {
-            if (s == null) return "";
-            return s.replace("\\", "\\\\")
-                    .replace("\"", "\\\"")
-                    .replace("\n", "\\n")
-                    .replace("\r", "\\r")
-                    .replace("\t", "\\t");
-        }
     }
 }

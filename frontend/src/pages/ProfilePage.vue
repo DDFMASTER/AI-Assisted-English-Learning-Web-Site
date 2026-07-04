@@ -75,6 +75,19 @@
             <div class="text-xl font-bold text-[#F59E0B]">{{ totalXp }}</div>
             <div class="text-[10px] text-gray-400">总经验 XP</div>
           </div>
+          <div class="w-px h-10 bg-gray-100"></div>
+          <button
+            class="flex flex-col items-center justify-center px-4 py-1 rounded-xl transition-all"
+            :class="profileCheckinDone ? 'bg-green-50' : 'bg-[#2563EB] hover:bg-blue-600 cursor-pointer'"
+            :disabled="profileCheckinLoading || profileCheckinDone"
+            @click="doProfileCheckin"
+          >
+            <Icon v-if="profileCheckinDone" icon="ph:check-circle-fill" class="text-xl text-green-500" />
+            <Icon v-else icon="ph:gift-fill" class="text-xl text-white" />
+            <span v-if="profileCheckinLoading" class="text-[10px] text-white">签到中</span>
+            <span v-else-if="profileCheckinDone" class="text-[10px] text-green-500 font-bold">已签到</span>
+            <span v-else class="text-[10px] text-white font-bold">签到 +10</span>
+          </button>
         </div>
       </div>
 
@@ -114,14 +127,14 @@
           </div>
           <div class="grid grid-cols-5 gap-3">
             <div
-              v-for="avatar in avatarList"
+              v-for="avatar in AVATAR_LIST"
               :key="avatar.id"
               class="aspect-square rounded-xl overflow-hidden cursor-pointer border-2 transition-all hover:scale-105"
               :class="currentAvatarId === avatar.id ? 'border-[#2563EB] ring-2 ring-blue-200' : 'border-gray-100 hover:border-gray-300'"
               @click="selectAvatar(avatar)"
             >
               <img
-                :src="photoBase + avatar.file"
+                :src="AVATAR_BASE_URL + avatar.file"
                 :alt="avatar.name"
                 class="w-full h-full object-cover"
               />
@@ -456,6 +469,7 @@
         v-if="showAboutModal"
         class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm"
         @click.self="showAboutModal = false"
+        @keydown.escape="showAboutModal = false"
       >
         <div class="relative bg-white rounded-2xl shadow-2xl overflow-hidden" style="width:192px;height:108px">
           <img src="/gggg.png" alt="关于我们" class="w-full h-full object-contain" />
@@ -490,7 +504,7 @@
     </Teleport>
 
     <!-- 词汇量测试弹窗 -->
-    <VocabTestModal :visible="showVocabTest" @close="showVocabTest = false" />
+    <VocabTestModel :visible="showVocabTest" @close="showVocabTest = false" />
 
     <!-- VIP 兑换弹窗 -->
     <Teleport to="body">
@@ -560,13 +574,14 @@
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
-import * as echarts from 'echarts'
+let echartsMod = null  // 动态导入 ECharts
 import { useUserStore } from '@/stores/user'
 import { useTaskStore } from '@/stores/task'
 import { getRecentOnlineTime, getTodayMinutes, getDailyTarget, setDailyTarget, getStreak } from '@/utils/onlineTimeDB'
 import { getRecentHistory, countHistory } from '@/utils/historyDB'
 import request from '@/utils/request'
-import VocabTestModal from '@/components/VocabTestModal.vue'
+import VocabTestModel from '@/components/VocabTestModel.vue'
+import { AVATAR_LIST, AVATAR_BASE_URL, getAvatarSrc } from '@/constants/avatars.js'
 const gggAudioModules = import.meta.glob('../ggg/*.mp3', { eager: true })
 const gggAudioFiles = Object.values(gggAudioModules).map(m => m.default)
 
@@ -579,39 +594,12 @@ const taskStore = useTaskStore()
 const AVATAR_STORAGE_KEY = 'aael_selected_avatar'
 const defaultAvatarId = 1
 
-// 头像资源基础路径（dev → /photo/, prod → ./photo/）
-const photoBase = import.meta.env.BASE_URL + 'photo/'
-
-// 头像列表（与 photo/ 目录下文件名对应）
-const avatarList = [
-  { id: 1,  file: '1.白猫.svg',   name: '白猫' },
-  { id: 2,  file: '2.边牧.svg',   name: '边牧' },
-  { id: 3,  file: '3.布偶猫.svg', name: '布偶猫' },
-  { id: 4,  file: '4.仓鼠.svg',   name: '仓鼠' },
-  { id: 5,  file: '5.藏獒.svg',   name: '藏獒' },
-  { id: 6,  file: '6.柴犬.svg',   name: '柴犬' },
-  { id: 7,  file: '7.哈士奇.svg', name: '哈士奇' },
-  { id: 8,  file: '8.荷兰猪.svg', name: '荷兰猪' },
-  { id: 9,  file: '9.黑猫.svg',   name: '黑猫' },
-  { id: 10, file: '10.金毛.svg',  name: '金毛' },
-  { id: 11, file: '11.橘猫.svg',  name: '橘猫' },
-  { id: 12, file: '12.柯基.svg',  name: '柯基' },
-  { id: 13, file: '13.可达鸭.svg', name: '可达鸭' },
-  { id: 14, file: '14.蓝猫.svg',  name: '蓝猫' },
-  { id: 15, file: '15.奶牛猫.svg', name: '奶牛猫' },
-  { id: 16, file: '16.三花猫.svg', name: '三花猫' },
-  { id: 17, file: '17.田园犬.svg', name: '田园犬' },
-  { id: 18, file: '18.暹罗猫.svg', name: '暹罗猫' },
-  { id: 19, file: '19.羊.svg',    name: '羊' },
-  { id: 20, file: '20.bvvd.png',  name: 'bvvd' },
-]
-
 function loadSelectedAvatarId() {
   try {
     const val = localStorage.getItem(AVATAR_STORAGE_KEY)
     if (val !== null) {
       const num = parseInt(val, 10)
-      if (!isNaN(num) && num >= 1 && num <= avatarList.length) return num
+      if (!isNaN(num) && num >= 1 && num <= AVATAR_LIST.length) return num
     }
   } catch (_) { /* ignore */ }
   return defaultAvatarId
@@ -625,8 +613,8 @@ const currentAvatarId = ref(loadSelectedAvatarId())
 const showAvatarPicker = ref(false)
 
 const currentAvatarSrc = computed(() => {
-  const avatar = avatarList.find(a => a.id === currentAvatarId.value)
-  return avatar ? photoBase + avatar.file : ''
+  const avatar = AVATAR_LIST.find(a => a.id === currentAvatarId.value)
+  return avatar ? AVATAR_BASE_URL + avatar.file : ''
 })
 
 function selectAvatar(avatar) {
@@ -755,6 +743,31 @@ function showToast(msg, type = 'success') {
   toastType.value = type
   clearTimeout(toastTimer)
   toastTimer = setTimeout(() => { toastMsg.value = '' }, 2500)
+}
+
+// 签到
+const profileCheckinLoading = ref(false)
+const profileCheckinDone = ref(false)
+async function doProfileCheckin() {
+  if (profileCheckinLoading.value || profileCheckinDone.value) return
+  profileCheckinLoading.value = true
+  try {
+    const data = await request.post('/user/checkin')
+    if (data.success) {
+      profileCheckinDone.value = true
+      showToast('签到成功！经验值 +' + (data.experienceEarned || 10), 'success')
+      await userStore.fetchProfile()
+    } else {
+      if (data.message && data.message.includes('今日已签到')) {
+        profileCheckinDone.value = true
+      }
+      showToast(data.message || '签到失败', 'error')
+    }
+  } catch (_) {
+    showToast('签到失败', 'error')
+  } finally {
+    profileCheckinLoading.value = false
+  }
 }
 const vipExpireAt = computed(() => userStore.user?.vipExpireAt || '')
 
@@ -1004,7 +1017,8 @@ const todayOnlineMinutes = ref(0)
 
 async function initTrendChart() {
   if (!trendChartRef.value) return
-  trendChart = echarts.init(trendChartRef.value)
+  if (!echartsMod) echartsMod = await import('echarts')
+  trendChart = echartsMod.init(trendChartRef.value)
 
   // 从 IndexedDB 读取最近 14 天的在线时长
   const records = await getRecentOnlineTime(14)
@@ -1062,12 +1076,12 @@ async function initTrendChart() {
           borderRadius: [4, 4, 0, 0],
           color: function (params) {
             if (params.dataIndex === todayIdx) {
-              return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              return new echartsMod.graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: '#6366F1' },
                 { offset: 1, color: '#2563EB' },
               ])
             }
-            return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            return new echartsMod.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: '#A5B4FC' },
               { offset: 1, color: '#93C5FD' },
             ])
@@ -1127,7 +1141,16 @@ onMounted(async () => {
     activeDrawer.value = 'records'
   }
   await nextTick()
-  userStore.fetchProfile()        // 刷新后端 XP
+  await userStore.fetchProfile()  // 刷新后端 XP，完成后判断签到状态
+  // 检查今日是否已签到
+  const lastCheckin = userStore.user?.lastCheckin
+  if (lastCheckin) {
+    const last = new Date(lastCheckin.replace(' ', 'T'))
+    const today = new Date()
+    if (last.toDateString() === today.toDateString()) {
+      profileCheckinDone.value = true
+    }
+  }
   loadUserStats()                 // 刷新本地统计
   if (activeDrawer.value === 'trend') {
     initTrendChart()
@@ -1140,6 +1163,7 @@ function disposeChart() {
   if (trendChart) {
     trendChart.dispose()
     trendChart = null
+    echartsMod = null  // 释放 ECharts 模块引用
   }
 }
 

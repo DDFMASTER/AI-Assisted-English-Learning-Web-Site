@@ -95,8 +95,12 @@
         <h3 class="text-sm font-bold text-gray-700">阅读选择题</h3>
       </div>
 
+      <!-- 未加载 -->
+      <div v-if="!quizData" class="flex items-center justify-center py-6">
+        <Icon icon="ph:spinner-bold" class="text-gray-300 text-2xl animate-spin" />
+      </div>
       <!-- VIP 限制提示 -->
-      <div v-if="quizData?.vipLimited" class="text-center py-6">
+      <div v-else-if="quizData.vipLimited" class="text-center py-6">
         <Icon icon="ph:crown-simple-bold" class="text-3xl text-yellow-500 mx-auto mb-2" />
         <p class="text-sm font-bold text-yellow-600 mb-1">今日免费次数已用尽</p>
         <p class="text-xs text-gray-400 mb-3">非VIP用户每天可享受 3 篇文章的 AI 出题</p>
@@ -106,13 +110,13 @@
       </div>
 
       <!-- 加载中 -->
-      <div v-else-if="quizData?.loading" class="flex items-center justify-center py-6">
+      <div v-else-if="quizData.loading" class="flex items-center justify-center py-6">
         <Icon icon="ph:spinner-bold" class="text-base text-[#2563EB] animate-spin" />
         <span class="text-xs text-gray-400 ml-2">AI 正在阅读全文并出题...</span>
       </div>
 
       <!-- 错误 -->
-      <div v-else-if="quizData?.error" class="text-center py-4 px-2">
+      <div v-else-if="quizData.error" class="text-center py-4 px-2">
         <Icon icon="ph:warning-circle-bold" class="text-lg text-red-400 mx-auto mb-1" />
         <p class="text-[11px] text-red-500">{{ quizData.error }}</p>
         <p class="text-[10px] text-gray-400 mt-1">请检查 Tomcat 是否已重启</p>
@@ -182,6 +186,7 @@
 import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
+import { tokenizeText } from '@/utils/tokenize.js'
 import { useReaderStore } from '@/stores/reader'
 import WordPopover from '@/components/WordPopover.vue'
 
@@ -197,30 +202,6 @@ const props = defineProps({
 
 const userStore = useUserStore()
 const readerStore = useReaderStore()
-
-// ========== 单词分词（用于文化背景内容中的单词点击查词） ==========
-function tokenizeText(text) {
-  const segments = []
-  const wordRe = /([a-zA-Z]+(?:['-][a-zA-Z]+)*)/g
-  let lastIdx = 0
-  let match
-
-  while ((match = wordRe.exec(text)) !== null) {
-    if (match.index > lastIdx) {
-      segments.push({ type: 'text', text: text.slice(lastIdx, match.index) })
-    }
-    segments.push({
-      type: 'word',
-      text: match[0],
-      data: { word: match[0] },
-    })
-    lastIdx = match.index + match[0].length
-  }
-  if (lastIdx < text.length) {
-    segments.push({ type: 'text', text: text.slice(lastIdx) })
-  }
-  return segments
-}
 
 // ========== 单词查词浮窗 ==========
 const wordPopover = reactive({
@@ -302,6 +283,7 @@ function hasAnswered(qIdx) {
 }
 
 function getOptionClass(qIdx, oIdx) {
+  if (!props.quizData?.questions) return 'text-gray-700 bg-white border border-gray-200'
   const answered = hasAnswered(qIdx)
   if (!answered) {
     return 'text-gray-700 bg-white border border-gray-200 hover:bg-blue-50 hover:border-blue-300 cursor-pointer'

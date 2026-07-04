@@ -3,6 +3,8 @@
     <div
       v-if="visible"
       class="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      tabindex="-1"
+      @keydown.escape="$emit('close')"
     >
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
         <!-- ========== 开始界面 ========== -->
@@ -125,7 +127,7 @@ const props = defineProps({
   visible: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['done'])
+const emit = defineEmits(['done', 'close'])
 
 const phase = ref('start')
 const words = ref([])

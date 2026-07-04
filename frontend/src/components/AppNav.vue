@@ -10,25 +10,28 @@
           <span class="text-xl font-bold tracking-tight text-[#1F2937]">EngliAI</span>
         </router-link>
 
-        <!-- 导航链接 -->
-        <router-link to="/materials" class="nav-link text-gray-500" active-class="nav-active">
-          读物匹配
-        </router-link>
-        <router-link to="/assessment" class="nav-link text-gray-500" active-class="nav-active">
-          测评中心
-        </router-link>
-        <router-link
-          v-if="userStore.user?.role === 'admin'"
-          to="/admin"
-          class="nav-link text-gray-500"
-          active-class="nav-active"
-        >
-          管理
-        </router-link>
+        <!-- 导航链接（桌面端可见） -->
+        <div class="hidden lg:flex items-center gap-6">
+          <router-link to="/materials" class="nav-link text-gray-500" active-class="nav-active" aria-label="读物匹配">
+            读物匹配
+          </router-link>
+          <router-link to="/assessment" class="nav-link text-gray-500" active-class="nav-active" aria-label="测评中心">
+            测评中心
+          </router-link>
+          <router-link
+            v-if="userStore.user?.role === 'admin'"
+            to="/admin"
+            class="nav-link text-gray-500"
+            active-class="nav-active"
+            aria-label="管理"
+          >
+            管理
+          </router-link>
+        </div>
       </div>
 
-      <!-- 中间：搜索框 -->
-      <div class="relative flex-1 max-w-md mx-8" ref="searchContainer">
+      <!-- 中间：搜索框（平板及以上可见） -->
+      <div class="relative flex-1 max-w-md mx-8 hidden sm:block" ref="searchContainer">
         <div class="relative">
           <button
             class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#2563EB] transition-colors"
@@ -41,6 +44,7 @@
             v-model="searchQuery"
             type="text"
             placeholder="搜索单词..."
+            aria-label="搜索单词"
             class="w-full h-10 pl-10 pr-4 bg-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
             @keydown.enter="handleSearch"
             @focus="onSearchFocus"
@@ -116,21 +120,60 @@
       <!-- 右侧操作 -->
       <div class="flex items-center gap-4 shrink-0">
 
-        <!-- 头像 -->
-        <router-link
-          to="/profile"
-          class="w-10 h-10 rounded-xl border-2 border-white overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#2563EB] transition-all"
-        >
-          <img
-            v-if="navAvatarSrc"
-            :src="navAvatarSrc"
-            alt="头像"
-            class="w-full h-full object-cover rounded-xl"
-          />
-          <div v-else class="w-full h-full rounded-xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
-            {{ avatarLetter }}
-          </div>
-        </router-link>
+        <!-- 头像（悬浮显示信息卡片） -->
+        <div class="relative" @mouseenter="showCard" @mouseleave="hideCard">
+          <router-link
+            to="/profile"
+            aria-label="个人中心"
+            class="w-10 h-10 rounded-xl border-2 border-white overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#2563EB] transition-all block"
+          >
+            <img
+              v-if="navAvatarSrc"
+              :src="navAvatarSrc"
+              alt="头像"
+              class="w-full h-full object-cover rounded-xl"
+            />
+            <div v-else class="w-full h-full rounded-xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
+              {{ avatarLetter }}
+            </div>
+          </router-link>
+
+          <!-- 悬浮卡片 -->
+          <Transition name="popover">
+            <div
+              v-if="showAvatarCard"
+              class="absolute right-0 top-full mt-1 w-60 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50"
+              @mouseenter="showCard"
+              @mouseleave="hideCard"
+            >
+              <div class="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
+                <div class="w-10 h-10 rounded-lg overflow-hidden flex-none">
+                  <img v-if="navAvatarSrc" :src="navAvatarSrc" alt="头像" class="w-full h-full object-cover" />
+                  <div v-else class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold">{{ avatarLetter }}</div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-bold text-gray-700 truncate">{{ userStore.user?.username || '用户' }}</p>
+                  <p class="text-xs text-gray-400">{{ userStore.user?.studyPurpose || '' }}</p>
+                </div>
+              </div>
+              <div class="space-y-1.5 mb-3 text-xs text-gray-500">
+                <div class="flex justify-between"><span>🔥 连续学习</span><span class="font-bold">{{ navStreak }} 天</span></div>
+                <div class="flex justify-between"><span>📖 累计阅读</span><span class="font-bold">{{ navTotalRead }} 篇</span></div>
+                <div class="flex justify-between"><span>⭐ 经验值</span><span class="font-bold text-[#F59E0B]">{{ userStore.user?.experience || 0 }} XP</span></div>
+              </div>
+              <button
+                class="w-full py-2 rounded-lg text-xs font-bold transition-all"
+                :class="checkinDone ? 'bg-green-50 text-green-500 cursor-default' : 'bg-[#2563EB] text-white hover:bg-blue-600'"
+                :disabled="checkinLoading || checkinDone"
+                @click="doCheckin"
+              >
+                <span v-if="checkinLoading">签到中...</span>
+                <span v-else-if="checkinDone">✅ 今日已签到</span>
+                <span v-else>🎁 签到 +10 XP</span>
+              </button>
+            </div>
+          </Transition>
+        </div>
       </div>
     </div>
 
@@ -142,6 +185,10 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
 import { useReaderStore } from '@/stores/reader'
+import { getAvatarSrc } from '@/constants/avatars.js'
+import { getStreak } from '@/utils/onlineTimeDB'
+import { countHistory } from '@/utils/historyDB'
+import request from '@/utils/request'
 
 const userStore = useUserStore()
 const readerStore = useReaderStore()
@@ -160,31 +207,76 @@ const avatarLetter = computed(() => {
 })
 
 // 导航栏头像（与个人中心同步，读取 localStorage）
-const photoBase = import.meta.env.BASE_URL + 'photo/'
-const avatarFiles = ['1.白猫.svg','2.边牧.svg','3.布偶猫.svg','4.仓鼠.svg','5.藏獒.svg','6.柴犬.svg','7.哈士奇.svg','8.荷兰猪.svg','9.黑猫.svg','10.金毛.svg','11.橘猫.svg','12.柯基.svg','13.可达鸭.svg','14.蓝猫.svg','15.奶牛猫.svg','16.三花猫.svg','17.田园犬.svg','18.暹罗猫.svg','19.羊.svg','20.bvvd.png']
-
-function getAvatarSrc() {
+function getNavAvatarSrc() {
   try {
     const id = parseInt(localStorage.getItem('aael_selected_avatar'), 10)
-    if (!isNaN(id) && id >= 1 && id <= avatarFiles.length) {
-      return photoBase + avatarFiles[id - 1]
-    }
+    return getAvatarSrc(id)
   } catch (_) { /* ignore */ }
-  return photoBase + avatarFiles[0]
+  return getAvatarSrc(1)
 }
 
-const navAvatarSrc = ref(getAvatarSrc())
+const navAvatarSrc = ref(getNavAvatarSrc())
+
+// 头像悬浮卡片
+const showAvatarCard = ref(false)
+let cardTimer = null
+
+function showCard() {
+  clearTimeout(cardTimer)
+  showAvatarCard.value = true
+}
+
+function hideCard() {
+  cardTimer = setTimeout(() => { showAvatarCard.value = false }, 200)
+}
+
+// 导航栏用户统计
+const navStreak = ref(0)
+const navTotalRead = ref(0)
+
+async function loadNavStats() {
+  try {
+    const [s, c] = await Promise.all([getStreak(), countHistory()])
+    navStreak.value = s
+    navTotalRead.value = c
+  } catch (_) { /* ignore */ }
+}
+
+// 签到相关
+const checkinLoading = ref(false)
+const checkinDone = ref(false)
+
+async function doCheckin() {
+  if (checkinLoading.value || checkinDone.value) return
+  checkinLoading.value = true
+  try {
+    const data = await request.post('/user/checkin')
+    if (data.success) {
+      checkinDone.value = true
+      await userStore.fetchProfile()
+      loadNavStats()
+    } else if (data.message) {
+      if (data.message.includes('今日已签到')) checkinDone.value = true
+      console.log('签到:', data.message)
+    }
+  } catch (e) {
+    console.log('签到请求失败:', e?.response?.status, e?.message)
+    if (e?.response?.status === 401) {
+      console.log('提示：会话可能已过期，请退出后重新登录')
+    }
+  } finally { checkinLoading.value = false }
+}
 
 // 监听头像变更事件（由 ProfilePage 触发）
 function onAvatarChanged() {
-  navAvatarSrc.value = getAvatarSrc()
+  navAvatarSrc.value = getNavAvatarSrc()
 }
 
 onMounted(() => {
   document.addEventListener('click', onClickOutside)
   window.addEventListener('avatar-changed', onAvatarChanged)
-  // 刷新用户数据确保 role 等字段最新
   userStore.fetchProfile()
+  loadNavStats()
 })
 
 onUnmounted(() => {

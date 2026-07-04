@@ -8,12 +8,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class WordDAOImpl implements WordDAO {
+
+    /** 并发查询 6 张词库表的线程池 */
+    private static final ExecutorService WORD_QUERY_POOL =
+            Executors.newFixedThreadPool(6);
 
     /** 学习阶段 → 数据库表名的白名单映射，防止 SQL 注入 */
     private static final Map<String, String> STAGE_TABLE = new LinkedHashMap<>();
@@ -63,40 +65,55 @@ public class WordDAOImpl implements WordDAO {
     public Map<String, List<WordBase>> findByWordInAllTables(String word) {
         Map<String, List<WordBase>> result = new LinkedHashMap<>();
 
+        // 并发查询 6 张词库表
+        List<Future<Map.Entry<String, List<WordBase>>>> futures = new ArrayList<>();
         for (Map.Entry<String, String> entry : STAGE_TABLE.entrySet()) {
-            String stageLabel = entry.getKey();
-            String tableName = entry.getValue();
+            futures.add(WORD_QUERY_POOL.submit(() -> queryOneTable(word, entry)));
+        }
 
-            // 表名来自白名单，安全拼接
-            String sql = "SELECT id, word, phonetic, translation FROM " + tableName
-                       + " WHERE word = ?";
-
-            List<WordBase> entries = new ArrayList<>();
-
-            try (Connection conn = DBUtil.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-
-                ps.setString(1, word);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        WordBase wb = new WordBase();
-                        wb.setId(rs.getLong("id"));
-                        wb.setWord(rs.getString("word"));
-                        wb.setPhonetic(rs.getString("phonetic"));
-                        wb.setTranslation(rs.getString("translation"));
-                        entries.add(wb);
-                    }
+        for (Future<Map.Entry<String, List<WordBase>>> future : futures) {
+            try {
+                Map.Entry<String, List<WordBase>> e = future.get();
+                if (!e.getValue().isEmpty()) {
+                    result.put(e.getKey(), e.getValue());
                 }
-            } catch (Exception e) {
-                throw new RuntimeException("查词失败: word=" + word + ", table=" + tableName, e);
-            }
-
-            if (!entries.isEmpty()) {
-                result.put(stageLabel, entries);
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException("并发查词失败: word=" + word, e);
             }
         }
 
         return result;
+    }
+
+    private Map.Entry<String, List<WordBase>> queryOneTable(String word,
+                                                             Map.Entry<String, String> stageEntry) {
+        String stageLabel = stageEntry.getKey();
+        String tableName = stageEntry.getValue();
+
+        String sql = "SELECT id, word, phonetic, translation FROM " + tableName
+                   + " WHERE word = ?";
+
+        List<WordBase> entries = new ArrayList<>();
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, word);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    WordBase wb = new WordBase();
+                    wb.setId(rs.getLong("id"));
+                    wb.setWord(rs.getString("word"));
+                    wb.setPhonetic(rs.getString("phonetic"));
+                    wb.setTranslation(rs.getString("translation"));
+                    entries.add(wb);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("查词失败: word=" + word + ", table=" + tableName, e);
+        }
+
+        return new AbstractMap.SimpleEntry<>(stageLabel, entries);
     }
 
     @Override

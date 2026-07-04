@@ -5,6 +5,7 @@ import DAO.ArticleDAOImpl;
 import Entities.Article;
 import Service.AdminService;
 import Utils.JsonUtil;
+import Utils.ServletUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,13 +29,10 @@ public class AdminArticleGetServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
 
         try {
-            Long adminUserId = parseLong(request.getParameter("adminUserId"));
-            if (!adminService.isAdmin(adminUserId)) {
-                response.getWriter().write(JsonUtil.error("无管理员权限"));
-                return;
-            }
+            Long adminUserId = ServletUtil.authenticateAdmin(request, response, adminService);
+            if (adminUserId == null) return;
 
-            Long articleId = parseLong(request.getParameter("id"));
+            Long articleId = ServletUtil.parseLong(request.getParameter("id"));
             if (articleId == null) {
                 response.getWriter().write(JsonUtil.error("缺少文章ID"));
                 return;
@@ -46,43 +44,21 @@ public class AdminArticleGetServlet extends HttpServlet {
                 return;
             }
 
-            // 返回文章完整信息
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            sb.append("\"success\":true,");
-            sb.append("\"article\":{");
-            sb.append("\"articleId\":").append(article.getArticleId()).append(",");
-            sb.append("\"title\":\"").append(escapeJson(article.getTitle())).append("\",");
-            sb.append("\"content\":\"").append(escapeJson(article.getContent())).append("\",");
-            sb.append("\"source\":\"").append(escapeJson(article.getSource())).append("\",");
-            sb.append("\"difficulty\":\"").append(escapeJson(article.getDifficulty())).append("\"");
-            sb.append("}}");
-            response.getWriter().write(sb.toString());
+            // 返回文章完整信息（使用 Gson 序列化）
+            var map = new java.util.LinkedHashMap<String, Object>();
+            map.put("success", true);
+            var am = new java.util.LinkedHashMap<String, Object>();
+            am.put("articleId", article.getArticleId());
+            am.put("title", article.getTitle());
+            am.put("content", article.getContent());
+            am.put("source", article.getSource());
+            am.put("difficulty", article.getDifficulty());
+            map.put("article", am);
+            response.getWriter().write(Utils.GsonUtil.toJson(map));
         } catch (Exception e) {
             e.printStackTrace();
             response.setStatus(500);
             response.getWriter().write(JsonUtil.error("服务器错误: " + e.getMessage()));
         }
-    }
-
-    private Long parseLong(String s) {
-        if (s == null || s.isBlank()) return null;
-        try { return Long.parseLong(s); } catch (NumberFormatException e) { return null; }
-    }
-
-    private String escapeJson(String s) {
-        if (s == null) return "";
-        StringBuilder sb = new StringBuilder(s.length());
-        for (char c : s.toCharArray()) {
-            switch (c) {
-                case '"' -> sb.append("\\\"");
-                case '\\' -> sb.append("\\\\");
-                case '\n' -> sb.append("\\n");
-                case '\r' -> sb.append("\\r");
-                case '\t' -> sb.append("\\t");
-                default -> sb.append(c);
-            }
-        }
-        return sb.toString();
     }
 }

@@ -9,20 +9,20 @@ const request = axios.create({
 request.interceptors.response.use(
     response => response.data,
     error => {
-        console.error('Request error:', error)
         if (error.response?.status === 401) {
-            // 解析响应数据（兼容 axios 自动解析和原始字符串两种情形）
             let data = error.response.data
             if (typeof data === 'string') {
                 try { data = JSON.parse(data) } catch (_) { data = {} }
             }
             const msg = data?.message || ''
 
-            // 只有被管理员强制下线才自动跳转登录页，避免影响正常用户
-            if (msg.includes('强制下线') && !window.location.hash.includes('#/login')) {
+            if (!window.location.hash.includes('#/login')) {
+                // 清除本地登录状态
                 localStorage.removeItem('token')
                 localStorage.removeItem('user')
-                sessionStorage.setItem('kickReason', msg)
+                // 存储原因供登录页展示
+                const reason = msg.includes('强制下线') ? msg : '会话已过期，请重新登录'
+                sessionStorage.setItem('kickReason', reason)
                 window.location.hash = '#/login'
             }
         }

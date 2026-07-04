@@ -2,10 +2,12 @@ package Servlet;
 
 import DAO.UserDAOImpl;
 import Utils.JsonUtil;
+import Utils.ServletUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
@@ -27,11 +29,17 @@ public class UserUpdateStudyPurposeServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
 
-        Long userId = parseLong(request.getParameter("userId"));
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            response.setStatus(401);
+            response.getWriter().write(JsonUtil.error("请先登录"));
+            return;
+        }
+        Long userId = (Long) session.getAttribute("userId");
         String studyPurpose = request.getParameter("studyPurpose");
 
         if (userId == null) {
-            response.getWriter().write(JsonUtil.error("缺少 userId"));
+            response.getWriter().write(JsonUtil.error("请先登录"));
             return;
         }
         if (studyPurpose == null || studyPurpose.isBlank()) {
@@ -61,10 +69,5 @@ public class UserUpdateStudyPurposeServlet extends HttpServlet {
 
         dao.updateStudyPurpose(userId, studyPurpose.trim());
         response.getWriter().write(JsonUtil.success("学习阶段已更新为 " + studyPurpose.trim()));
-    }
-
-    private Long parseLong(String s) {
-        if (s == null || s.isBlank()) return null;
-        try { return Long.parseLong(s); } catch (NumberFormatException e) { return null; }
     }
 }

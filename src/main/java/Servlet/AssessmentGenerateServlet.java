@@ -1,6 +1,7 @@
 package Servlet;
 
-import Service.AIService;
+import Service.AIClient;
+import Service.AIQuizService;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,10 +23,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @WebServlet("/api/assessment/generate")
 public class AssessmentGenerateServlet extends HttpServlet {
 
-    private final AIService aiService = new AIService();
+    private final AIClient aiClient = new AIClient();
+    private final AIQuizService aiQuizService = new AIQuizService(aiClient);
 
     /** 会话 → 已生成的题目列表（线程安全） */
-    public static final ConcurrentHashMap<String, List<AIService.AssessmentQuestion>> SESSIONS
+    public static final ConcurrentHashMap<String, List<AIQuizService.AssessmentQuestion>> SESSIONS
             = new ConcurrentHashMap<>();
 
     @Override
@@ -43,9 +45,9 @@ public class AssessmentGenerateServlet extends HttpServlet {
         final String sessionId = UUID.randomUUID().toString();
 
         // 1. 同步生成第一道题（约 15-20 秒）
-        AIService.AssessmentQuestion first = aiService.generateSingleQuestion(sp);
+        AIQuizService.AssessmentQuestion first = aiQuizService.generateSingleQuestion(sp);
 
-        List<AIService.AssessmentQuestion> questions = new ArrayList<>();
+        List<AIQuizService.AssessmentQuestion> questions = new ArrayList<>();
         if (first != null) {
             questions.add(first);
         }
@@ -53,14 +55,14 @@ public class AssessmentGenerateServlet extends HttpServlet {
 
         // 2. 后台线程逐道生成剩余 9 道题，失败自动重试
         //    追踪最近 3 题答案，若连续相同则要求 AI 避开
-        final AIService svc = aiService;
-        final List<AIService.AssessmentQuestion> firstList = new ArrayList<>();
+        final AIQuizService svc = aiQuizService;
+        final List<AIQuizService.AssessmentQuestion> firstList = new ArrayList<>();
         if (first != null) firstList.add(first);
         SESSIONS.put(sessionId, firstList);
 
         new Thread(() -> {
             try {
-                List<AIService.AssessmentQuestion> list = SESSIONS.get(sessionId);
+                List<AIQuizService.AssessmentQuestion> list = SESSIONS.get(sessionId);
                 int failures = 0;
                 int[] lastThree = new int[3]; // 环形记录最近 3 题答案
                 int ltIdx = 0;
@@ -74,7 +76,7 @@ public class AssessmentGenerateServlet extends HttpServlet {
                         if (a0 == a1 && a1 == a2) avoid = a0;
                     }
 
-                    AIService.AssessmentQuestion q = null;
+                    AIQuizService.AssessmentQuestion q = null;
                     for (int retry = 0; retry < 2; retry++) {
                         try {
                             q = svc.generateSingleQuestion(sp, avoid);
@@ -127,7 +129,7 @@ public class AssessmentGenerateServlet extends HttpServlet {
     }
 
     /** 将单个 AssessmentQuestion 序列化为 JSON */
-    static void appendQuestionJson(StringBuilder sb, AIService.AssessmentQuestion q) {
+    static void appendQuestionJson(StringBuilder sb, AIQuizService.AssessmentQuestion q) {
         sb.append("{");
         sb.append("\"passage\":\"").append(esc(q.passage)).append("\",");
         sb.append("\"question\":\"").append(esc(q.question)).append("\",");

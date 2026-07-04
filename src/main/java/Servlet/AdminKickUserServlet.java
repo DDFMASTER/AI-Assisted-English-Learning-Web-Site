@@ -3,6 +3,7 @@ package Servlet;
 import Service.AdminService;
 import Service.MonitorService;
 import Utils.JsonUtil;
+import Utils.ServletUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,14 +35,11 @@ public class AdminKickUserServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
 
         // 管理员身份校验
-        Long adminUserId = parseLong(request.getParameter("adminUserId"));
-        if (!adminService.isAdmin(adminUserId)) {
-            response.getWriter().write(JsonUtil.error("无管理员权限"));
-            return;
-        }
+        Long adminUserId = Utils.ServletUtil.authenticateAdmin(request, response, adminService);
+        if (adminUserId == null) return;
 
         // 获取目标用户 ID
-        Long targetUserId = parseLong(request.getParameter("targetUserId"));
+        Long targetUserId = ServletUtil.parseLong(request.getParameter("targetUserId"));
         if (targetUserId == null) {
             response.getWriter().write(JsonUtil.error("缺少目标用户ID"));
             return;
@@ -61,14 +59,5 @@ public class AdminKickUserServlet extends HttpServlet {
         // 记录操作日志
         adminService.logAction(adminUserId, "user", targetUserId,
                 "kick_user", "forced_logout");
-    }
-
-    private Long parseLong(String s) {
-        if (s == null || s.isBlank()) return null;
-        try {
-            return Long.parseLong(s);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 }

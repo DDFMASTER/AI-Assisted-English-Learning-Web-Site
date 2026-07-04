@@ -305,7 +305,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
-import * as echarts from 'echarts'
+let echartsMod = null
 import { useAssessmentStore } from '@/stores/assessment'
 
 const router = useRouter()
@@ -513,9 +513,10 @@ const ringOffset = computed(() => {
 const radarChartRef = ref(null)
 let radarChart = null
 
-function initRadarChart() {
+async function initRadarChart() {
   if (!radarChartRef.value) return
-  radarChart = echarts.init(radarChartRef.value)
+  if (!echartsMod) echartsMod = await import('echarts')
+  radarChart = echartsMod.init(radarChartRef.value)
   const dims = storeResult?.dimensions || {}
   const option = {
     radar: {

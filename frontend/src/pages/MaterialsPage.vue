@@ -1,5 +1,5 @@
 <template>
-  <main class="max-w-[1200px] mx-auto px-6 mt-10">
+  <main class="max-w-[1200px] mx-auto px-6 mt-10 pb-8" role="main">
     <!-- 顶部标题区 -->
     <div class="mb-10">
       <h1 class="text-3xl font-bold mb-2">智能读物匹配</h1>
@@ -10,11 +10,11 @@
       </p>
     </div>
 
-    <div class="grid grid-cols-12 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <!-- 左栏：文章区 -->
-      <div class="col-span-8">
+      <div class="col-span-1 lg:col-span-8">
         <!-- ====== 推荐区 ====== -->
-        <section class="mb-10">
+        <section class="mb-10" aria-label="为你推荐">
           <h2 class="text-lg font-bold text-gray-700 mb-4">
             📚 为你推荐
             <span class="text-sm font-normal text-gray-400 ml-2">（{{ recommendLabel }}）</span>
@@ -46,7 +46,7 @@
         </section>
 
         <!-- ====== 文章目录 ====== -->
-        <section>
+        <section aria-label="文章目录">
           <h2 class="text-lg font-bold text-gray-700 mb-4">📖 文章目录</h2>
 
           <!-- 分类 Tab -->
@@ -91,7 +91,7 @@
           </div>
 
           <!-- 分页 -->
-          <div v-if="catalogTotalPages > 1" class="mt-6 pt-4 border-t border-gray-100">
+          <div v-if="catalogTotalPages > 1" class="mt-6 pt-4 border-t border-gray-100" role="navigation" aria-label="分页导航">
             <div class="flex items-center justify-center gap-2 flex-wrap">
               <button
                 class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
@@ -153,7 +153,7 @@
       </div>
 
       <!-- 右栏 -->
-      <div class="col-span-4 space-y-8">
+      <div class="col-span-1 lg:col-span-4 space-y-8">
         <!-- 今日任务 -->
         <div class="card">
           <div class="flex items-center justify-between mb-4">

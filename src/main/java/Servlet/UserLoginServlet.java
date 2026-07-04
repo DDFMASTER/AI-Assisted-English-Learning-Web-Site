@@ -43,8 +43,9 @@ public class UserLoginServlet extends HttpServlet {
         session.setAttribute("role", user.getRole());
         session.setAttribute("studyPurpose", user.getStudyPurpose());
 
-        // 设置会话超时（30 分钟无操作后自动失效）
-        session.setMaxInactiveInterval(24 * 60 * 60);
+        // 设置会话超时（从配置文件读取，默认 30 分钟）
+        int timeoutMinutes = Utils.ConfigUtil.getInt("session.timeout.minutes", 30);
+        session.setMaxInactiveInterval(timeoutMinutes * 60);
 
         System.out.println("[AAEL] 用户登录成功: userId=" + user.getUserId()
                 + ", username=" + user.getUsername()
@@ -53,8 +54,8 @@ public class UserLoginServlet extends HttpServlet {
 
         // VIP 到期时间
         String vipExpireAt = "";
-        if ("vip".equals(user.getProfile()) && user.getLastCheckin() != null) {
-            vipExpireAt = user.getLastCheckin().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        if ("vip".equals(user.getProfile()) && user.getVipUntil() != null) {
+            vipExpireAt = user.getVipUntil().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
         }
 
         // 构建成功响应

@@ -2,6 +2,7 @@ package Servlet;
 
 import Service.AdminService;
 import Utils.JsonUtil;
+import Utils.ServletUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,13 +27,10 @@ public class AdminArticleUpdateServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
 
         try {
-            Long adminUserId = parseLong(request.getParameter("adminUserId"));
-            if (!adminService.isAdmin(adminUserId)) {
-                response.getWriter().write(JsonUtil.error("无管理员权限"));
-                return;
-            }
+            Long adminUserId = Utils.ServletUtil.authenticateAdmin(request, response, adminService);
+            if (adminUserId == null) return;
 
-            Long articleId = parseLong(request.getParameter("articleId"));
+            Long articleId = ServletUtil.parseLong(request.getParameter("articleId"));
             String title = request.getParameter("title");
             String content = request.getParameter("content");
             String source = request.getParameter("source");
@@ -53,10 +51,5 @@ public class AdminArticleUpdateServlet extends HttpServlet {
             response.setStatus(500);
             response.getWriter().write(JsonUtil.error("服务器错误: " + e.getMessage()));
         }
-    }
-
-    private Long parseLong(String s) {
-        if (s == null || s.isBlank()) return null;
-        try { return Long.parseLong(s); } catch (NumberFormatException e) { return null; }
     }
 }

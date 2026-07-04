@@ -73,6 +73,10 @@ public class User {
     public Integer getCefrProgress() { return cefrProgress; }
     public void setCefrProgress(Integer cefrProgress) { this.cefrProgress = cefrProgress; }
 
+    private LocalDateTime vipUntil;
+    public LocalDateTime getVipUntil() { return vipUntil; }
+    public void setVipUntil(LocalDateTime vipUntil) { this.vipUntil = vipUntil; }
+
     public LocalDateTime getLastCheckin() { return lastCheckin; }
     public void setLastCheckin(LocalDateTime lastCheckin) { this.lastCheckin = lastCheckin; }
 

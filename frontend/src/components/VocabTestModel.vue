@@ -3,6 +3,8 @@
     <div
       v-if="visible"
       class="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      tabindex="-1"
+      @keydown.escape="$emit('close')"
     >
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-4">
         <!-- ========== 开始界面 ========== -->
@@ -143,50 +145,12 @@
         </div>
 
         <!-- ========== 结果界面 ========== -->
-        <div v-else-if="phase === 'result'" class="p-8 text-center">
-          <div class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4"
-            :class="resultHonesty >= 80 ? 'bg-green-100' : 'bg-yellow-100'">
-            <Icon
-              :icon="resultHonesty >= 80 ? 'ph:trophy-bold' : 'ph:warning-bold'"
-              class="text-4xl"
-              :class="resultHonesty >= 80 ? 'text-green-500' : 'text-yellow-500'"
-            />
-          </div>
-          <h2 class="text-2xl font-bold mb-1">测试完成！</h2>
-          <p class="text-gray-400 text-sm mb-6">您的词汇量估算结果</p>
-
-          <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="bg-blue-50 rounded-xl p-4">
-              <p class="text-3xl font-black text-[#2563EB]">{{ resultVocab.toLocaleString() }}</p>
-              <p class="text-xs text-gray-400">估算词汇量</p>
-            </div>
-            <div class="bg-green-50 rounded-xl p-4">
-              <p class="text-3xl font-black text-green-500">{{ resultCefr }}</p>
-              <p class="text-xs text-gray-400">{{ resultCefrLabel }} · CEFR 等级</p>
-            </div>
-            <div class="bg-gray-50 rounded-xl p-4">
-              <p class="text-xl font-bold text-gray-700">{{ resultCorrect }} / {{ totalWords }}</p>
-              <p class="text-xs text-gray-400">正确题数</p>
-            </div>
-            <div class="bg-amber-50 rounded-xl p-4">
-              <p class="text-xl font-bold text-amber-500">+{{ resultXp }}</p>
-              <p class="text-xs text-gray-400">获得经验</p>
-            </div>
-            <div class="bg-gray-50 rounded-xl p-4">
-              <p class="text-xl font-bold" :class="resultHonesty >= 80 ? 'text-green-500' : 'text-yellow-500'">
-                {{ resultHonesty }}%
-              </p>
-              <p class="text-xs text-gray-400">诚信度</p>
-            </div>
-          </div>
-
-          <button
-            class="px-8 py-3 bg-[#2563EB] text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform"
-            @click="$emit('close')"
-          >
-            完成
-          </button>
-        </div>
+        <VocabTestResult
+          v-else-if="phase === 'result'"
+          v-bind="resultProps"
+          @close="$emit('close')"
+          @test-again="resetToStart()"
+        />
       </div>
     </div>
   </Teleport>
@@ -197,6 +161,7 @@ import { ref, computed, onUnmounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
 import request from '@/utils/request'
+import VocabTestResult from './VocabTestResult.vue'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -231,6 +196,7 @@ const resultCefrLabel = ref('初级')
 const resultCorrect = ref(0)
 const resultHonesty = ref(0)
 const resultXp = ref(0)
+const resultPseudoRate = ref(0)
 
 // 实时统计
 const realCorrect = ref(0)
@@ -256,6 +222,16 @@ const isCurrentCorrect = computed(() => {
     return selectedAnswer.value === 'know' || selectedOptionIdx.value === currentCorrectIndex.value
   }
 })
+
+const resultProps = computed(() => ({
+  correctCount: resultCorrect.value,
+  totalWords: totalWords.value,
+  estimatedVocab: resultVocab.value,
+  cefrLevel: resultCefr.value,
+  xpEarned: resultXp.value,
+  honestyPercent: resultHonesty.value,
+  pseudoHitRate: resultPseudoRate.value,
+}))
 
 async function startTest() {
   phase.value = 'loading'
@@ -454,6 +430,7 @@ async function submitResults() {
     resultCefrLabel.value = cefrLabel
     resultCorrect.value = totalCorrect
     resultHonesty.value = honesty
+    resultPseudoRate.value = Math.round(pseudoRate * 100)
 
     // 根据得分给予 0-10 经验值
     const xpEarned = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 10) : 0
@@ -501,6 +478,22 @@ function clearTimers() {
 function abandonTest() {
   clearTimers()
   emit('close')
+}
+
+function resetToStart() {
+  clearTimers()
+  phase.value = 'start'
+  loadingReady.value = 0
+  loadingStatus.value = '正在获取测试词汇...'
+  words.value = []
+  optionsCache.value = {}
+  answers.value = []
+  currentIndex.value = 0
+  answered.value = false
+  realCorrect.value = 0
+  realTotal.value = 0
+  pseudoCorrect.value = 0
+  pseudoTotal.value = 0
 }
 
 function getOptBtnClass(idx) {

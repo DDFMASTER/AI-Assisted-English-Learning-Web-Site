@@ -2,6 +2,7 @@ package Servlet;
 
 import DAO.UserDAOImpl;
 import Utils.JsonUtil;
+import Utils.ServletUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,9 +23,10 @@ public class CefrProgressServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         response.setContentType("application/json;charset=UTF-8");
-        Long userId = parseLong(request.getParameter("userId"));
+        Long userId = (Long) request.getSession().getAttribute("userId");
         if (userId == null) {
-            response.getWriter().write(JsonUtil.error("缺少 userId"));
+            response.setStatus(401);
+            response.getWriter().write(JsonUtil.error("请先登录"));
             return;
         }
         var user = new UserDAOImpl().findById(userId);
@@ -43,7 +45,12 @@ public class CefrProgressServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
 
-        Long userId = parseLong(request.getParameter("userId"));
+        Long userId = (Long) request.getSession().getAttribute("userId");
+        if (userId == null) {
+            response.setStatus(401);
+            response.getWriter().write(JsonUtil.error("请先登录"));
+            return;
+        }
         var dao = new UserDAOImpl();
 
         // 升级场景：同时更新 literacy 和 level
@@ -70,8 +77,4 @@ public class CefrProgressServlet extends HttpServlet {
         response.getWriter().write(JsonUtil.buildResponse(true, "更新成功", extra));
     }
 
-    private Long parseLong(String s) {
-        if (s == null || s.isBlank()) return null;
-        try { return Long.parseLong(s); } catch (NumberFormatException e) { return null; }
-    }
 }

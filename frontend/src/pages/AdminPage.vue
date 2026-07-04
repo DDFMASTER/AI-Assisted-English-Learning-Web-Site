@@ -1,5 +1,5 @@
 <template>
-  <main class="max-w-[1200px] mx-auto px-6 py-8">
+  <main class="max-w-[1200px] mx-auto px-6 py-8 overflow-x-auto">
     <h1 class="text-2xl font-bold text-[#1F2937] mb-6">管理后台</h1>
 
     <!-- Tab 切换 -->
@@ -32,7 +32,7 @@
       <div v-if="usersLoading" class="text-center py-8 text-gray-400">加载中...</div>
 
       <div v-else class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="min-w-[700px] w-full text-sm">
           <thead>
             <tr class="border-b border-gray-100 text-left text-gray-400">
               <th class="py-2 px-3">ID</th>
@@ -40,6 +40,8 @@
               <th class="py-2 px-3">角色</th>
               <th class="py-2 px-3">学习阶段</th>
               <th class="py-2 px-3">经验值</th>
+              <th class="py-2 px-3">VIP剩余</th>
+              <th class="py-2 px-3">VIP截止</th>
               <th class="py-2 px-3">最近登录</th>
               <th class="py-2 px-3">操作</th>
             </tr>
@@ -60,9 +62,18 @@
               </td>
               <td class="py-2 px-3 text-gray-500">{{ u.studyPurpose || '-' }}</td>
               <td class="py-2 px-3 text-gray-500">{{ u.experience || 0 }}</td>
+              <td class="py-2 px-3 text-xs">
+                <span v-if="u.profile === 'vip' && u.vipUntil" class="text-yellow-600 font-bold">{{ vipDaysLeft(u.vipUntil) }}</span>
+                <span v-else class="text-gray-300">-</span>
+              </td>
+              <td class="py-2 px-3 text-gray-400 text-xs">{{ fmtVipUntil(u.vipUntil) }}</td>
               <td class="py-2 px-3 text-gray-400 text-xs">{{ u.lastLogin || '-' }}</td>
               <td class="py-2 px-3">
                 <div class="flex gap-1">
+                  <button
+                    class="text-xs px-2 py-0.5 rounded bg-yellow-50 text-yellow-600 hover:bg-yellow-100 transition-colors"
+                    @click="openGrantVip(u)"
+                  >VIP</button>
                   <button
                     v-if="u.role !== 'admin'"
                     class="text-xs px-2 py-0.5 rounded bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
@@ -110,7 +121,7 @@
       <div v-if="articlesLoading" class="text-center py-8 text-gray-400">加载中...</div>
 
       <div v-else class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="min-w-[700px] w-full text-sm">
           <thead>
             <tr class="border-b border-gray-100 text-left text-gray-400">
               <th class="py-2 px-3">ID</th>
@@ -149,64 +160,7 @@
         </table>
 
         <!-- 分页 -->
-        <div v-if="articleTotalPages > 1" class="mt-4 pt-4 border-t border-gray-100">
-          <div class="flex items-center justify-center gap-2 flex-wrap">
-            <button
-              class="px-3 py-1 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
-              :disabled="articlePage <= 1"
-              @click="articlePage--; loadArticles()"
-            >上一页</button>
-
-            <template v-if="articleVisiblePages[0] > 1">
-              <button
-                class="px-2.5 py-0.5 text-xs rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                @click="articlePage = 1; loadArticles()"
-              >1</button>
-              <span v-if="articleVisiblePages[0] > 2" class="px-1 text-xs text-gray-300">…</span>
-            </template>
-
-            <button
-              v-for="p in articleVisiblePages"
-              :key="p"
-              class="px-2.5 py-0.5 text-xs rounded-lg transition-colors"
-              :class="p === articlePage ? 'bg-[#2563EB] text-white' : 'text-gray-500 hover:bg-gray-100'"
-              @click="articlePage = p; loadArticles()"
-            >{{ p }}</button>
-
-            <template v-if="articleVisiblePages[articleVisiblePages.length - 1] < articleTotalPages">
-              <span v-if="articleVisiblePages[articleVisiblePages.length - 1] < articleTotalPages - 1" class="px-1 text-xs text-gray-300">…</span>
-              <button
-                class="px-2.5 py-0.5 text-xs rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                @click="articlePage = articleTotalPages; loadArticles()"
-              >{{ articleTotalPages }}</button>
-            </template>
-
-            <button
-              class="px-3 py-1 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
-              :disabled="articlePage >= articleTotalPages"
-              @click="articlePage++; loadArticles()"
-            >下一页</button>
-          </div>
-
-          <!-- 跳转至第 N 页 -->
-          <div class="flex items-center justify-center gap-1.5 mt-3">
-            <span class="text-xs text-gray-400">跳至第</span>
-            <input
-              v-model="articleJumpPageInput"
-              type="number"
-              :min="1"
-              :max="articleTotalPages"
-              class="w-14 h-7 text-center text-xs border border-gray-200 rounded-lg outline-none focus:border-[#2563EB] transition-colors"
-              @keyup.enter="handleArticleJumpPage"
-            />
-            <span class="text-xs text-gray-400">页</span>
-            <button
-              class="text-xs px-2.5 py-1 bg-gray-100 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
-              :disabled="!isArticleJumpValid"
-              @click="handleArticleJumpPage"
-            >GO</button>
-          </div>
-        </div>
+        <AppPagination :current-page="articlePage" :total-pages="articleTotalPages" @change="p => { articlePage = p; loadArticles() }" />
       </div>
     </div>
 
@@ -230,7 +184,7 @@
       <div v-else-if="onlineUsers.length === 0" class="text-center py-8 text-gray-400">暂无在线用户</div>
 
       <div v-else class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="min-w-[700px] w-full text-sm">
           <thead>
             <tr class="border-b border-gray-100 text-left text-gray-400">
               <th class="py-2 px-3">用户ID</th>
@@ -285,7 +239,7 @@
       <div v-if="logsLoading" class="text-center py-8 text-gray-400">加载中...</div>
 
       <div v-else class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="min-w-[700px] w-full text-sm">
           <thead>
             <tr class="border-b border-gray-100 text-left text-gray-400">
               <th class="py-2 px-3">时间</th>
@@ -332,180 +286,36 @@
     </Teleport>
 
     <!-- 上传文章弹窗 -->
-    <Teleport to="body">
-      <div
-        v-if="uploadModal.show"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/30"
-        @click.self="uploadModal.show = false"
-      >
-        <div class="bg-white rounded-xl shadow-xl p-6 w-[560px] max-h-[90vh] overflow-y-auto">
-          <h3 class="text-lg font-bold text-gray-800 mb-4">上传文章</h3>
-
-          <!-- 标题 -->
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-sm text-gray-600">标题</label>
-            <button
-              class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-500 hover:bg-blue-100 transition-colors disabled:opacity-40"
-              :disabled="uploadAiTitle.loading"
-              @click="fetchAiTitle('upload')"
-            >
-              {{ uploadAiTitle.loading ? 'AI 生成中...' : '✨ AI 生成标题' }}
-            </button>
-          </div>
-          <input
-            v-model="uploadModal.title"
-            type="text"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-2"
-            placeholder="请输入或使用 AI 生成标题"
-          />
-          <!-- AI 生成标题结果 -->
-          <div v-if="uploadAiTitle.result && !uploadAiTitle.loading" class="flex items-center gap-2 mb-3 p-2 bg-blue-50 rounded-lg">
-            <span class="text-sm text-gray-700 flex-1 truncate">{{ uploadAiTitle.result }}</span>
-            <button
-              class="text-xs px-2 py-0.5 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors flex-none"
-              @click="applyAiTitle('upload')"
-            >直接应用</button>
-          </div>
-
-          <!-- 内容 -->
-          <label class="block text-sm text-gray-600 mb-1">文章内容</label>
-          <div class="flex items-center gap-2 mb-2">
-            <input
-              ref="fileInput"
-              type="file"
-              accept=".txt"
-              class="hidden"
-              @change="handleFileSelect"
-            />
-            <button
-              class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-              @click="fileInput?.click()"
-            >导入 .txt 文件</button>
-            <span class="text-xs text-gray-400 truncate flex-1">
-              {{ uploadModal.fileName || '或直接在下方输入内容' }}
-            </span>
-          </div>
-          <textarea
-            v-model="uploadModal.content"
-            rows="10"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-1 resize-y"
-            placeholder="粘贴或输入文章正文..."
-          ></textarea>
-          <div class="text-right text-xs text-gray-400 mb-3">{{ uploadModal.content.length }} 字符</div>
-
-          <!-- 来源 -->
-          <label class="block text-sm text-gray-600 mb-1">来源</label>
-          <input
-            v-model="uploadModal.source"
-            type="text"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-3"
-            placeholder="如：BBC News / 新概念英语 / 自定义"
-          />
-
-          <!-- 难度 -->
-          <label class="block text-sm text-gray-600 mb-1">难度等级</label>
-          <select
-            v-model="uploadModal.difficulty"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-4"
-          >
-            <option value="" disabled>请选择难度</option>
-            <option v-for="d in difficultyOptions" :key="d" :value="d">{{ d }}</option>
-          </select>
-
-          <!-- 操作按钮 -->
-          <div class="flex justify-end gap-2">
-            <button
-              class="px-4 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"
-              @click="uploadModal.show = false"
-            >取消</button>
-            <button
-              class="px-4 py-1.5 text-xs rounded-lg bg-[#2563EB] text-white hover:bg-blue-600 disabled:opacity-50"
-              :disabled="uploadModal.submitting"
-              @click="submitArticle"
-            >
-              {{ uploadModal.submitting ? '提交中...' : '提交' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <ArticleFormModal
+      :visible="uploadModalShow"
+      @close="uploadModalShow = false"
+      @saved="loadArticles"
+    />
 
     <!-- 修改文章弹窗 -->
+    <ArticleFormModal
+      :visible="editModalShow"
+      :article="editModalData"
+      @close="editModalShow = false"
+      @saved="loadArticles"
+    />
+
+    <!-- 授予 VIP 弹窗 -->
     <Teleport to="body">
-      <div
-        v-if="editModal.show"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/30"
-        @click.self="editModal.show = false"
-      >
-        <div class="bg-white rounded-xl shadow-xl p-6 w-[560px] max-h-[90vh] overflow-y-auto">
-          <h3 class="text-lg font-bold text-gray-800 mb-4">修改文章</h3>
-
-          <!-- 标题 -->
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-sm text-gray-600">标题</label>
-            <button
-              class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-500 hover:bg-blue-100 transition-colors disabled:opacity-40"
-              :disabled="editAiTitle.loading"
-              @click="fetchAiTitle('edit')"
-            >
-              {{ editAiTitle.loading ? 'AI 生成中...' : '✨ AI 生成标题' }}
-            </button>
+      <div v-if="grantVipModal.show" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/30" @click.self="grantVipModal.show = false">
+        <div class="bg-white rounded-xl shadow-xl p-6 w-80">
+          <h3 class="text-lg font-bold text-gray-800 mb-2">授予 VIP</h3>
+          <p class="text-sm text-gray-500 mb-4">为用户 <strong>{{ grantVipModal.username }}</strong> 授予 VIP 天数：</p>
+          <div class="flex gap-2 mb-4">
+            <button v-for="d in [1,7,30,90]" :key="d"
+              class="flex-1 py-2 rounded-lg text-sm font-bold border transition-all"
+              :class="grantVipModal.days === d ? 'bg-yellow-100 border-yellow-400 text-yellow-700' : 'bg-white border-gray-200 text-gray-500 hover:border-yellow-300'"
+              @click="grantVipModal.days = d">{{ d }}天</button>
           </div>
-          <input
-            v-model="editModal.title"
-            type="text"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-2"
-            placeholder="请输入或使用 AI 生成标题"
-          />
-          <!-- AI 生成标题结果 -->
-          <div v-if="editAiTitle.result && !editAiTitle.loading" class="flex items-center gap-2 mb-3 p-2 bg-blue-50 rounded-lg">
-            <span class="text-sm text-gray-700 flex-1 truncate">{{ editAiTitle.result }}</span>
-            <button
-              class="text-xs px-2 py-0.5 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors flex-none"
-              @click="applyAiTitle('edit')"
-            >直接应用</button>
-          </div>
-
-          <!-- 内容 -->
-          <label class="block text-sm text-gray-600 mb-1">文章内容</label>
-          <textarea
-            v-model="editModal.content"
-            rows="12"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-1 resize-y"
-          ></textarea>
-          <div class="text-right text-xs text-gray-400 mb-3">{{ editModal.content.length }} 字符</div>
-
-          <!-- 来源 -->
-          <label class="block text-sm text-gray-600 mb-1">来源</label>
-          <input
-            v-model="editModal.source"
-            type="text"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-3"
-            placeholder="如：BBC News / 新概念英语 / 自定义"
-          />
-
-          <!-- 难度 -->
-          <label class="block text-sm text-gray-600 mb-1">难度等级</label>
-          <select
-            v-model="editModal.difficulty"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] mb-4"
-          >
-            <option value="" disabled>请选择难度</option>
-            <option v-for="d in difficultyOptions" :key="d" :value="d">{{ d }}</option>
-          </select>
-
-          <!-- 操作按钮 -->
           <div class="flex justify-end gap-2">
-            <button
-              class="px-4 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"
-              @click="editModal.show = false"
-            >取消</button>
-            <button
-              class="px-4 py-1.5 text-xs rounded-lg bg-[#2563EB] text-white hover:bg-blue-600 disabled:opacity-50"
-              :disabled="editModal.submitting"
-              @click="submitEditArticle"
-            >
-              {{ editModal.submitting ? '提交中...' : '保存修改' }}
+            <button class="px-4 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200" @click="grantVipModal.show = false">取消</button>
+            <button class="px-4 py-1.5 text-xs rounded-lg bg-yellow-400 text-white hover:bg-yellow-500 disabled:opacity-50" :disabled="grantVipModal.submitting" @click="submitGrantVip">
+              {{ grantVipModal.submitting ? '处理中...' : '确认授予' }}
             </button>
           </div>
         </div>
@@ -541,6 +351,8 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import request from '@/utils/request'
+import AppPagination from '@/components/AppPagination.vue'
+import ArticleFormModal from '@/components/ArticleFormModal.vue'
 
 const userStore = useUserStore()
 
@@ -625,72 +437,10 @@ function showToast(message, type = 'success') {
 }
 
 // ========== 上传文章弹窗 ==========
-const difficultyOptions = ['初中', '高中', '四级', '六级', '考研', '托福', '期刊', '原著', '网络新闻']
-const fileInput = ref(null)
-const uploadModal = ref({
-  show: false,
-  title: '',
-  fileName: '',
-  content: '',
-  source: '',
-  difficulty: '',
-  submitting: false,
-})
+const uploadModalShow = ref(false)
 
 function openUploadModal() {
-  uploadModal.value = {
-    show: true,
-    title: '',
-    fileName: '',
-    content: '',
-    source: '',
-    difficulty: '',
-    submitting: false,
-  }
-  uploadAiTitle.value = { loading: false, result: '' }
-}
-
-function handleFileSelect(e) {
-  const file = e.target.files?.[0]
-  if (!file) return
-  uploadModal.value.fileName = file.name
-  const reader = new FileReader()
-  reader.onload = () => {
-    uploadModal.value.content = reader.result
-  }
-  reader.readAsText(file, 'UTF-8')
-}
-
-async function submitArticle() {
-  const m = uploadModal.value
-  if (!m.title.trim()) return showToast('请输入标题', 'error')
-  if (!m.content.trim()) return showToast('请输入文章内容或导入文件', 'error')
-  if (!m.source.trim()) return showToast('请输入来源', 'error')
-  if (!m.difficulty) return showToast('请选择难度等级', 'error')
-
-  m.submitting = true
-  try {
-    const formData = new FormData()
-    formData.append('adminUserId', String(userStore.user?.userId))
-    formData.append('title', m.title.trim())
-    formData.append('content', m.content)
-    formData.append('source', m.source.trim())
-    formData.append('difficulty', m.difficulty)
-    const data = await request.post('/admin/article/create', formData)
-    if (data.success) {
-      showToast('文章上传成功')
-      uploadModal.value.show = false
-      loadArticles()
-    } else {
-      showToast(data.message || '上传失败', 'error')
-    }
-  } catch (e) {
-    console.error('上传文章失败:', e)
-    const msg = e?.response?.data?.message || e?.message || '上传失败'
-    showToast(msg, 'error')
-  } finally {
-    m.submitting = false
-  }
+  uploadModalShow.value = true
 }
 
 // ========== 确认弹窗 ==========
@@ -706,6 +456,47 @@ function showConfirm(message, onConfirm) {
 
 // ========== 操作 ==========
 const adminUserId = () => userStore.user?.userId
+
+// ===== 授予 VIP =====
+const grantVipModal = ref({ show: false, username: '', targetUserId: null, days: 7, submitting: false })
+
+function vipDaysLeft(vipUntil) {
+  if (!vipUntil) return '-'
+  const d = new Date(vipUntil.replace(' ', 'T'))
+  const now = new Date()
+  const left = Math.ceil((d - now) / 86400000)
+  return left > 0 ? `剩余 ${left} 天` : '已过期'
+}
+
+function fmtVipUntil(vipUntil) {
+  if (!vipUntil) return '-'
+  return vipUntil.substring(0, 16)
+}
+
+function openGrantVip(u) {
+  grantVipModal.value = { show: true, username: u.username, targetUserId: u.userId, days: 7, submitting: false }
+}
+
+async function submitGrantVip() {
+  const m = grantVipModal.value
+  m.submitting = true
+  try {
+    const params = new URLSearchParams()
+    params.append('adminUserId', String(userStore.user?.userId))
+    params.append('targetUserId', String(m.targetUserId))
+    params.append('days', String(m.days))
+    const data = await request.post('/admin/user/grant-vip', params)
+    if (data.success) {
+      showToast(data.message || 'VIP 授予成功')
+      grantVipModal.value.show = false
+      loadUsers()
+    } else {
+      showToast(data.message || '操作失败', 'error')
+    }
+  } catch (e) {
+    showToast('操作失败', 'error')
+  } finally { m.submitting = false }
+}
 
 async function deleteUser(u) {
   showConfirm(`确定要删除用户 "${u.username}"（ID: ${u.userId}）吗？此操作不可撤销。`, async () => {
@@ -789,162 +580,18 @@ async function loadArticles() {
 
 const articleTotalPages = computed(() => Math.max(1, Math.ceil(articleTotal.value / articlePageSize)))
 
-const articleVisiblePages = computed(() => {
-  const tp = articleTotalPages.value
-  const cp = articlePage.value
-
-  if (tp <= 5) {
-    const pages = []
-    for (let i = 1; i <= tp; i++) pages.push(i)
-    return pages
-  }
-
-  let start
-  if (cp <= 3) {
-    start = 1
-  } else if (cp >= tp - 2) {
-    start = tp - 4
-  } else {
-    start = cp - 2
-  }
-
-  const pages = []
-  for (let i = start; i < start + 5; i++) pages.push(i)
-  return pages
-})
-
-// ====== 跳转至第 N 页 ======
-const articleJumpPageInput = ref(1)
-
-const isArticleJumpValid = computed(() => {
-  const v = parseInt(articleJumpPageInput.value, 10)
-  return !isNaN(v) && v >= 1 && v <= articleTotalPages.value
-})
-
-function handleArticleJumpPage() {
-  if (!isArticleJumpValid.value) return
-  const target = parseInt(articleJumpPageInput.value, 10)
-  articlePage.value = target
-  loadArticles()
-}
-
 // ====== 修改文章弹窗 ======
-const editModal = ref({
-  show: false,
-  articleId: null,
-  title: '',
-  content: '',
-  source: '',
-  difficulty: '',
-  submitting: false,
-})
+const editModalShow = ref(false)
+const editModalData = ref(null)
 
-async function openEditModal(a) {
-  editModal.value = {
-    show: true,
+function openEditModal(a) {
+  editModalData.value = {
     articleId: a.articleId,
-    title: a.title || '',
-    content: '',
-    source: a.source || '',
-    difficulty: a.difficulty || '',
-    submitting: false,
+    title: a.title,
+    source: a.source,
+    difficulty: a.difficulty,
   }
-  editAiTitle.value = { loading: false, result: '' }
-
-  // 从后端获取完整内容
-  try {
-    const adminUserId = userStore.user?.userId
-    const data = await request.get('/admin/article/get', {
-      params: { id: a.articleId, adminUserId }
-    })
-    if (data.success && data.article) {
-      editModal.value.title = data.article.title || ''
-      editModal.value.content = data.article.content || ''
-      editModal.value.source = data.article.source || ''
-      editModal.value.difficulty = data.article.difficulty || ''
-    }
-  } catch (_) {
-    // 保持从列表获取的基础信息
-  }
-}
-
-async function submitEditArticle() {
-  const m = editModal.value
-  if (!m.title.trim()) return showToast('请输入标题', 'error')
-  if (!m.content.trim()) return showToast('请输入文章内容', 'error')
-  if (!m.difficulty) return showToast('请选择难度等级', 'error')
-
-  m.submitting = true
-  try {
-    const params = new URLSearchParams()
-    params.append('adminUserId', String(userStore.user?.userId))
-    params.append('articleId', String(m.articleId))
-    params.append('title', m.title.trim())
-    params.append('content', m.content.trim())
-    params.append('source', (m.source || '').trim())
-    params.append('difficulty', m.difficulty)
-    const data = await request.post('/admin/article/update', params)
-    if (data.success) {
-      showToast('文章修改成功')
-      editModal.value.show = false
-      loadArticles()
-    } else {
-      showToast(data.message || '修改失败', 'error')
-    }
-  } catch (e) {
-    console.error('修改文章失败:', e)
-    const msg = e?.response?.data?.message || e?.message || '修改失败'
-    showToast(msg, 'error')
-  } finally {
-    m.submitting = false
-  }
-}
-
-// ====== AI 标题生成 ======
-const uploadAiTitle = ref({ loading: false, result: '' })
-const editAiTitle = ref({ loading: false, result: '' })
-
-function getAiTitleState(modal) {
-  return modal === 'upload' ? uploadAiTitle.value : editAiTitle.value
-}
-
-async function fetchAiTitle(modal) {
-  const state = getAiTitleState(modal)
-  const m = modal === 'upload' ? uploadModal.value : editModal.value
-
-  if (!m.content || m.content.trim().length < 50) {
-    showToast('文章内容过短，无法生成标题', 'error')
-    return
-  }
-
-  state.loading = true
-  state.result = ''
-  try {
-    const params = new URLSearchParams()
-    params.append('content', m.content.trim())
-    const data = await request.post('/clickbait/generate-title', params)
-    if (data.success && data.title) {
-      state.result = data.title
-    } else {
-      showToast(data.message || 'AI 标题生成失败', 'error')
-    }
-  } catch (e) {
-    console.error('AI 标题生成失败:', e)
-    showToast('AI 标题生成失败，请稍后重试', 'error')
-  } finally {
-    state.loading = false
-  }
-}
-
-function applyAiTitle(modal) {
-  const state = getAiTitleState(modal)
-  if (!state.result) return
-  if (modal === 'upload') {
-    uploadModal.value.title = state.result
-  } else {
-    editModal.value.title = state.result
-  }
-  state.result = ''
+  editModalShow.value = true
 }
 
 async function deleteArticle(a) {

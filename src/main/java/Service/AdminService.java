@@ -4,6 +4,7 @@ import DAO.*;
 import Entities.AdminActionLog;
 import Entities.Article;
 import Entities.User;
+import Utils.ConfigUtil;
 import Utils.DBUtil;
 import Utils.PasswordUtil;
 
@@ -69,7 +70,7 @@ public class AdminService {
         }
 
         String salt = PasswordUtil.generateSalt();
-        String hashedPwd = PasswordUtil.md5Hash("123456", salt);
+        String hashedPwd = PasswordUtil.md5Hash(ConfigUtil.get("default.password", "123456"), salt);
 
         User user = new User();
         user.setUsername(username);
@@ -192,6 +193,33 @@ public class AdminService {
         }
 
         userDAO.updateRole(targetUserId, role);
+        return null;
+    }
+
+    /**
+     * 管理员为用户授予 VIP 天数（不消耗经验值）。
+     * @return 错误消息，null 表示成功
+     */
+    public String grantVip(Long targetUserId, int days) {
+        if (targetUserId == null) return "缺少目标用户ID";
+        if (days <= 0) return "天数必须大于0";
+
+        User target = userDAO.findById(targetUserId);
+        if (target == null) return "用户不存在";
+
+        // 计算 VIP 到期时间（叠加现有 VIP 剩余天数）
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime newExpire;
+        if (target.getVipUntil() != null && target.getVipUntil().isAfter(now)) {
+            newExpire = target.getVipUntil().plusDays(days);
+        } else {
+            newExpire = now.plusDays(days);
+        }
+
+        // 更新 profile 为 vip，写入 vip_until
+        int currentProgress = target.getCefrProgress() != null ? target.getCefrProgress() : 0;
+        String profile = "{\"cefrProgress\":" + currentProgress + ",\"vip\":true}";
+        userDAO.updateVip(targetUserId, "vip", newExpire, target.getExperience() != null ? target.getExperience() : 0);
         return null;
     }
 

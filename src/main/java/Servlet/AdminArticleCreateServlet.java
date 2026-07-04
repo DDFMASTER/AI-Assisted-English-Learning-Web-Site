@@ -2,6 +2,7 @@ package Servlet;
 
 import Service.AdminService;
 import Utils.JsonUtil;
+import Utils.ServletUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,11 +31,8 @@ public class AdminArticleCreateServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
 
         try {
-            Long adminUserId = parseLong(request.getParameter("adminUserId"));
-            if (!adminService.isAdmin(adminUserId)) {
-                response.getWriter().write(JsonUtil.error("无管理员权限"));
-                return;
-            }
+            Long adminUserId = Utils.ServletUtil.authenticateAdmin(request, response, adminService);
+            if (adminUserId == null) return;
 
             String title = request.getParameter("title");
             String content = request.getParameter("content");
@@ -67,12 +65,4 @@ public class AdminArticleCreateServlet extends HttpServlet {
         }
     }
 
-    private Long parseLong(String s) {
-        if (s == null || s.isBlank()) return null;
-        try {
-            return Long.parseLong(s);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
 }

@@ -13,12 +13,14 @@ import java.util.List;
 
 public class UserDAOImpl implements UserDAO {
 
+    private static final String USER_COLUMNS =
+            "user_id, username, password, salt, profile, role, " +
+            "study_purpose, literacy, experience, " +
+            "last_checkin, created_at, last_login, vip_until, cefr_progress";
+
     @Override
     public User findByUsername(String username) {
-        String sql = "SELECT user_id, username, password, salt, profile, role, " +
-                     "study_purpose, literacy, last_literacy, experience, " +
-                     "last_checkin, created_at, last_login " +
-                     "FROM user WHERE username = ?";
+        String sql = "SELECT " + USER_COLUMNS + " FROM user WHERE username = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -37,10 +39,7 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public User findById(Long userId) {
-        String sql = "SELECT user_id, username, password, salt, profile, role, " +
-                     "study_purpose, literacy, last_literacy, experience, " +
-                     "last_checkin, created_at, last_login " +
-                     "FROM user WHERE user_id = ?";
+        String sql = "SELECT " + USER_COLUMNS + " FROM user WHERE user_id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -60,9 +59,9 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public int insert(User user) {
         String sql = "INSERT INTO user (username, password, salt, profile, role, " +
-                     "study_purpose, literacy, last_literacy, experience, " +
-                     "last_checkin, created_at, last_login) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "study_purpose, literacy, experience, " +
+                     "last_checkin, created_at, last_login, vip_until, cefr_progress) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -74,12 +73,13 @@ public class UserDAOImpl implements UserDAO {
             ps.setString(5, user.getRole() != null ? user.getRole() : "normal");
             ps.setString(6, user.getStudyPurpose());
             ps.setInt(7, user.getLiteracy() != null ? user.getLiteracy() : 0);
-            ps.setTimestamp(8, toTimestamp(user.getLastLiteracy()));
-            ps.setInt(9, user.getExperience() != null ? user.getExperience() : 0);
-            ps.setTimestamp(10, toTimestamp(user.getLastCheckin()));
-            ps.setTimestamp(11, toTimestamp(
+            ps.setInt(8, user.getExperience() != null ? user.getExperience() : 0);
+            ps.setTimestamp(9, toTimestamp(user.getLastCheckin()));
+            ps.setTimestamp(10, toTimestamp(
                     user.getCreatedAt() != null ? user.getCreatedAt() : LocalDateTime.now()));
-            ps.setTimestamp(12, toTimestamp(user.getLastLogin()));
+            ps.setTimestamp(11, toTimestamp(user.getLastLogin()));
+            ps.setTimestamp(12, toTimestamp(user.getVipUntil()));
+            ps.setInt(13, user.getCefrProgress() != null ? user.getCefrProgress() : 0);
 
             return ps.executeUpdate();
         } catch (Exception e) {
@@ -148,12 +148,14 @@ public class UserDAOImpl implements UserDAO {
         }
     }
 
-    // ========== profile 字段统一存储（JSON 格式，同时存 CEFR 进度和 VIP 状态） ==========
+    // ========== profile / vip_until / cefr_progress 过渡策略 ==========
+    // 新字段 vip_until 和 cefr_progress 已添加。
+    // 读时优先取新字段；写时双写（新字段 + profile），保持向后兼容。
 
     /** 从 profile JSON 中提取 CEFR 进度（兼容旧格式 "vip" 字符串） */
     static int readProgressFromProfile(String profile) {
         if (profile == null || profile.isBlank()) return 0;
-        if ("vip".equals(profile)) return 0; // 旧格式：纯 VIP 字符串，无进度
+        if ("vip".equals(profile)) return 0;
         try {
             int idx = profile.indexOf("\"cefrProgress\"");
             if (idx < 0) return 0;
@@ -167,14 +169,12 @@ public class UserDAOImpl implements UserDAO {
         }
     }
 
-    /** 判断 profile 是否表示 VIP（兼容旧格式 "vip" 和新 JSON 格式） */
     static boolean isVipInProfile(String profile) {
         if (profile == null) return false;
         if ("vip".equals(profile)) return true;
         return profile.contains("\"vip\":true");
     }
 
-    /** 构建统一的 profile JSON */
     static String buildProfileJson(int progress, boolean isVip) {
         if (isVip) {
             return "{\"cefrProgress\":" + progress + ",\"vip\":true}";
@@ -184,7 +184,6 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public int updateCefrProgress(Long userId, int progress) {
-        // 读取当前 profile 以保留 VIP 状态
         boolean isVip = false;
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(
@@ -199,11 +198,12 @@ public class UserDAOImpl implements UserDAO {
             throw new RuntimeException("读取用户profile失败: userId=" + userId, e);
         }
 
-        String sql = "UPDATE user SET profile = ? WHERE user_id = ?";
+        String sql = "UPDATE user SET cefr_progress = ?, profile = ? WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, buildProfileJson(progress, isVip));
-            ps.setLong(2, userId);
+            ps.setInt(1, progress);
+            ps.setString(2, buildProfileJson(progress, isVip));
+            ps.setLong(3, userId);
             return ps.executeUpdate();
         } catch (Exception e) {
             throw new RuntimeException("更新CEFR进度失败: userId=" + userId, e);
@@ -220,9 +220,10 @@ public class UserDAOImpl implements UserDAO {
         user.setRole(rs.getString("role"));
         user.setStudyPurpose(rs.getString("study_purpose"));
         user.setLiteracy(rs.getInt("literacy"));
-        user.setLastLiteracy(toLocalDateTime(rs.getTimestamp("last_literacy")));
         user.setExperience(rs.getInt("experience"));
-        user.setCefrProgress(readProgressFromProfile(rs.getString("profile")));
+        user.setCefrProgress(rs.getInt("cefr_progress"));
+        Timestamp vuTs = rs.getTimestamp("vip_until");
+        if (vuTs != null) user.setVipUntil(vuTs.toLocalDateTime());
         user.setLastCheckin(toLocalDateTime(rs.getTimestamp("last_checkin")));
         user.setCreatedAt(toLocalDateTime(rs.getTimestamp("created_at")));
         user.setLastLogin(toLocalDateTime(rs.getTimestamp("last_login")));
@@ -234,10 +235,7 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public List<User> findAll() {
         List<User> users = new ArrayList<>();
-        String sql = "SELECT user_id, username, password, salt, profile, role, " +
-                     "study_purpose, literacy, last_literacy, experience, " +
-                     "last_checkin, created_at, last_login " +
-                     "FROM user ORDER BY user_id DESC";
+        String sql = "SELECT " + USER_COLUMNS + " FROM user ORDER BY user_id DESC";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -312,33 +310,37 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public int updateVip(Long userId, String vipStatus, LocalDateTime vipExpireAt, int newExperience) {
-        // 读取当前 profile 以保留 CEFR 进度
+        // 双写：新字段 vip_until + 旧 profile JSON / last_checkin
         int currentProgress = 0;
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                     "SELECT profile FROM user WHERE user_id = ?")) {
+                     "SELECT cefr_progress, profile FROM user WHERE user_id = ?")) {
             ps.setLong(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    currentProgress = readProgressFromProfile(rs.getString("profile"));
+                    currentProgress = rs.getInt("cefr_progress");
+                    if (rs.wasNull() || currentProgress == 0) {
+                        currentProgress = readProgressFromProfile(rs.getString("profile"));
+                    }
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException("读取用户profile失败: userId=" + userId, e);
+            throw new RuntimeException("读取用户信息失败: userId=" + userId, e);
         }
 
         boolean isVip = "vip".equals(vipStatus);
         String profile = buildProfileJson(currentProgress, isVip);
 
-        String sql = "UPDATE user SET profile = ?, last_checkin = ?, experience = ? WHERE user_id = ?";
+        String sql = "UPDATE user SET profile = ?, last_checkin = ?, experience = ?, vip_until = ? WHERE user_id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, profile);
-            ps.setTimestamp(2, toTimestamp(vipExpireAt));
+            ps.setTimestamp(2, toTimestamp(isVip ? vipExpireAt : null));
             ps.setInt(3, newExperience);
-            ps.setLong(4, userId);
+            ps.setTimestamp(4, toTimestamp(isVip ? vipExpireAt : null));
+            ps.setLong(5, userId);
             return ps.executeUpdate();
         } catch (Exception e) {
             throw new RuntimeException("VIP兑换失败: " + userId, e);

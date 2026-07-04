@@ -173,7 +173,7 @@ public class UserService {
      */
     public boolean checkVipExpired(User user) {
         if (user == null || !"vip".equals(user.getProfile())) return false;
-        LocalDateTime expireAt = user.getLastCheckin();
+        LocalDateTime expireAt = user.getVipUntil();
         if (expireAt != null && expireAt.isBefore(LocalDateTime.now())) {
             user.setProfile("");
             userDAO.updateVip(user.getUserId(), "", expireAt, user.getExperience() != null ? user.getExperience() : 0);

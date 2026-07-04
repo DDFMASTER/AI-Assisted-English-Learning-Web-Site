@@ -1,7 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import request from '@/utils/request'
-import { lemmatize } from '@/utils/lemmatize'
+let _lemmatize = null
+async function getLemmatize() {
+  if (!_lemmatize) {
+    const mod = await import('@/utils/lemmatize')
+    _lemmatize = mod.lemmatize
+  }
+  return _lemmatize
+}
 
 export const useReaderStore = defineStore('reader', () => {
   // ========== 状态 ==========
@@ -52,8 +59,10 @@ export const useReaderStore = defineStore('reader', () => {
       loading.value = false
     }
 
-    // 未拿到数据时，从列表页 mock 中取（MaterialsPage 也用的 mock）
-    article.value = getMockArticle(articleId)
+    // 后端获取失败时，显示错误状态而非 mock 数据
+    if (!article.value) {
+      loading.value = false
+    }
   }
 
   /**
@@ -231,7 +240,7 @@ export const useReaderStore = defineStore('reader', () => {
     if (exact && exact.found) return exact
 
     // 2. 词形还原：生成候选原形列表，逐个尝试
-    const candidates = lemmatize(w)
+    const candidates = (await getLemmatize())(w)
     // 跳过第一个（就是原词本身，已经精确匹配过了）
     for (let i = 1; i < candidates.length; i++) {
       const candidate = candidates[i]
@@ -249,23 +258,21 @@ export const useReaderStore = defineStore('reader', () => {
     return { success: true, word: w, found: false, results: [] }
   }
 
-  /** 尝试查词：先后端 API，再本地 mock */
+  /** 尝试查词：仅后端 API，失败时返回错误信息 */
   async function tryLookup(w, studyPurpose) {
     try {
       const params = { word: w }
       if (studyPurpose) {
         params.studyPurpose = studyPurpose
       }
-      // AI 兜底查词可能耗时 15-20 秒，超时设为 30 秒
       const data = await request.get('/word/lookup', { params, timeout: 30000 })
       if (data.success) {
-        // 透传跨词书检索标记
         return { ...data, crossStage: data.crossStage || false }
       }
     } catch (error) {
-      // 后端不可用，继续尝试本地
+      // 后端不可用，返回错误结果
     }
-    return getMockWordResult(w, studyPurpose)
+    return { success: true, word: w, found: false, results: [], error: '后端连接错误' }
   }
 
   /** 本地 mock 词库，后端不可用时的后备 */

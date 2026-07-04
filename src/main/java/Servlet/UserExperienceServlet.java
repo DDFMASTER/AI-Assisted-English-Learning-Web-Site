@@ -2,6 +2,7 @@ package Servlet;
 
 import Service.UserService;
 import Utils.JsonUtil;
+import Utils.ServletUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,27 +31,22 @@ public class UserExperienceServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
 
-        // 读取参数
-        String userIdParam = request.getParameter("userId");
+        // 从 session 获取当前用户 ID
+        Long userId = ServletUtil.getSessionUserId(request);
+        if (userId == null) {
+            response.getWriter().write(
+                    JsonUtil.error("请先登录"));
+            return;
+        }
+
         String xpParam = request.getParameter("xp");
-
-        if (userIdParam == null || xpParam == null) {
+        if (xpParam == null) {
             response.getWriter().write(
-                    JsonUtil.error("缺少必要参数 userId 或 xp"));
+                    JsonUtil.error("缺少必要参数 xp"));
             return;
         }
 
-        Long userId;
-        int xpToAdd;
-        try {
-            userId = Long.parseLong(userIdParam);
-            xpToAdd = Integer.parseInt(xpParam);
-        } catch (NumberFormatException e) {
-            response.getWriter().write(
-                    JsonUtil.error("参数格式错误: userId 和 xp 必须为整数"));
-            return;
-        }
-
+        int xpToAdd = ServletUtil.parseInt(xpParam, 0);
         if (xpToAdd == 0) {
             response.getWriter().write(
                     JsonUtil.error("xp 不能为 0"));
@@ -83,19 +79,10 @@ public class UserExperienceServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
 
-        String userIdParam = request.getParameter("userId");
-        if (userIdParam == null) {
+        Long userId = ServletUtil.getSessionUserId(request);
+        if (userId == null) {
             response.getWriter().write(
-                    JsonUtil.error("缺少参数 userId"));
-            return;
-        }
-
-        Long userId;
-        try {
-            userId = Long.parseLong(userIdParam);
-        } catch (NumberFormatException e) {
-            response.getWriter().write(
-                    JsonUtil.error("userId 格式错误"));
+                    JsonUtil.error("请先登录"));
             return;
         }
 

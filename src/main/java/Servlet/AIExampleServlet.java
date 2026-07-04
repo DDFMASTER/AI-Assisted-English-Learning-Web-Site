@@ -1,6 +1,7 @@
 package Servlet;
 
-import Service.AIService;
+import Service.AIClient;
+import Service.AIWordService;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,7 +17,8 @@ import java.io.IOException;
 @WebServlet("/api/word/ai-examples")
 public class AIExampleServlet extends HttpServlet {
 
-    private final AIService aiService = new AIService();
+    private final AIClient aiClient = new AIClient();
+    private final AIWordService aiWordService = new AIWordService(aiClient);
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -32,7 +34,7 @@ public class AIExampleServlet extends HttpServlet {
             return;
         }
 
-        AIService.AIExampleResult result = aiService.generateExamples(word.trim());
+        AIWordService.AIExampleResult result = aiWordService.generateExamples(word.trim());
         response.getWriter().write(result.toJson());
     }
 }

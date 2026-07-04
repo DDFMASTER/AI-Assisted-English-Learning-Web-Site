@@ -3,6 +3,7 @@ package Servlet;
 import Entities.User;
 import Service.AdminService;
 import Utils.JsonUtil;
+import Utils.ServletUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,11 +28,8 @@ public class AdminUserListServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
 
         // 管理员身份校验
-        Long adminUserId = parseLong(request.getParameter("adminUserId"));
-        if (!adminService.isAdmin(adminUserId)) {
-            response.getWriter().write(JsonUtil.error("无管理员权限"));
-            return;
-        }
+        Long adminUserId = Utils.ServletUtil.authenticateAdmin(request, response, adminService);
+        if (adminUserId == null) return;
 
         List<User> users = adminService.getAllUsers();
 
@@ -49,19 +47,13 @@ public class AdminUserListServlet extends HttpServlet {
             json.append("\"literacy\":").append(JsonUtil.numVal(u.getLiteracy())).append(",");
             json.append("\"experience\":").append(JsonUtil.numVal(u.getExperience())).append(",");
             json.append("\"lastLogin\":").append(JsonUtil.formatDateTime(u.getLastLogin())).append(",");
-            json.append("\"createdAt\":").append(JsonUtil.formatDateTime(u.getCreatedAt()));
+            json.append("\"createdAt\":").append(JsonUtil.formatDateTime(u.getCreatedAt())).append(",");
+            json.append("\"profile\":").append(JsonUtil.strVal(u.getProfile())).append(",");
+            json.append("\"vipUntil\":").append(JsonUtil.formatDateTime(u.getVipUntil()));
             json.append("}");
         }
         json.append("]}");
         response.getWriter().write(json.toString());
     }
 
-    private Long parseLong(String s) {
-        if (s == null || s.isBlank()) return null;
-        try {
-            return Long.parseLong(s);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
 }
