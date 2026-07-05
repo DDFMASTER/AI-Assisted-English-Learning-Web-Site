@@ -294,6 +294,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
       let leveledUp = false
       let progressGained = 0
       let scoreTooLow = false
+      let isMaxLevel = false
       try {
         const progressResult = await saveCefrProgress(data.overallScore || 0, data.cefrLevel)
         if (progressResult) {
@@ -302,14 +303,17 @@ export const useAssessmentStore = defineStore('assessment', () => {
           assessmentResult.value.leveledUp = progressResult.leveledUp || false
           assessmentResult.value.progressGained = progressResult.progressGained || 0
           assessmentResult.value.tooLow = progressResult.tooLow || false
+          assessmentResult.value.isMaxLevel = progressResult.isMaxLevel || false
           leveledUp = progressResult.leveledUp || false
           progressGained = progressResult.progressGained || 0
           scoreTooLow = progressResult.tooLow || false
+          isMaxLevel = progressResult.isMaxLevel || false
         }
       } catch (_) { /* 非关键 */ }
       assessmentResult.value.leveledUp = leveledUp
       assessmentResult.value.progressGained = progressGained
       assessmentResult.value.tooLow = scoreTooLow
+      assessmentResult.value.isMaxLevel = isMaxLevel
 
       clearProgress()
       return { success: true, result: assessmentResult.value }
@@ -357,15 +361,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
     const userId = userStore.user?.userId
     if (!userId) return null
 
-    // 分数低于 30 分不增加进度
-    if ((score || 0) < 30) {
-      return { level: null, nextLevel: null, leveledUp: false, progressGained: 0, tooLow: true }
-    }
-
-    const vocabBases = { A1: 500, A2: 1500, B1: 3000, B2: 5000, C1: 8000, C2: 12000 }
-    const cefrLabels = { A1: '初级', A2: '初级上', B1: '中级', B2: '中高级', C1: '高级', C2: '精通' }
-
-    // 读取用户当前 CEFR 等级
+    // 先检测用户当前等级
     let currentLevel = null
     try {
       const raw = localStorage.getItem(`aael_vocab_result_${userId}`)
@@ -383,6 +379,22 @@ export const useAssessmentStore = defineStore('assessment', () => {
       else if (literacy >= 1500) currentLevel = 'A2'
       else currentLevel = 'A1'
     }
+
+    // 已到达最高等级 C2，不再增加进度（分数低于30也提示攻克C2难题）
+    if (currentLevel === 'C2') {
+      if ((score || 0) < 30) {
+        return { level: 'C2', nextLevel: 'C2', leveledUp: false, progressGained: 0, tooLow: true, isMaxLevel: true }
+      }
+      return { level: 'C2', nextLevel: 'C2', leveledUp: false, progressGained: 0, isMaxLevel: true }
+    }
+
+    // 分数低于 30 分不增加进度
+    if ((score || 0) < 30) {
+      return { level: null, nextLevel: null, leveledUp: false, progressGained: 0, tooLow: true }
+    }
+
+    const vocabBases = { A1: 500, A2: 1500, B1: 3000, B2: 5000, C1: 8000, C2: 12000 }
+    const cefrLabels = { A1: '初级', A2: '初级上', B1: '中级', B2: '中高级', C1: '高级', C2: '精通' }
 
     let currentProgress = 0
     try {

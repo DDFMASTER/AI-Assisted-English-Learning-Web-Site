@@ -27,7 +27,11 @@
 
         <!-- 结果描述 -->
         <div class="flex-1">
-          <div v-if="result.leveledUp" class="inline-flex items-center gap-2 px-3 py-1 bg-yellow-50 text-yellow-600 rounded-full text-xs font-bold mb-4">
+          <div v-if="result.isMaxLevel && !result.tooLow" class="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold mb-4">
+            <Icon icon="ph:crown-simple-fill" />
+            已达最高等级
+          </div>
+          <div v-else-if="result.leveledUp" class="inline-flex items-center gap-2 px-3 py-1 bg-yellow-50 text-yellow-600 rounded-full text-xs font-bold mb-4">
             <Icon icon="ph:crown-simple-bold" />
             成功晋级
           </div>
@@ -39,11 +43,18 @@
             <Icon icon="ph:check-circle-bold" />
             测评已通过
           </div>
-          <h1 v-if="result.leveledUp" class="text-3xl font-bold mb-4">🎉 恭喜！你已成功晋级至 {{ result.level }}！</h1>
+          <h1 v-if="result.isMaxLevel && !result.tooLow" class="text-3xl font-bold mb-4">🏆 你已达到最高等级 C2！</h1>
+          <h1 v-else-if="result.leveledUp" class="text-3xl font-bold mb-4">🎉 恭喜！你已成功晋级至 {{ result.level }}！</h1>
           <h1 v-else-if="result.tooLow" class="text-3xl font-bold mb-4">很遗憾，本次得分偏低</h1>
           <h1 v-else class="text-3xl font-bold mb-4">测评完成！当前等级 {{ result.level }}</h1>
-          <p v-if="result.tooLow" class="text-gray-500 leading-relaxed mb-2">
+          <p v-if="result.tooLow && result.isMaxLevel" class="text-gray-500 leading-relaxed mb-2">
+            继续努力，攻克 C2 难题吧！
+          </p>
+          <p v-else-if="result.tooLow" class="text-gray-500 leading-relaxed mb-2">
             你的得分（{{ result.score }} 分）低于 30 分，本次不会增加英语水平进度。继续努力，多加练习！
+          </p>
+          <p v-else-if="result.isMaxLevel" class="text-gray-500 leading-relaxed mb-2">
+            你已达到 CEFR 最高等级 C2（精通），做题不会继续提高进度，但可以继续练习保持水平！
           </p>
           <p v-else class="text-gray-500 leading-relaxed mb-2">
             根据你的答题表现（{{ result.score }} 分），本次测评获得
@@ -52,8 +63,11 @@
           <p v-if="result.leveledUp" class="text-green-600 font-bold leading-relaxed mb-6">
             🎊 进度已满，恭喜晋级至 {{ result.level }}！新阶段从 0% 开始，继续加油！
           </p>
-          <p v-else-if="!result.tooLow" class="text-gray-400 text-sm leading-relaxed mb-8">
+          <p v-else-if="!result.tooLow && !result.isMaxLevel" class="text-gray-400 text-sm leading-relaxed mb-8">
             继续加油，距下一阶段 {{ result.nextLevel }} 还需积累更多进度。
+          </p>
+          <p v-else-if="result.isMaxLevel && !result.tooLow" class="text-blue-500 font-bold text-sm leading-relaxed mb-8">
+            💪 C2 精通级别没有更高的等级了，继续保持，你就是英语大神！
           </p>
           <div class="flex items-center gap-4">
             <router-link
@@ -489,6 +503,7 @@ const result = computed(() => ({
   leveledUp: storeResult?.leveledUp || false,
   progressGained: storeResult?.progressGained || 0,
   tooLow: storeResult?.tooLow || false,
+  isMaxLevel: storeResult?.isMaxLevel || false,
 }))
 
 // 分项能力详情（从 store 动态读取）

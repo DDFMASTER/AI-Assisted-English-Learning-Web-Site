@@ -657,13 +657,18 @@ const totalXp = computed(() => userStore.user?.experience || 0)
 
 // CEFR 进度条
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
-const cefrProgress = computed(() => userStore.user?.cefrProgress || 0)
 const cefrCurrentLevel = computed(() => {
   const local = getLocalVocabResult()
   if (local) return local.cefrLevel || 'A1'
   return literacyToLevel(userStore.user?.literacy)?.split(' · ')[0] || 'A1'
 })
+const isCefrMaxLevel = computed(() => cefrCurrentLevel.value === 'C2')
+const cefrProgress = computed(() => {
+  if (isCefrMaxLevel.value) return 100
+  return userStore.user?.cefrProgress || 0
+})
 const cefrNextLevel = computed(() => {
+  if (isCefrMaxLevel.value) return 'MAX'
   const idx = CEFR_LEVELS.indexOf(cefrCurrentLevel.value)
   return CEFR_LEVELS[idx + 1] || cefrCurrentLevel.value
 })
