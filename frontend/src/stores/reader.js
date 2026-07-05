@@ -18,6 +18,7 @@ export const useReaderStore = defineStore('reader', () => {
   const showTranslation = ref(false)
   const bookmarks = ref([])
   const loading = ref(false)
+  const isFavorited = ref(false)    // 当前文章是否已收藏
 
   // ========== AI 例句缓存 ==========
   /** @type {import('vue').Ref<Record<string, {examples: Array<{en:string,zh:string}>, loading: boolean}>>} */
@@ -206,17 +207,23 @@ export const useReaderStore = defineStore('reader', () => {
    * 调整字体大小
    */
   function adjustFontSize(delta) {
-    fontSize.value = Math.min(24, Math.max(14, fontSize.value + delta))
+    fontSize.value = Math.min(28, Math.max(12, fontSize.value + delta))
   }
 
   /**
-   * 添加书签
+   * 直接设置字体大小
+   */
+  function setFontSize(size) {
+    fontSize.value = Math.min(28, Math.max(12, size))
+  }
+
+  /**
+   * 添加书签（阅读进度位置）
    */
   function addBookmark(position) {
     if (!bookmarks.value.includes(position)) {
       bookmarks.value.push(position)
     }
-    // TODO: 调用后端 API 保存
   }
 
   /**
@@ -224,6 +231,55 @@ export const useReaderStore = defineStore('reader', () => {
    */
   function removeBookmark(position) {
     bookmarks.value = bookmarks.value.filter(b => b !== position)
+  }
+
+  /**
+   * 切换收藏状态（添加/移除收藏夹）
+   * @returns {Promise<boolean>} 操作后的收藏状态
+   */
+  async function toggleFavorite() {
+    if (!article.value?.id) return isFavorited.value
+
+    try {
+      const { addToFavorites, removeFromFavorites, isInFavorites } = await import('@/utils/favoritesDB')
+
+      if (isFavorited.value) {
+        await removeFromFavorites(article.value.id)
+        isFavorited.value = false
+      } else {
+        const success = await addToFavorites({
+          articleId: article.value.id,
+          title: article.value.title || '',
+          difficulty: article.value.difficulty || '',
+          source: article.value.source || '',
+          readTime: article.value.readTime || '',
+          wordCount: article.value.wordCount ? String(article.value.wordCount) : '',
+        })
+        if (success) {
+          isFavorited.value = true
+        }
+      }
+    } catch (e) {
+      console.error('收藏操作失败:', e)
+    }
+    return isFavorited.value
+  }
+
+  /**
+   * 检查当前文章是否已收藏
+   */
+  async function checkFavoriteStatus() {
+    if (!article.value?.id) {
+      isFavorited.value = false
+      return
+    }
+    try {
+      const { isInFavorites } = await import('@/utils/favoritesDB')
+      isFavorited.value = await isInFavorites(article.value.id)
+    } catch (e) {
+      console.error('检查收藏状态失败:', e)
+      isFavorited.value = false
+    }
   }
 
   /**
@@ -549,14 +605,18 @@ export const useReaderStore = defineStore('reader', () => {
     showTranslation,
     bookmarks,
     loading,
+    isFavorited,
     articleTitle,
     articleContent,
     fetchArticle,
     updateProgress,
     toggleTranslation,
     adjustFontSize,
+    setFontSize,
     addBookmark,
     removeBookmark,
+    toggleFavorite,
+    checkFavoriteStatus,
     lookupWord,
     addToVocabulary,
     aiExampleCache,

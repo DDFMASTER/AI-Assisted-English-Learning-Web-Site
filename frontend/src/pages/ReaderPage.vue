@@ -10,24 +10,51 @@
           <div class="h-6 w-px bg-gray-200"></div>
           <h2 class="font-bold truncate max-w-[400px]">{{ readerStore.articleTitle }}</h2>
         </div>
-        <div class="flex items-center gap-3">
-          <!-- 字体大小 -->
-          <button class="p-2 text-gray-400 hover:text-gray-600" @click="guard(() => readerStore.adjustFontSize(2))">
-            <Icon icon="ph:text-t-bold" class="text-2xl" />
-          </button>
-          <!-- 书签 -->
-          <button class="p-2 text-gray-400 hover:text-gray-600" @click="guard(handleBookmark)">
-            <Icon icon="ph:bookmark-simple-bold" class="text-2xl" />
-          </button>
-          <!-- AI 面板切换 -->
-          <button
-            class="p-2 transition-colors"
-            :class="showSidePanel ? 'text-[#2563EB]' : 'text-gray-300 hover:text-[#2563EB]'"
-            title="AI 文化讲解 & 选择题"
-            @click="showSidePanel = !showSidePanel"
-          >
-            <Icon icon="ph:brain-bold" class="text-lg" />
-          </button>
+        <div class="flex items-center gap-1">
+          <!-- AI 面板切换（第一个） -->
+          <div class="relative group">
+            <button
+              class="p-2 transition-colors rounded-lg"
+              :class="showSidePanel ? 'text-[#2563EB] bg-blue-50' : 'text-gray-400 hover:text-[#2563EB]'"
+              @click="showSidePanel = !showSidePanel"
+            >
+              <Icon icon="ph:brain-bold" class="text-2xl" />
+            </button>
+            <div class="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded-lg px-3 py-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[60]">
+              AI 文化讲解 & 选择题
+            </div>
+          </div>
+
+          <!-- 字体设置（第二个） -->
+          <div class="relative group">
+            <button
+              class="p-2 transition-colors rounded-lg"
+              :class="showFontPanel ? 'text-[#2563EB] bg-blue-50' : 'text-gray-400 hover:text-[#2563EB]'"
+              @click.stop="toggleFontPanel"
+            >
+              <Icon icon="ph:text-aa-bold" class="text-2xl" />
+            </button>
+            <div class="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded-lg px-3 py-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[60]">
+              字体设置
+            </div>
+          </div>
+
+          <!-- 书签 / 收藏夹（第三个） -->
+          <div class="relative group">
+            <button
+              class="p-2 transition-colors rounded-lg"
+              :class="readerStore.isFavorited ? 'text-yellow-500' : 'text-gray-400 hover:text-gray-600'"
+              @click.stop="guard(handleFavorite)"
+            >
+              <Icon
+                :icon="readerStore.isFavorited ? 'ph:bookmark-simple-fill' : 'ph:bookmark-simple-bold'"
+                class="text-2xl"
+              />
+            </button>
+            <div class="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded-lg px-3 py-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[60]">
+              {{ readerStore.isFavorited ? '已收藏 · 点击取消' : '添加至收藏夹' }}
+            </div>
+          </div>
         </div>
       </div>
     </nav>
@@ -155,31 +182,36 @@
       <p class="text-gray-400">加载文章中...</p>
     </div>
 
-    <!-- 底部固定操作栏 -->
+    <!-- 底部固定操作栏（单词/段落翻译切换） -->
     <div class="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-t border-gray-100">
-      <div class="max-w-[800px] mx-auto px-6 h-16 flex items-center justify-between">
-        <!-- 进度条 -->
-        <div class="flex items-center gap-3 flex-1 mr-8">
-          <span class="text-xs font-bold text-gray-400 flex-none">{{ readerStore.readingProgress }}%</span>
-          <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              class="h-full bg-[#2563EB] transition-all"
-              :style="{ width: readerStore.readingProgress + '%' }"
-            ></div>
-          </div>
+      <div class="max-w-[800px] mx-auto px-6 py-2 flex flex-col items-center">
+        <!-- 翻译模式切换 -->
+        <div class="flex items-center bg-gray-100 rounded-full p-0.5">
+          <button
+            class="px-5 py-1.5 rounded-full text-xs font-bold transition-all"
+            :class="translateMode === 'word'
+              ? 'bg-white text-[#2563EB] shadow-sm'
+              : 'text-gray-400 hover:text-gray-600'"
+            @click="setTranslateMode('word')"
+          >
+            <Icon icon="ph:text-aa-bold" class="inline mr-1" />
+            单词翻译
+          </button>
+          <button
+            class="px-5 py-1.5 rounded-full text-xs font-bold transition-all"
+            :class="translateMode === 'paragraph'
+              ? 'bg-white text-[#2563EB] shadow-sm'
+              : 'text-gray-400 hover:text-gray-600'"
+            @click="guard(() => setTranslateMode('paragraph'))"
+          >
+            <Icon icon="ph:article-bold" class="inline mr-1" />
+            段落翻译
+          </button>
         </div>
-
-        <!-- 段落翻译按钮 -->
-        <button
-          class="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all flex-none"
-          :class="readerStore.showTranslation
-            ? 'bg-[#2563EB] text-white shadow-lg shadow-blue-200'
-            : 'bg-blue-50 text-[#2563EB] hover:bg-blue-100'"
-          @click="guard(readerStore.toggleTranslation)"
-        >
-          <Icon icon="ph:translate-bold" />
-          段落翻译
-        </button>
+        <!-- 操作提示 -->
+        <p class="text-[10px] text-gray-400 mt-1.5">
+          {{ translateMode === 'word' ? '点击想要翻译的单词即可一键AI翻译' : '点击想要翻译的段落即可一键AI翻译' }}
+        </p>
       </div>
     </div>
 
@@ -219,9 +251,76 @@
       :visible="showSidePanel"
       :cultural-notes="readerStore.culturalNotesCache"
       :quiz-data="readerStore.quizCache"
-      :position="{ x: sidePanelX, y: 140 }"
+      :position="{ x: sidePanelX, y: 175 }"
       @quiz-completed="onQuizCompleted"
     />
+
+    <!-- 字体设置面板（与 AI 面板等宽，点击字体按钮后打开） -->
+    <div
+      v-if="showFontPanel"
+      class="fixed z-[56] w-[300px]"
+      :style="{ right: sidePanelX + 'px', top: '175px' }"
+      @click.stop
+    >
+      <div class="glass-popover p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <Icon icon="ph:text-aa-bold" class="text-[#2563EB] text-lg" />
+            <h3 class="text-sm font-bold text-gray-700">字体设置</h3>
+          </div>
+          <button
+            class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+            @click="showFontPanel = false"
+          >
+            <Icon icon="ph:x-bold" class="text-xs text-gray-500" />
+          </button>
+        </div>
+
+        <!-- 当前字号预览 -->
+        <div class="text-center mb-5">
+          <span class="text-4xl font-bold text-[#2563EB]">{{ readerStore.fontSize }}</span>
+          <span class="text-sm text-gray-400 ml-1">px</span>
+        </div>
+
+        <!-- 字号调节按钮 -->
+        <div class="flex items-center justify-center gap-3 mb-5">
+          <button
+            class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 active:scale-95 transition-all flex items-center justify-center text-sm font-bold"
+            @click="adjustFontSize(-1)"
+            :disabled="readerStore.fontSize <= 12"
+          >−1</button>
+          <button
+            class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 active:scale-95 transition-all flex items-center justify-center text-sm font-bold"
+            @click="adjustFontSize(1)"
+            :disabled="readerStore.fontSize >= 28"
+          >+1</button>
+        </div>
+
+        <!-- 快捷预设 -->
+        <div class="mb-5">
+          <div class="text-xs text-gray-400 mb-2">快捷预设</div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="size in [14, 16, 18, 20, 22, 24]"
+              :key="size"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+              :class="readerStore.fontSize === size
+                ? 'bg-[#2563EB] text-white shadow-sm'
+                : 'bg-gray-50 text-gray-500 hover:bg-gray-100'"
+              @click="readerStore.setFontSize(size)"
+            >{{ size }}px</button>
+          </div>
+        </div>
+
+        <!-- 示例文字 -->
+        <div class="p-3 bg-gray-50 rounded-xl">
+          <p class="text-gray-400 text-xs mb-1">预览效果</p>
+          <p class="text-gray-700 leading-relaxed" :style="{ fontSize: readerStore.fontSize + 'px' }">
+            The quick brown fox jumps over the lazy dog.
+          </p>
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>
@@ -335,9 +434,15 @@ const currentTranslationOriginal = computed(() => {
     .join('')
 })
 
-// 右侧面板位置：文章区域右边缘 + 20px gap
+// 右侧面板位置：放在文章右边缘与滚动条之间，不遮挡文本和滚动条
+const PANEL_WIDTH = 300
+const SCROLLBAR = 17   // 浏览器滚动条宽度
+const GAP = 20         // 面板与文章之间的间距
 const sidePanelX = computed(() => {
-  return Math.max(20, Math.floor((window.innerWidth - 800) / 2) - 360)
+  // 文章右边缘到窗口右边缘的距离
+  const marginR = Math.floor((window.innerWidth - 800) / 2)
+  // right = 文章右边缘偏移 - 面板宽 - 间距，但不小于滚动条宽度
+  return Math.max(SCROLLBAR, marginR - PANEL_WIDTH - GAP)
 })
 const aiDetailData = computed(() => {
   if (!aiDetailWord.value) return null
@@ -351,6 +456,32 @@ const answerText = ref('')
 // ========== 目录和设置面板 ==========
 const showToc = ref(false)
 const showSettings = ref(false)
+const showFontPanel = ref(false)
+
+// ========== 翻译模式 ==========
+const translateMode = ref('word')  // 'word' | 'paragraph'
+
+function setTranslateMode(mode) {
+  translateMode.value = mode
+  readerStore.showTranslation = mode === 'paragraph'
+}
+
+// ========== 字体调节 ==========
+function toggleFontPanel() {
+  // 关闭 AI 面板
+  if (showSidePanel.value) {
+    showSidePanel.value = false
+  }
+  showFontPanel.value = !showFontPanel.value
+}
+
+function adjustFontSize(delta) {
+  readerStore.setFontSize(readerStore.fontSize + delta)
+}
+
+function resetFontSize() {
+  readerStore.setFontSize(18)
+}
 
 // ========== 单词点击 ==========
 function handleWordClick(wordData, event) {
@@ -363,12 +494,9 @@ function handleWordClick(wordData, event) {
   // 弹窗宽度 320px (w-80)，固定放在文章左侧
   const popoverWidth = 320
   const gap = 20
-  let left = articleRect ? articleRect.left - popoverWidth - gap : 0
-
-  // 如果左侧空间不足，回退到右侧
-  if (left < 10) {
-    left = Math.min((articleRect?.right || window.innerWidth) + gap, window.innerWidth - popoverWidth - 10)
-  }
+  const left = articleRect
+    ? Math.max(10, articleRect.left - popoverWidth - gap)
+    : 10
 
   // 垂直位置：固定距页面顶端 140px
   const top = 140
@@ -378,7 +506,7 @@ function handleWordClick(wordData, event) {
   aiDetailWord.value = ''
   wordPopover.word = { word: wordData.word, results: [] }
   wordPopover.loading = true
-  wordPopover.position = { x: Math.max(10, left), y: top }
+  wordPopover.position = { x: left, y: top }
   wordPopover.visible = true
   culturePopover.visible = false
 
@@ -427,18 +555,16 @@ function handleCultureClick(data, event) {
 
   const popoverWidth = 320
   const gap = 20
-  let left = articleRect ? articleRect.left - popoverWidth - gap : 0
-
-  if (left < 10) {
-    left = Math.min((articleRect?.right || window.innerWidth) + gap, window.innerWidth - popoverWidth - 10)
-  }
+  const left = articleRect
+    ? Math.max(10, articleRect.left - popoverWidth - gap)
+    : 10
 
   // 垂直位置：固定距页面顶端 140px
   const top = 140
 
   culturePopover.title = data.title
   culturePopover.content = data.content
-  culturePopover.position = { x: Math.max(10, left), y: top }
+  culturePopover.position = { x: left, y: top }
   culturePopover.visible = true
   wordPopover.visible = false
 }
@@ -454,17 +580,14 @@ function handleParagraphClick(pIdx, event) {
   // 弹窗宽度 320px (w-80)，固定放在文章左侧
   const popoverWidth = 320
   const gap = 20
-  let left = articleRect ? articleRect.left - popoverWidth - gap : 0
-
-  // 如果左侧空间不足，回退到右侧
-  if (left < 10) {
-    left = Math.min((articleRect?.right || window.innerWidth) + gap, window.innerWidth - popoverWidth - 10)
-  }
+  const left = articleRect
+    ? Math.max(10, articleRect.left - popoverWidth - gap)
+    : 10
 
   // 垂直位置：固定距页面顶端 140px
   const top = 140
 
-  translationPosition.x = Math.max(10, left)
+  translationPosition.x = left
   translationPosition.y = top
   activeTranslationIndex.value = pIdx
   showTranslationPopover.value = true
@@ -484,9 +607,8 @@ function handleParagraphClick(pIdx, event) {
 }
 
 // ========== 其他操作 ==========
-function handleBookmark() {
-  readerStore.addBookmark(readerStore.readingProgress)
-  alert('已添加书签')
+async function handleFavorite() {
+  await readerStore.toggleFavorite()
 }
 
 function handleTTS() {
@@ -567,6 +689,7 @@ function handleGlobalClick() {
   aiDetailWord.value = ''
   showToc.value = false
   showSettings.value = false
+  showFontPanel.value = false
 }
 
 // ========== 滚动监听更新进度 ==========
@@ -590,6 +713,8 @@ watch(() => readerStore.showTranslation, (newVal) => {
 async function initArticle(articleId) {
   resetReadState()
   await readerStore.fetchArticle(articleId)
+  // 检查收藏状态
+  readerStore.checkFavoriteStatus()
   if (articleId && readerStore.article?.title) {
     // 记录浏览历史到 IndexedDB
     addToHistory(articleId, readerStore.article.title).catch(err => {

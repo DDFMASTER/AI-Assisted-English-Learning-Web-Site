@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="visible"
-    class="fixed z-[55] w-[340px] max-h-[calc(100vh-160px)] overflow-y-auto"
+    class="fixed z-[55] w-[300px] max-h-[calc(100vh-160px)] overflow-y-auto"
     :style="{ right: position.x + 'px', top: position.y + 'px' }"
   >
     <!-- ========== 文化背景 ========== -->

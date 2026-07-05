@@ -3,12 +3,20 @@
     class="card flex gap-6 hover:shadow-lg transition-shadow cursor-pointer group"
     @click="goToReader"
   >
-    <!-- 左侧图标 -->
+    <!-- 左侧封面图片（文字图片，显示难度类型） -->
     <div
-      class="w-48 h-32 rounded-xl overflow-hidden flex-none relative flex items-center justify-center"
+      class="w-48 h-32 rounded-xl overflow-hidden flex-none relative flex items-center justify-center select-none"
       :class="bgClass"
     >
-      <Icon :icon="icon" class="text-4xl opacity-40" :class="iconColorClass" />
+      <!-- 装饰背景圆 -->
+      <div class="absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-20" :class="accentBgClass"></div>
+      <div class="absolute -bottom-4 -left-4 w-16 h-16 rounded-full opacity-10" :class="accentBgClass"></div>
+      <!-- 难度文字 -->
+      <span
+        class="relative text-3xl font-extrabold tracking-wider"
+        :class="textColorClass"
+        style="text-shadow: 0 2px 8px rgba(0,0,0,0.08);"
+      >{{ coverText }}</span>
     </div>
 
     <!-- 中间内容 -->
@@ -70,36 +78,58 @@ const difficultyMap = {
   'B1+': 'badge badge-medium',
   'B2': 'badge badge-hard',
   'C1': 'badge badge-hard',
+  // 中文难度标签（MaterialsPage 传入的是中文）
+  '初中': 'badge badge-easy',
+  '高中': 'badge badge-easy',
+  '四级': 'badge badge-medium',
+  '六级': 'badge badge-hard',
+  '考研': 'badge badge-hard',
+  '托福': 'badge badge-hard',
 }
 
 const bgMap = {
-  'A1': 'bg-gradient-to-br from-green-100 to-teal-100',
-  'A2': 'bg-gradient-to-br from-green-100 to-teal-100',
-  'A2+': 'bg-gradient-to-br from-green-100 to-teal-100',
-  'B1': 'bg-gradient-to-br from-blue-100 to-purple-100',
-  'B1+': 'bg-gradient-to-br from-blue-100 to-purple-100',
-  'B2': 'bg-gradient-to-br from-yellow-100 to-orange-100',
-  'C1': 'bg-gradient-to-br from-red-100 to-pink-100',
+  'A1': 'bg-gradient-to-br from-green-200 to-emerald-300',
+  'A2': 'bg-gradient-to-br from-green-200 to-teal-300',
+  'A2+': 'bg-gradient-to-br from-green-200 to-teal-300',
+  'B1': 'bg-gradient-to-br from-blue-200 to-indigo-300',
+  'B1+': 'bg-gradient-to-br from-blue-200 to-indigo-300',
+  'B2': 'bg-gradient-to-br from-yellow-200 to-amber-300',
+  'C1': 'bg-gradient-to-br from-red-200 to-rose-300',
+  // 中文难度映射
+  '初中': 'bg-gradient-to-br from-green-200 to-emerald-300',
+  '高中': 'bg-gradient-to-br from-teal-200 to-cyan-300',
+  '四级': 'bg-gradient-to-br from-blue-200 to-indigo-300',
+  '六级': 'bg-gradient-to-br from-yellow-200 to-amber-300',
+  '考研': 'bg-gradient-to-br from-red-200 to-rose-300',
+  '托福': 'bg-gradient-to-br from-purple-200 to-violet-300',
 }
 
-const iconMap = {
-  'A1': 'ph:tree-bold',
-  'A2': 'ph:flask-bold',
-  'A2+': 'ph:flask-bold',
-  'B1': 'ph:newspaper-bold',
-  'B1+': 'ph:newspaper-bold',
-  'B2': 'ph:building-bold',
-  'C1': 'ph:brain-bold',
+// 封面难度文字
+const coverTextMap = {
+  'A1': '初中', 'A2': '高中', 'A2+': '高中',
+  'B1': '四级', 'B1+': '四级',
+  'B2': '六级', 'C1': '考研',
+  '初中': '初中', '高中': '高中',
+  '四级': '四级', '六级': '六级',
+  '考研': '考研', '托福': '托福',
 }
 
-const iconColorMap = {
-  'A1': 'text-green-500',
-  'A2': 'text-green-500',
-  'A2+': 'text-green-500',
-  'B1': 'text-[#2563EB]',
-  'B1+': 'text-[#2563EB]',
-  'B2': 'text-yellow-500',
-  'C1': 'text-red-500',
+const textColorMap = {
+  'A1': 'text-green-700', 'A2': 'text-green-700', 'A2+': 'text-green-700',
+  'B1': 'text-blue-700', 'B1+': 'text-blue-700',
+  'B2': 'text-yellow-700', 'C1': 'text-red-700',
+  '初中': 'text-green-700', '高中': 'text-teal-700',
+  '四级': 'text-blue-700', '六级': 'text-yellow-700',
+  '考研': 'text-red-700', '托福': 'text-purple-700',
+}
+
+const accentBgMap = {
+  'A1': 'bg-green-400', 'A2': 'bg-green-400', 'A2+': 'bg-green-400',
+  'B1': 'bg-blue-400', 'B1+': 'bg-blue-400',
+  'B2': 'bg-yellow-400', 'C1': 'bg-red-400',
+  '初中': 'bg-green-400', '高中': 'bg-teal-400',
+  '四级': 'bg-blue-400', '六级': 'bg-yellow-400',
+  '考研': 'bg-red-400', '托福': 'bg-purple-400',
 }
 
 const difficultyBadgeClass = computed(() =>
@@ -107,15 +137,19 @@ const difficultyBadgeClass = computed(() =>
 )
 
 const bgClass = computed(() =>
-  bgMap[props.article.difficulty] || 'bg-gradient-to-br from-blue-100 to-purple-100'
+  bgMap[props.article.difficulty] || 'bg-gradient-to-br from-blue-200 to-indigo-300'
 )
 
-const icon = computed(() =>
-  iconMap[props.article.difficulty] || 'ph:newspaper-bold'
+const coverText = computed(() =>
+  coverTextMap[props.article.difficulty] || props.article.difficulty || '阅读'
 )
 
-const iconColorClass = computed(() =>
-  iconColorMap[props.article.difficulty] || 'text-[#2563EB]'
+const textColorClass = computed(() =>
+  textColorMap[props.article.difficulty] || 'text-blue-700'
+)
+
+const accentBgClass = computed(() =>
+  accentBgMap[props.article.difficulty] || 'bg-blue-400'
 )
 
 function goToReader() {

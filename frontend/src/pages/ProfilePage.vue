@@ -403,6 +403,54 @@
           </div>
         </div>
 
+        <!-- 收藏夹 -->
+        <div v-else-if="activeDrawer === 'favorites'" key="favorites" class="card drawer-card">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold">📌 收藏夹</h3>
+            <span class="text-xs text-gray-400">{{ favoriteArticles.length }} 篇文章</span>
+          </div>
+          <div v-if="favoriteArticles.length === 0" class="text-center py-12 text-gray-400">
+            <Icon icon="ph:bookmark-simple-bold" class="text-3xl mx-auto mb-3 opacity-30" />
+            <p class="text-sm">暂无收藏文章</p>
+            <p class="text-xs mt-1">在阅读时点击右上角 <span class="text-yellow-500 font-bold">🔖</span> 书签按钮即可收藏</p>
+            <router-link to="/materials" class="text-xs text-[#2563EB] hover:underline mt-2 inline-block">
+              去发现文章 →
+            </router-link>
+          </div>
+          <div v-else class="space-y-3 max-h-96 overflow-y-auto">
+            <div
+              v-for="fav in favoriteArticles"
+              :key="fav.articleId"
+              class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-blue-50 hover:shadow-sm transition-all group"
+              @click="goToReader(fav.articleId)"
+            >
+              <!-- 难度封面缩略图 -->
+              <div
+                class="w-14 h-14 rounded-lg flex-none flex items-center justify-center text-xs font-extrabold select-none"
+                :class="getFavCoverClass(fav.difficulty)"
+              >
+                {{ fav.difficulty || '阅读' }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-bold group-hover:text-[#2563EB] transition-colors truncate">{{ fav.title }}</div>
+                <div class="flex items-center gap-3 mt-1">
+                  <span class="text-[10px] text-gray-400">{{ fav.source || '未知来源' }}</span>
+                  <span v-if="fav.readTime" class="text-[10px] text-gray-300">{{ fav.readTime }}</span>
+                  <span class="text-[10px] text-gray-300">{{ formatFavTime(fav.addedAt) }}</span>
+                </div>
+              </div>
+              <button
+                class="flex-none p-2 text-gray-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                title="移出收藏夹"
+                @click.stop="removeFavorite(fav.articleId)"
+              >
+                <Icon icon="ph:trash-bold" class="text-sm" />
+              </button>
+              <Icon icon="ph:arrow-right-bold" class="text-gray-300 group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all text-sm flex-none" />
+            </div>
+          </div>
+        </div>
+
         <!-- 设置 -->
         <div v-else-if="activeDrawer === 'settings'" key="settings" class="card drawer-card">
           <h3 class="text-lg font-bold mb-6">⚙️ 设置</h3>
@@ -709,6 +757,7 @@ const drawerTabs = [
   { key: 'records', label: '学习记录', emoji: '📖' },
   { key: 'vocab', label: '生词本', emoji: '📝' },
   { key: 'wrongbook', label: '错题本', emoji: '📋' },
+  { key: 'favorites', label: '收藏夹', emoji: '📌' },
   { key: 'vocabtest', label: '词汇量测试', emoji: '🧪' },
   { key: 'settings', label: '设置', emoji: '⚙️' },
 ]
@@ -846,6 +895,51 @@ function toggleDrawer(key) {
 const vocabWords = ref([])
 let vocabTimer = null
 const VOCAB_REVIEW_SECONDS = 30  // 停留 30 秒视为完成复习任务
+
+// ========== 收藏夹 ==========
+const favoriteArticles = ref([])
+
+async function loadFavorites() {
+  try {
+    const { getAllFavorites } = await import('@/utils/favoritesDB')
+    favoriteArticles.value = await getAllFavorites()
+  } catch (e) {
+    console.error('加载收藏夹失败:', e)
+  }
+}
+
+async function removeFavorite(articleId) {
+  try {
+    const { removeFromFavorites } = await import('@/utils/favoritesDB')
+    await removeFromFavorites(articleId)
+    favoriteArticles.value = favoriteArticles.value.filter(f => f.articleId !== articleId)
+  } catch (e) {
+    console.error('移除收藏失败:', e)
+  }
+}
+
+function getFavCoverClass(difficulty) {
+  const map = {
+    '初中': 'bg-green-100 text-green-700',
+    '高中': 'bg-teal-100 text-teal-700',
+    '四级': 'bg-blue-100 text-blue-700',
+    '六级': 'bg-yellow-100 text-yellow-700',
+    '考研': 'bg-red-100 text-red-700',
+    '托福': 'bg-purple-100 text-purple-700',
+  }
+  return map[difficulty] || 'bg-gray-100 text-gray-600'
+}
+
+function formatFavTime(timestamp) {
+  const now = Date.now()
+  const diff = now - timestamp
+  const days = Math.floor(diff / 86400000)
+  if (days < 1) return '今天'
+  if (days < 2) return '昨天'
+  if (days < 7) return `${days}天前`
+  const d = new Date(timestamp)
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
 
 function startVocabTimer() {
   clearVocabTimer()
@@ -1209,6 +1303,10 @@ watch(activeDrawer, async (val, oldVal) => {
   if (oldVal === 'wrongbook') {
     window.removeEventListener('keydown', handleWrongBookKeydown)
     wrongBookIndex.value = 0
+  }
+  // 进入收藏夹 → 刷新收藏列表
+  if (val === 'favorites') {
+    loadFavorites()
   }
 })
 

@@ -11,7 +11,7 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <!-- 左栏：文章区 -->
+      <!-- 左栏：文章推荐区 -->
       <div class="col-span-1 lg:col-span-8">
         <!-- ====== 推荐区 ====== -->
         <section class="mb-10" aria-label="为你推荐">
@@ -42,112 +42,6 @@
           <div v-else class="card text-center text-gray-400 py-10">
             <Icon icon="ph:hard-drives-bold" class="text-4xl mb-3 opacity-30" />
             <p>文章数据库建设中，敬请期待</p>
-          </div>
-        </section>
-
-        <!-- ====== 文章目录 ====== -->
-        <section aria-label="文章目录">
-          <h2 class="text-lg font-bold text-gray-700 mb-4">📖 文章目录</h2>
-
-          <!-- 分类 Tab -->
-          <div class="flex p-1 bg-white rounded-xl mb-6 w-fit shadow-sm">
-            <button
-              v-for="tab in catalogTabs"
-              :key="tab.key"
-              class="px-5 py-2 rounded-lg text-sm font-medium transition-all"
-              :class="activeCategory === tab.key ? 'tab-active' : 'text-gray-500 hover:bg-gray-50'"
-              @click="switchCategory(tab.key)"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
-
-          <!-- 加载中 -->
-          <div v-if="catalogLoading" class="space-y-6">
-            <div v-for="n in 3" :key="'skel-c'+n" class="card flex gap-6 animate-pulse">
-              <div class="w-48 h-32 rounded-xl bg-gray-200 flex-none" />
-              <div class="flex-1 space-y-3 py-2">
-                <div class="h-4 w-20 bg-gray-200 rounded" />
-                <div class="h-6 w-3/4 bg-gray-200 rounded" />
-                <div class="h-4 w-full bg-gray-200 rounded" />
-              </div>
-            </div>
-          </div>
-
-          <!-- 文章列表 -->
-          <div v-else class="space-y-6">
-            <ArticleCard
-              v-for="article in catalogArticles"
-              :key="'cat-'+article.id"
-              :article="article"
-            />
-            <div
-              v-if="catalogArticles.length === 0"
-              class="card text-center text-gray-400 py-12"
-            >
-              <Icon icon="ph:book-open-bold" class="text-4xl mb-3 opacity-30" />
-              <p>暂无此类文章</p>
-            </div>
-          </div>
-
-          <!-- 分页 -->
-          <div v-if="catalogTotalPages > 1" class="mt-6 pt-4 border-t border-gray-100" role="navigation" aria-label="分页导航">
-            <div class="flex items-center justify-center gap-2 flex-wrap">
-              <button
-                class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
-                :disabled="catalogPage <= 1"
-                @click="goPage(catalogPage - 1)"
-              >上一页</button>
-
-              <template v-if="visiblePages[0] > 1">
-                <button
-                  class="px-3 py-1.5 text-xs rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                  @click="goPage(1)"
-                >1</button>
-                <span v-if="visiblePages[0] > 2" class="px-1 text-xs text-gray-300">…</span>
-              </template>
-
-              <button
-                v-for="p in visiblePages"
-                :key="p"
-                class="px-3 py-1.5 text-xs rounded-lg transition-colors"
-                :class="p === catalogPage ? 'bg-[#2563EB] text-white' : 'text-gray-500 hover:bg-gray-100'"
-                @click="goPage(p)"
-              >{{ p }}</button>
-
-              <template v-if="visiblePages[visiblePages.length - 1] < catalogTotalPages">
-                <span v-if="visiblePages[visiblePages.length - 1] < catalogTotalPages - 1" class="px-1 text-xs text-gray-300">…</span>
-                <button
-                  class="px-3 py-1.5 text-xs rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                  @click="goPage(catalogTotalPages)"
-                >{{ catalogTotalPages }}</button>
-              </template>
-
-              <button
-                class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
-                :disabled="catalogPage >= catalogTotalPages"
-                @click="goPage(catalogPage + 1)"
-              >下一页</button>
-            </div>
-
-            <!-- 跳转至第 N 页 -->
-            <div class="flex items-center justify-center gap-1.5 mt-3">
-              <span class="text-xs text-gray-400">跳至第</span>
-              <input
-                v-model="jumpPageInput"
-                type="number"
-                :min="1"
-                :max="catalogTotalPages"
-                class="w-14 h-7 text-center text-xs border border-gray-200 rounded-lg outline-none focus:border-[#2563EB] transition-colors"
-                @keyup.enter="handleJumpPage"
-              />
-              <span class="text-xs text-gray-400">页</span>
-              <button
-                class="text-xs px-2.5 py-1 bg-gray-100 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
-                :disabled="!isValidJumpPage"
-                @click="handleJumpPage"
-              >GO</button>
-            </div>
           </div>
         </section>
       </div>
@@ -217,6 +111,113 @@
         </div>
       </div>
     </div>
+
+    <!-- ====== 文章目录（全宽）====== -->
+    <section aria-label="文章目录" class="mt-10">
+      <h2 class="text-lg font-bold text-gray-700 mb-4">📖 文章目录</h2>
+
+      <!-- 分类 Tab -->
+      <div class="flex p-1 bg-white rounded-xl mb-6 w-fit shadow-sm">
+        <button
+          v-for="tab in catalogTabs"
+          :key="tab.key"
+          class="px-5 py-2 rounded-lg text-sm font-medium transition-all"
+          :class="activeCategory === tab.key ? 'tab-active' : 'text-gray-500 hover:bg-gray-50'"
+          @click="switchCategory(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <!-- 加载中 -->
+      <div v-if="catalogLoading" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div v-for="n in 6" :key="'skel-c'+n" class="card flex gap-6 animate-pulse">
+          <div class="w-48 h-32 rounded-xl bg-gray-200 flex-none" />
+          <div class="flex-1 space-y-3 py-2">
+            <div class="h-4 w-20 bg-gray-200 rounded" />
+            <div class="h-6 w-3/4 bg-gray-200 rounded" />
+            <div class="h-4 w-full bg-gray-200 rounded" />
+          </div>
+        </div>
+      </div>
+
+      <template v-else>
+        <!-- 文章列表（双列） -->
+        <div v-if="catalogArticles.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ArticleCard
+            v-for="article in catalogArticles"
+            :key="'cat-'+article.id"
+            :article="article"
+          />
+        </div>
+
+        <!-- 空状态 -->
+        <div v-else class="card text-center text-gray-400 py-12">
+          <Icon icon="ph:book-open-bold" class="text-4xl mb-3 opacity-30" />
+          <p>暂无此类文章</p>
+        </div>
+
+        <!-- 分页（居中，始终显示） -->
+        <div v-if="catalogArticles.length > 0" class="mt-8 pt-4 border-t border-gray-100" role="navigation" aria-label="分页导航">
+        <div class="flex items-center justify-center gap-2 flex-wrap">
+          <button
+            class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+            :disabled="catalogPage <= 1"
+            @click="goPage(catalogPage - 1)"
+          >上一页</button>
+
+          <template v-if="visiblePages[0] > 1">
+            <button
+              class="px-3 py-1.5 text-xs rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+              @click="goPage(1)"
+            >1</button>
+            <span v-if="visiblePages[0] > 2" class="px-1 text-xs text-gray-300">…</span>
+          </template>
+
+          <button
+            v-for="p in visiblePages"
+            :key="p"
+            class="px-3 py-1.5 text-xs rounded-lg transition-colors"
+            :class="p === catalogPage ? 'bg-[#2563EB] text-white' : 'text-gray-500 hover:bg-gray-100'"
+            @click="goPage(p)"
+          >{{ p }}</button>
+
+          <template v-if="visiblePages[visiblePages.length - 1] < catalogTotalPages">
+            <span v-if="visiblePages[visiblePages.length - 1] < catalogTotalPages - 1" class="px-1 text-xs text-gray-300">…</span>
+            <button
+              class="px-3 py-1.5 text-xs rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+              @click="goPage(catalogTotalPages)"
+            >{{ catalogTotalPages }}</button>
+          </template>
+
+          <button
+            class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+            :disabled="catalogPage >= catalogTotalPages"
+            @click="goPage(catalogPage + 1)"
+          >下一页</button>
+        </div>
+
+        <!-- 跳转至第 N 页 -->
+        <div class="flex items-center justify-center gap-1.5 mt-3">
+          <span class="text-xs text-gray-400">跳至第</span>
+          <input
+            v-model="jumpPageInput"
+            type="number"
+            :min="1"
+            :max="catalogTotalPages"
+            class="w-14 h-7 text-center text-xs border border-gray-200 rounded-lg outline-none focus:border-[#2563EB] transition-colors"
+            @keyup.enter="handleJumpPage"
+          />
+          <span class="text-xs text-gray-400">页</span>
+          <button
+            class="text-xs px-2.5 py-1 bg-gray-100 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30"
+            :disabled="!isValidJumpPage"
+            @click="handleJumpPage"
+          >GO</button>
+        </div>
+      </div>
+      </template>
+    </section>
 
     <!-- 词汇量测试弹窗 -->
     <FirstVocabTestModal
@@ -346,7 +347,7 @@ const catalogArticles = ref([])
 const catalogLoading = ref(false)
 const catalogPage = ref(1)
 const catalogTotalPages = ref(1)
-const catalogPageSize = 3
+const catalogPageSize = 6
 
 const visiblePages = computed(() => {
   const tp = catalogTotalPages.value
