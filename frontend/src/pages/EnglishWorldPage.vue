@@ -311,8 +311,8 @@
 
     <!-- ====== 角色扮演 - 场景选择 ====== -->
     <template v-if="rpState === 'scene-select'">
-      <div class="max-w-2xl mx-auto">
-        <button class="text-gray-400 hover:text-gray-600 mb-6 flex items-center gap-1 text-sm" @click="rpState = null">
+      <div class="max-w-2xl mx-auto border-2 border-gray-200 rounded-2xl p-6">
+        <button class="px-4 py-2 rounded-xl bg-blue-50 text-gray-700 font-bold hover:bg-blue-100 transition-all mb-6 flex items-center gap-1 text-sm" @click="rpState = null">
           <Icon icon="ph:arrow-left-bold" /> 返回游戏列表
         </button>
         <h2 class="text-2xl font-bold mb-2">选择场景</h2>
@@ -327,7 +327,7 @@
             <div class="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-purple-50/60 to-transparent pointer-events-none"></div>
             <div class="relative z-10">
               <div class="text-5xl mb-3 group-hover:scale-110 transition-transform">{{ scene.emoji }}</div>
-              <h3 class="text-lg font-bold mb-1 group-hover:text-[#2563EB] transition-colors">{{ scene.label }}</h3>
+              <h3 class="text-lg font-bold mb-1 group-hover:text-[#2563EB] transition-colors">{{ scene.name }}</h3>
               <p class="text-xs text-gray-400 leading-relaxed">{{ scene.desc }}</p>
             </div>
           </div>
@@ -337,9 +337,9 @@
 
     <!-- ====== 角色扮演 - 对话界面 ====== -->
     <template v-if="rpState === 'chatting'">
-      <div class="max-w-3xl mx-auto">
+      <div class="max-w-3xl mx-auto border-2 border-gray-200 rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
-          <button class="text-gray-400 hover:text-gray-600 text-sm flex items-center gap-1" @click="rpState = 'scene-select'; resetRP()">
+          <button class="px-4 py-2 rounded-xl bg-blue-50 text-gray-700 font-bold hover:bg-blue-100 transition-all text-sm flex items-center gap-1" @click="rpState = 'scene-select'; resetRP()">
             <Icon icon="ph:arrow-left-bold" /> 切换场景
           </button>
           <span class="text-xs font-bold text-[#2563EB] bg-blue-50 px-3 py-1 rounded-full">{{ currentSceneLabel }}</span>
@@ -420,7 +420,7 @@
 
           <!-- 右侧：建议框 -->
           <div class="lg:col-span-1">
-            <div class="card sticky top-28">
+            <div class="card">
               <h4 class="text-sm font-bold text-gray-600 mb-3 flex items-center gap-1">
                 <Icon icon="ph:lightbulb-bold" class="text-yellow-500" /> 回复建议
               </h4>
@@ -435,15 +435,27 @@
                 </div>
               </div>
             </div>
+
+            <!-- 刷新按钮 -->
+            <div class="mt-4 text-center">
+              <button
+                class="px-4 py-2 rounded-xl bg-blue-50 text-gray-700 font-bold hover:bg-blue-100 transition-all text-sm flex items-center gap-1.5 mx-auto"
+                @click="refreshRolePlay"
+              >
+                <Icon icon="ph:arrow-clockwise-bold" class="text-base" /> 刷新对话
+              </button>
+              <p class="text-xs text-gray-400 mt-1">如有问题可刷新重置</p>
+            </div>
           </div>
         </div>
+
       </div>
     </template>
 
     <!-- ====== 单词接龙 - 模式选择 ====== -->
     <template v-if="wcModeSelect">
-      <div class="max-w-lg mx-auto">
-        <button class="text-gray-400 hover:text-gray-600 mb-6 flex items-center gap-1 text-sm" @click="wcModeSelect = false">
+      <div class="max-w-lg mx-auto border-2 border-gray-200 rounded-2xl p-6">
+        <button class="px-4 py-2 rounded-xl bg-blue-50 text-gray-700 font-bold hover:bg-blue-100 transition-all mb-6 flex items-center gap-1 text-sm" @click="wcModeSelect = false">
           <Icon icon="ph:arrow-left-bold" /> 返回游戏列表
         </button>
         <h2 class="text-2xl font-bold mb-2">单词接龙</h2>
@@ -481,9 +493,9 @@
 
     <!-- ====== 单词接龙游戏 ====== -->
     <template v-if="wcPlaying">
-      <div class="max-w-lg mx-auto">
-        <button class="text-gray-400 hover:text-gray-600 mb-4 flex items-center gap-1 text-sm" @click="quitWordChain">
-          <Icon icon="ph:arrow-left-bold" /> 退出游戏
+      <div class="max-w-lg mx-auto border-2 border-gray-200 rounded-2xl p-6">
+        <button class="px-4 py-2 rounded-xl bg-blue-50 text-gray-700 font-bold hover:bg-blue-100 transition-all mb-4 flex items-center gap-1 text-sm" @click="quitWordChain">
+          <Icon icon="ph:arrow-left-bold" /> 返回模式选择
         </button>
 
         <!-- 计时器 + 计数 -->
@@ -583,7 +595,7 @@
             >{{ item.word }}</span>
           </div>
           <button class="px-8 py-3 rounded-xl bg-[#2563EB] text-white font-bold hover:bg-blue-600 transition-all" @click="quitWordChain">
-            返回游戏列表
+            返回模式选择
           </button>
         </div>
       </div>
@@ -611,15 +623,15 @@ const rpMessages = ref([])
 const chatContainer = ref(null)
 
 const scenes = [
-  { key: 'shopping', label: '🛍️ 购物', emoji: '🛍️', desc: '在商店中与店员交流，选购商品、讨价还价、结账付款' },
-  { key: 'travel', label: '✈️ 旅游', emoji: '✈️', desc: '旅行中的各种场景：酒店入住、景点咨询、购买门票、问路指引' },
-  { key: 'ordering', label: '🍽️ 点餐', emoji: '🍽️', desc: '在餐厅点餐，与服务员交流菜品、特殊要求、付款结账' },
-  { key: 'interview', label: '💼 职场面试', emoji: '💼', desc: '模拟求职面试，与HR和面试官进行英语面试对话' },
+  { key: 'shopping', name: '购物', emoji: '🛍️', desc: '在商店中与店员交流，选购商品、讨价还价、结账付款' },
+  { key: 'travel', name: '旅游', emoji: '✈️', desc: '旅行中的各种场景：酒店入住、景点咨询、购买门票、问路指引' },
+  { key: 'ordering', name: '点餐', emoji: '🍽️', desc: '在餐厅点餐，与服务员交流菜品、特殊要求、付款结账' },
+  { key: 'interview', name: '职场面试', emoji: '💼', desc: '模拟求职面试，与HR和面试官进行英语面试对话' },
 ]
 
 const currentSceneLabel = computed(() => {
   const s = scenes.find(s => s.key === rpScene.value)
-  return s ? s.label : ''
+  return s ? s.emoji + ' ' + s.name : ''
 })
 
 function startRolePlay(sceneKey) {
@@ -758,6 +770,13 @@ function resetRP() {
   rpSuggestion.value = ''
   rpCharName.value = ''
   rpRole.value = ''
+}
+
+function refreshRolePlay() {
+  resetRP()
+  rpRole.value = getDefaultRole(rpScene.value)
+  rpCharName.value = getDefaultRole(rpScene.value)
+  sendToAI('', true)
 }
 
 // ========== 单词接龙系统 ==========
@@ -1015,6 +1034,7 @@ function quitWordChain() {
   clearInterval(wcTimer)
   wcPlaying.value = false
   wcGameOver.value = false
+  wcModeSelect.value = true
 }
 
 // ========== 房间系统 ==========
@@ -1291,4 +1311,10 @@ const resultSub = computed(() => {
   if (myCorrect.value < opponentCorrect.value) return `对手以 ${opponentCorrect.value}:${myCorrect.value} 赢得比赛`
   return `双方打成 ${myCorrect.value}:${opponentCorrect.value} 平手`
 })
+
+// ========== 页面切换时滚动到顶部 ==========
+watch(rpState, (val) => { if (val) nextTick(() => window.scrollTo(0, 0)) })
+watch(wcModeSelect, (val) => { if (val) nextTick(() => window.scrollTo(0, 0)) })
+watch(wcPlaying, (val) => { if (val) nextTick(() => window.scrollTo(0, 0)) })
+watch(pkState, (val) => { if (val) nextTick(() => window.scrollTo(0, 0)) })
 </script>
