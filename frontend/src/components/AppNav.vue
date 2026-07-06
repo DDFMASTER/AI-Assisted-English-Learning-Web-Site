@@ -62,14 +62,21 @@
           v-if="showResult && searchResult"
           class="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-[#252526] rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-5 z-50"
         >
-          <!-- 未找到 -->
-          <div v-if="!searchResult.found" class="text-center py-2">
+          <!-- 未找到（词书和AI均无结果） -->
+          <div v-if="!searchResult.found && !searchResult.fromAi" class="text-center py-2">
             <Icon icon="ph:smiley-sad-bold" class="text-3xl text-gray-300 mb-2" />
             <p class="text-sm text-gray-400">未找到该单词的释义</p>
           </div>
 
           <!-- 找到结果 -->
           <template v-else>
+            <!-- AI 释义提示 -->
+            <div v-if="searchResult.fromAi" class="mb-3 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <p class="text-xs text-amber-700 dark:text-amber-300 font-medium leading-relaxed">
+                <Icon icon="ph:info-bold" class="inline-block mr-1" />
+                词书中未能找到该单词释义，以下是AI释义
+              </p>
+            </div>
             <!-- 单词与音标 -->
             <div class="flex items-center justify-between mb-3">
               <div>
@@ -206,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
 import { useReaderStore } from '@/stores/reader'
@@ -228,6 +235,7 @@ const searchQuery = ref('')
 const searching = ref(false)
 const searchResult = ref(null)
 const showResult = ref(false)
+let searchTimer = null
 
 const avatarLetter = computed(() => {
   const username = userStore.user?.username || 'A'
@@ -342,6 +350,7 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', onClickOutside)
   window.removeEventListener('avatar-changed', onAvatarChanged)
+  if (searchTimer) clearTimeout(searchTimer)
 })
 
 // 点击外部关闭搜索卡片
@@ -352,6 +361,7 @@ function onClickOutside(e) {
 }
 
 async function handleSearch() {
+  if (searchTimer) clearTimeout(searchTimer)
   const query = searchQuery.value.trim()
   if (!query) return
 
@@ -360,7 +370,7 @@ async function handleSearch() {
   searchResult.value = null
 
   try {
-    const result = await readerStore.lookupWord(query)
+    const result = await readerStore.lookupWord(query, userStore.user?.studyPurpose || '')
     searchResult.value = result
     showResult.value = true
   } catch (err) {
@@ -380,6 +390,15 @@ function clearSearch() {
 function onSearchFocus() {
   if (searchResult.value) showResult.value = true
 }
+
+// 防抖自动搜索：用户停止输入 500ms 后自动触发
+watch(searchQuery, (newVal) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  if (!newVal || !newVal.trim()) return
+  searchTimer = setTimeout(() => {
+    handleSearch()
+  }, 500)
+})
 </script>
 
 <style scoped>

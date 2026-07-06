@@ -101,6 +101,66 @@ public class WordService {
         }
 
         result.found = !allResults.isEmpty();
+        if (result.found) {
+            return result;
+        }
+
+        // 词书未命中 → 查询 AI 动态词典 ai_word_dic
+        AiWordDic aiDic = wordDAO.findLatestAiDic(word);
+        if (aiDic != null) {
+            Map<String, List<WordBase>> grouped = new LinkedHashMap<>();
+            WordBase wb = new WordBase();
+            wb.setId(aiDic.getAidicId() != null ? aiDic.getAidicId() : 0L);
+            wb.setWord(aiDic.getWord());
+            wb.setPhonetic(aiDic.getPhonetic());
+            wb.setTranslation(aiDic.getTranslation());
+            wb.setExplanation(aiDic.getExplanation());
+            grouped.put("AI 词典", java.util.Collections.singletonList(wb));
+            result.stageResults = grouped;
+            result.found = true;
+            result.fromAi = true;
+            if (aiDic.getPhonetic() != null && !aiDic.getPhonetic().isBlank()) {
+                result.phonetic = aiDic.getPhonetic();
+            }
+            return result;
+        }
+
+        // ai_word_dic 也未命中 → AI 介入搜索并写入数据库
+        Service.AIClient aiClient = new Service.AIClient();
+        Service.AIWordService aiWordService = new Service.AIWordService(aiClient);
+        Service.AIWordService.AiWordLookupResult aiResult = aiWordService.lookupWordByAI(word);
+        if (aiResult.translation != null && !aiResult.translation.isBlank()) {
+            AiWordDic newAiDic = new AiWordDic();
+            newAiDic.setWord(word);
+            newAiDic.setPhonetic(aiResult.phonetic);
+            newAiDic.setTranslation(aiResult.translation);
+            newAiDic.setExplanation(aiResult.explanation);
+            newAiDic.setLikeCount(0);
+            newAiDic.setDislikeCount(0);
+            newAiDic.setIsRemoved(false);
+            newAiDic.setCreatedAt(java.time.LocalDateTime.now());
+            wordDAO.insertAiDic(newAiDic);
+
+            Map<String, List<WordBase>> grouped = new LinkedHashMap<>();
+            WordBase wb = new WordBase();
+            wb.setId(0L);
+            wb.setWord(word);
+            wb.setPhonetic(aiResult.phonetic);
+            wb.setTranslation(aiResult.translation);
+            wb.setExplanation(aiResult.explanation);
+            grouped.put("AI 生成", java.util.Collections.singletonList(wb));
+            result.stageResults = grouped;
+            result.found = true;
+            result.fromAi = true;
+            if (aiResult.phonetic != null && !aiResult.phonetic.isBlank()) {
+                result.phonetic = aiResult.phonetic;
+            }
+            return result;
+        }
+
+        // 全部手段均未命中
+        result.stageResults = new LinkedHashMap<>();
+        result.found = false;
         return result;
     }
 
@@ -181,6 +241,7 @@ public class WordService {
             result.stageResults = grouped;
             result.found = true;
             result.crossStage = true;  // 非当前阶段来源
+            result.fromAi = true;
             if (aiDic.getPhonetic() != null && !aiDic.getPhonetic().isBlank()) {
                 result.phonetic = aiDic.getPhonetic();
             }
@@ -216,6 +277,7 @@ public class WordService {
             result.stageResults = grouped;
             result.found = true;
             result.crossStage = true;
+            result.fromAi = true;
             if (aiResult.phonetic != null && !aiResult.phonetic.isBlank()) {
                 result.phonetic = aiResult.phonetic;
             }
@@ -293,6 +355,7 @@ public class WordService {
         public Map<String, List<WordBase>> stageResults;
         public boolean found;
         public boolean crossStage;   // 是否来自跨词书检索（当前阶段未命中后回退）
+        public boolean fromAi;      // 是否来自 AI 生成（ai_word_dic 或实时 AI 调用）
         public String error;
 
         public String toJson() {
@@ -307,6 +370,7 @@ public class WordService {
             }
             obj.addProperty("found", found);
             obj.addProperty("crossStage", crossStage);
+            obj.addProperty("fromAi", fromAi);
 
             com.google.gson.JsonArray results = new com.google.gson.JsonArray();
             if (stageResults != null) {
