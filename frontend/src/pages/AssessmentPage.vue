@@ -306,7 +306,7 @@ function handleConfirmExit() {
   showExitConfirm.value = false
   // 不清除进度——退出时保留，下次可继续
   store.resetAssessment()
-  router.push('/materials')
+  router.push('/assessment')
 }
 
 onMounted(() => {

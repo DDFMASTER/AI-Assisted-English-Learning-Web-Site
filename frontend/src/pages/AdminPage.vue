@@ -228,12 +228,11 @@
           📋 IP 请求日志
           <span class="text-sm font-normal text-gray-400 ml-2">（共 {{ logTotal }} 条）</span>
         </h2>
-        <button
-          class="px-3 py-1.5 text-xs bg-[#2563EB] text-white rounded-lg hover:bg-blue-600 transition-colors"
-          @click="loadLogs"
-        >
-          刷新
-        </button>
+        <div class="flex gap-2">
+          <button class="px-3 py-1.5 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors" @click="handleClearLogs">清空</button>
+          <button class="px-3 py-1.5 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors" @click="backupLogs">备份</button>
+          <button class="px-3 py-1.5 text-xs bg-[#2563EB] text-white rounded-lg hover:bg-blue-600 transition-colors" @click="loadLogs">刷新</button>
+        </div>
       </div>
 
       <div v-if="logsLoading" class="text-center py-8 text-gray-400">加载中...</div>
@@ -242,6 +241,7 @@
         <table class="min-w-[700px] w-full text-sm">
           <thead>
             <tr class="border-b border-gray-100 text-left text-gray-400">
+              <th class="py-2 px-3 w-16">操作</th>
               <th class="py-2 px-3">时间</th>
               <th class="py-2 px-3">IP</th>
               <th class="py-2 px-3">方法</th>
@@ -256,6 +256,9 @@
               :key="idx"
               class="border-b border-gray-50 hover:bg-gray-50 transition-colors"
             >
+              <td class="py-2 px-3">
+                <button class="text-xs text-red-400 hover:text-red-600 transition-colors" @click="deleteLogEntry(log.originalIndex)">删除</button>
+              </td>
               <td class="py-2 px-3 text-gray-400 text-xs whitespace-nowrap">{{ log.timestamp }}</td>
               <td class="py-2 px-3 text-gray-500 font-mono text-xs">{{ log.ip }}</td>
               <td class="py-2 px-3">
@@ -264,12 +267,43 @@
                 >{{ log.method }}</span>
               </td>
               <td class="py-2 px-3 text-gray-500 text-xs font-mono max-w-xs truncate block">{{ log.path }}</td>
-              <td class="py-2 px-3 text-gray-500">{{ log.username || '-' }}</td>
-              <td class="py-2 px-3 text-gray-400 text-xs font-mono">{{ (log.sessionId || '-').substring(0, 8) }}...</td>
+              <td class="py-2 px-3 text-gray-500 text-xs">{{ log.username || '-' }}</td>
+              <td class="py-2 px-3 text-gray-400 text-xs font-mono">{{ log.sessionId || '-' }}</td>
             </tr>
           </tbody>
         </table>
+
+        <!-- 分页 -->
+        <div v-if="logTotalPages > 1" class="flex items-center justify-center gap-3 mt-4 pb-2">
+          <button class="px-3 py-1.5 rounded-lg text-sm font-bold transition-all"
+            :class="logPage > 1 ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'text-gray-300 cursor-not-allowed'"
+            :disabled="logPage <= 1" @click="loadLogs(logPage - 1)">
+            ←
+          </button>
+          <span class="text-xs text-gray-400">{{ logPage }} / {{ logTotalPages }}</span>
+          <button class="px-3 py-1.5 rounded-lg text-sm font-bold transition-all"
+            :class="logPage < logTotalPages ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'text-gray-300 cursor-not-allowed'"
+            :disabled="logPage >= logTotalPages" @click="loadLogs(logPage + 1)">
+            →
+          </button>
+        </div>
       </div>
+
+      <!-- 清空确认弹窗 -->
+      <Teleport to="body">
+        <div v-if="clearLogsDialog.show" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="clearLogsDialog.show = false">
+          <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 text-center">
+            <span class="text-5xl">⚠️</span>
+            <h3 class="text-lg font-bold mb-2">清空 IP 日志</h3>
+            <p class="text-sm text-gray-500 mb-6">即将清空全部 {{ logTotal }} 条 IP 日志，是否需要备份？</p>
+            <div class="flex gap-3">
+              <button class="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-all text-sm" @click="clearLogsDialog.onDirect()">直接删除</button>
+              <button class="flex-1 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all text-sm" @click="clearLogsDialog.onBackup()">备份并删除</button>
+            </div>
+            <button class="mt-3 w-full text-sm text-gray-400 hover:text-gray-600 transition-colors" @click="clearLogsDialog.show = false">取消</button>
+          </div>
+        </div>
+      </Teleport>
     </div>
 
     <!-- Toast 提示卡片 -->
@@ -408,21 +442,96 @@ async function loadOnlineUsers() {
 // ========== 请求日志 ==========
 const logs = ref([])
 const logTotal = ref(0)
+const logPage = ref(1)
+const logTotalPages = ref(1)
 const logsLoading = ref(false)
 
-async function loadLogs() {
+async function loadLogs(page = 1) {
   logsLoading.value = true
   try {
     const adminUserId = userStore.user?.userId
-    const data = await request.get('/admin/monitor/request-logs', { params: { adminUserId, limit: 200 } })
+    const data = await request.get('/admin/monitor/request-logs', { params: { adminUserId, page, pageSize: 15 } })
     if (data.success) {
-      logs.value = data.logs || []
+      // 为每条日志添加 originalIndex（在全部日志列表中的位置），用于删除
+      // 后端按 page 返回，index 计算: totalCount - (page-1)*15 - (1...15)
+      const startIdx = data.totalCount - (data.page - 1) * 15 - 1
+      logs.value = (data.logs || []).map((l, i) => ({ ...l, originalIndex: startIdx - i }))
       logTotal.value = data.totalCount || 0
+      logPage.value = data.page || 1
+      logTotalPages.value = data.totalPages || 1
     }
   } catch (e) {
     console.error('加载请求日志失败:', e)
   } finally {
     logsLoading.value = false
+  }
+}
+
+async function deleteLogEntry(index) {
+  try {
+    const adminUserId = userStore.user?.userId
+    const data = await request.post('/admin/monitor/request-logs', { adminUserId, action: 'delete', index })
+    if (data.success) {
+      showToast('已删除')
+      await loadLogs(logPage.value)
+    } else {
+      showToast(data.message || '删除失败', 'error')
+    }
+  } catch (e) {
+    showToast('网络错误', 'error')
+  }
+}
+
+async function backupLogs() {
+  try {
+    const adminUserId = userStore.user?.userId
+    // 使用 axios 获取 blob，确保 baseURL 和 cookie 正确
+    const resp = await request.post('/admin/monitor/request-logs',
+      { adminUserId, action: 'backup' },
+      { responseType: 'blob' }
+    )
+    const url = URL.createObjectURL(resp)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'AAEL-IP-logs-' + Date.now() + '.txt'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    showToast('备份已下载')
+  } catch (e) {
+    showToast('备份失败', 'error')
+  }
+}
+
+const clearLogsDialog = ref({
+  show: false,
+  onDirect: () => {},
+  onBackup: () => {},
+})
+
+function handleClearLogs() {
+  clearLogsDialog.value = {
+    show: true,
+    onDirect: async () => {
+      clearLogsDialog.value.show = false
+      try {
+        const adminUserId = userStore.user?.userId
+        const data = await request.post('/admin/monitor/request-logs', { adminUserId, action: 'clear' })
+        if (data.success) { showToast('已清空'); await loadLogs(1) }
+        else showToast(data.message || '清空失败', 'error')
+      } catch (e) { showToast('网络错误', 'error') }
+    },
+    onBackup: async () => {
+      clearLogsDialog.value.show = false
+      await backupLogs()
+      try {
+        const adminUserId = userStore.user?.userId
+        const data = await request.post('/admin/monitor/request-logs', { adminUserId, action: 'clear' })
+        if (data.success) { showToast('已备份并清空'); await loadLogs(1) }
+        else showToast(data.message || '清空失败', 'error')
+      } catch (e) { showToast('网络错误', 'error') }
+    },
   }
 }
 

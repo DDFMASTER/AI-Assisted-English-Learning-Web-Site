@@ -148,6 +148,83 @@ public class MonitorService {
     }
 
     /**
+     * 分页获取请求日志（最新在前）
+     * @return LogPageResult 包含当前页日志和分页信息
+     */
+    public LogPageResult getLogsPage(ServletContext ctx, int page, int pageSize) {
+        @SuppressWarnings("unchecked")
+        List<RequestLogEntry> logs =
+                (List<RequestLogEntry>) ctx.getAttribute(RequestLogListener.REQUEST_LOGS);
+
+        if (logs == null || logs.isEmpty()) {
+            return new LogPageResult(Collections.emptyList(), 0, 1, 1);
+        }
+
+        synchronized (logs) {
+            int total = logs.size();
+            int totalPages = Math.max(1, (int) Math.ceil((double) total / pageSize));
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+
+            // 倒序取（最新在前）
+            int fromIndex = total - (page * pageSize);
+            if (fromIndex < 0) fromIndex = 0;
+            int toIndex = total - ((page - 1) * pageSize);
+
+            List<RequestLogEntry> pageItems = new ArrayList<>(logs.subList(fromIndex, toIndex));
+            Collections.reverse(pageItems);
+            return new LogPageResult(pageItems, total, page, totalPages);
+        }
+    }
+
+    /**
+     * 删除指定索引的日志（0-based，从旧到新）
+     * @return true 成功，false 索引无效
+     */
+    public boolean deleteLog(ServletContext ctx, int index) {
+        @SuppressWarnings("unchecked")
+        List<RequestLogEntry> logs =
+                (List<RequestLogEntry>) ctx.getAttribute(RequestLogListener.REQUEST_LOGS);
+        if (logs == null || index < 0 || index >= logs.size()) return false;
+        synchronized (logs) {
+            if (index < logs.size()) {
+                logs.remove(index);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 获取全部日志（用于备份导出）
+     */
+    public List<RequestLogEntry> getAllLogs(ServletContext ctx) {
+        @SuppressWarnings("unchecked")
+        List<RequestLogEntry> logs =
+                (List<RequestLogEntry>) ctx.getAttribute(RequestLogListener.REQUEST_LOGS);
+        if (logs == null || logs.isEmpty()) return Collections.emptyList();
+        synchronized (logs) {
+            List<RequestLogEntry> result = new ArrayList<>(logs);
+            Collections.reverse(result);
+            return result;
+        }
+    }
+
+    public static class LogPageResult {
+        private final List<RequestLogEntry> items;
+        private final int total;
+        private final int page;
+        private final int totalPages;
+        public LogPageResult(List<RequestLogEntry> items, int total, int page, int totalPages) {
+            this.items = items; this.total = total; this.page = page; this.totalPages = totalPages;
+        }
+        public List<RequestLogEntry> getItems() { return items; }
+        public int getTotal() { return total; }
+        public int getPage() { return page; }
+        public int getTotalPages() { return totalPages; }
+    }
+
+    /**
      * 强制用户下线（通过 userId）。
      * 将目标用户 ID 加入 kickedUserIds 集合，
      * 用户的下一次请求将被 LoginFilter 拦截并强制销毁会话。

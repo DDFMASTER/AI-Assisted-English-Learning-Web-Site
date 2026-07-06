@@ -6,19 +6,19 @@
     <!-- ====== 游戏列表 ====== -->
     <template v-if="!pkState && !rpState && !wcPlaying && !wcModeSelect">
       <div class="space-y-5">
-        <!-- 角色扮演 -->
+        <!-- 情景对话 -->
         <div
           class="card cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all group overflow-hidden p-0"
           @click="rpState = 'scene-select'"
         >
           <!-- 图片区 -->
           <div class="relative h-44 overflow-hidden">
-            <img src="/photo/角色扮演图片 (1).png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="角色扮演" />
+            <img src="/photo/情景对话图片 (1).webp" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="情景对话" />
             <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-b from-transparent to-white/85 pointer-events-none"></div>
           </div>
           <!-- 文字区 -->
           <div class="px-6 pb-5 pt-2">
-            <h3 class="text-2xl font-bold mb-1.5 group-hover:text-purple-600 transition-colors">角色扮演</h3>
+            <h3 class="text-2xl font-bold mb-1.5 group-hover:text-purple-600 transition-colors">情景对话</h3>
             <p class="text-sm text-gray-600 leading-relaxed max-w-2xl mb-3">选择场景与AI进行英语对话，实战练习口语和表达能力。AI扮演商店店员、酒店前台、餐厅服务员等各种角色，提供双语旁白和回复建议，让你在真实场景中提升英语水平。</p>
             <span class="inline-flex items-center gap-1.5 px-5 py-2 bg-purple-500 text-white text-sm font-bold rounded-xl hover:bg-purple-600 transition-colors shadow-lg">
               进入游戏 <Icon icon="ph:arrow-right-bold" class="text-sm" />
@@ -32,12 +32,12 @@
           @click="pkState = 'lobby'"
         >
           <div class="relative h-44 overflow-hidden">
-            <img src="/photo/真人pk图片 (2).png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="真人PK" />
+            <img src="/photo/真人pk图片 (2).webp" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="真人PK" />
             <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-b from-transparent to-white/85 pointer-events-none"></div>
           </div>
           <div class="px-6 pb-5 pt-2">
             <h3 class="text-2xl font-bold mb-1.5 group-hover:text-red-500 transition-colors">真人PK</h3>
-            <p class="text-sm text-gray-600 leading-relaxed max-w-2xl mb-3">与好友实时对战，比拼词汇量和答题速度。创建房间邀请好友加入，选择难度后开始答题挑战，10道选择题一决胜负，看谁的正确率更高！</p>
+            <p class="text-sm text-gray-600 leading-relaxed max-w-2xl mb-3">与好友实时对战，比拼词汇量和答题速度。创建房间邀请好友加入，选择难度后开始答题挑战，20道选择题一决胜负，看谁的正确率更高！</p>
             <span class="inline-flex items-center gap-1.5 px-5 py-2 bg-red-500 text-white text-sm font-bold rounded-xl hover:bg-red-600 transition-colors shadow-lg">
               进入游戏 <Icon icon="ph:arrow-right-bold" class="text-sm" />
             </span>
@@ -50,7 +50,7 @@
           @click="wcModeSelect = true"
         >
           <div class="relative h-44 overflow-hidden">
-            <img src="/photo/单词接龙图片(3).png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="单词接龙" />
+            <img src="/photo/单词接龙图片(3).webp" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="单词接龙" />
             <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-b from-transparent to-white/85 pointer-events-none"></div>
           </div>
           <div class="px-6 pb-5 pt-2">
@@ -66,123 +66,232 @@
 
     <!-- ====== PK 大厅 ====== -->
     <template v-if="pkState === 'lobby'">
-      <div class="max-w-lg mx-auto">
-        <button class="text-gray-400 hover:text-gray-600 mb-6 flex items-center gap-1 text-sm" @click="leaveLobby">
+      <div class="max-w-3xl mx-auto border-2 border-gray-200 rounded-2xl p-6">
+        <button class="px-4 py-2 rounded-xl bg-blue-50 text-gray-700 font-bold hover:bg-blue-100 transition-all mb-6 flex items-center gap-1 text-sm" @click="leaveLobby">
           <Icon icon="ph:arrow-left-bold" /> 返回游戏列表
         </button>
 
-        <div class="card text-center relative overflow-hidden">
-          <!-- 背景装饰 -->
-          <div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-red-50 to-transparent pointer-events-none"></div>
-          <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-red-100/50 pointer-events-none"></div>
-          <div class="relative z-10">
-            <div class="w-24 h-24 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center shadow-lg shadow-red-200">
-              <Icon icon="ph:trophy-bold" class="text-white text-5xl" />
-            </div>
-            <h2 class="text-2xl font-bold mb-2">真人PK</h2>
-            <p class="text-sm text-gray-400 mb-6">与好友实时对战，比拼词汇量</p>
-
-            <div class="space-y-3">
-              <button
-                class="w-full py-4 rounded-xl bg-gradient-to-r from-red-400 to-pink-500 text-white font-bold text-lg hover:shadow-lg hover:shadow-red-200 transition-all active:scale-[0.98]"
-                @click="startCreateRoom"
-              >
-                <Icon icon="ph:plus-circle-bold" class="inline mr-2" />创建房间
-              </button>
-              <button
-                class="w-full py-4 rounded-xl border-2 border-gray-200 text-gray-600 font-bold text-lg hover:border-red-300 hover:text-red-500 hover:bg-red-50 transition-all active:scale-[0.98]"
-                @click="startJoinRoom"
-              >
-                <Icon icon="ph:sign-in-bold" class="inline mr-2" />加入房间
-              </button>
-            </div>
+        <!-- 标题 + 操作按钮 -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold">真人PK</h2>
+            <p class="text-sm text-gray-400">与好友实时对战，比拼词汇量</p>
+          </div>
+          <div class="flex gap-3">
+            <button
+              class="px-5 py-3 rounded-xl bg-gradient-to-r from-red-400 to-pink-500 text-white font-bold hover:shadow-lg transition-all active:scale-[0.98] text-sm"
+              @click="showCreateDialog = true"
+            >
+              <Icon icon="ph:plus-circle-bold" class="inline mr-1" />创建房间
+            </button>
+            <button
+              class="px-5 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold hover:border-red-300 hover:text-red-500 hover:bg-red-50 transition-all active:scale-[0.98] text-sm"
+              @click="showCodeOverlay = true"
+            >
+              <Icon icon="ph:keyboard-bold" class="inline mr-1" />输入房间码
+            </button>
           </div>
         </div>
 
-        <!-- 创建房间 -->
-        <div v-if="creatingRoom" class="card mt-4 text-center">
-          <h3 class="font-bold mb-4">创建房间</h3>
-          <p class="text-sm text-gray-400 mb-4">房间码已生成，等待好友输入房间码加入</p>
-          <div class="text-5xl font-bold tracking-[0.3em] text-[#2563EB] mb-6">{{ roomCode }}</div>
-          <div class="flex items-center justify-center gap-2 mb-4">
-            <span class="w-3 h-3 rounded-full animate-pulse" :class="roomReady ? 'bg-green-500' : 'bg-yellow-500'"></span>
-            <span class="text-sm" :class="roomReady ? 'text-green-600 font-bold' : 'text-gray-400'">
-              {{ roomReady ? '双方已就位，请选择难度并开始！' : '等待另一位玩家加入...' }}
+        <!-- 创建房间弹窗 -->
+        <Teleport to="body">
+          <div v-if="showCreateDialog" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="showCreateDialog = false">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
+              <h3 class="text-lg font-bold mb-4">创建房间</h3>
+              <!-- 公开/私密切换 -->
+              <div class="flex gap-2 mb-4">
+                <button
+                  class="flex-1 py-3 rounded-xl text-sm font-bold transition-all"
+                  :class="createIsPublic ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'"
+                  @click="createIsPublic = true"
+                >🌐 公开房间</button>
+                <button
+                  class="flex-1 py-3 rounded-xl text-sm font-bold transition-all"
+                  :class="!createIsPublic ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-500'"
+                  @click="createIsPublic = false"
+                >🔒 私密房间</button>
+              </div>
+              <p class="text-xs text-gray-400 mb-4">
+                {{ createIsPublic ? '公开房间会显示在房间列表中，任何人都可以加入' : '私密房间仅通过房间码加入，不会在列表中显示' }}
+              </p>
+              <!-- 难度选择 -->
+              <p class="text-sm font-bold text-gray-600 mb-2">选择难度</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <button
+                  v-for="d in difficulties" :key="d.key"
+                  class="px-3 py-2 rounded-xl text-xs font-bold transition-all"
+                  :class="selectedDifficulty === d.key ? 'bg-[#2563EB] text-white shadow-lg' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+                  @click="selectedDifficulty = d.key"
+                >{{ d.label }}</button>
+              </div>
+              <p v-if="createError" class="text-xs text-red-400 mb-3 text-center">{{ createError }}</p>
+              <button
+                class="w-full py-3 rounded-xl bg-gradient-to-r from-red-400 to-pink-500 text-white font-bold hover:shadow-lg transition-all"
+                @click="doCreateRoom"
+              >
+                <span v-if="creatingRoom">创建中...</span>
+                <span v-else>确认创建</span>
+              </button>
+              <button class="mt-3 w-full text-sm text-gray-400 hover:text-gray-600 transition-colors" @click="showCreateDialog = false">取消</button>
+            </div>
+          </div>
+        </Teleport>
+
+        <!-- 我的房间 -->
+        <div v-if="myRoom && myRoom.hasRoom" class="card mb-6 border-2 border-red-200">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+              <Icon v-if="myRoom.isHost" icon="ph:crown-bold" class="text-yellow-500" />
+              <Icon v-else icon="ph:user-bold" class="text-blue-500" />
+              {{ myRoom.isHost ? '我的房间（房主）' : '已加入的房间' }}
+              <button class="ml-2 text-gray-400 hover:text-[#2563EB] transition-colors" title="刷新" @click="loadMyRoom">
+                <Icon icon="ph:arrow-clockwise-bold" :class="{ 'animate-spin': roomRefreshing }" />
+              </button>
+            </h3>
+            <span class="text-xs px-2 py-1 rounded-full font-bold"
+              :class="myRoom.isReady ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'">
+              {{ myRoom.isReady ? '已就位' : '等待中' }}
             </span>
           </div>
 
-          <!-- 房主选择难度（仅双方就位后显示） -->
-          <div v-if="roomReady" class="mb-4">
-            <p class="text-sm font-bold text-gray-600 mb-3">选择难度</p>
-            <div class="flex justify-center gap-2 flex-wrap">
-              <button
-                v-for="d in difficulties"
-                :key="d.key"
-                class="px-4 py-2 rounded-xl text-sm font-bold transition-all"
-                :class="selectedDifficulty === d.key
-                  ? 'bg-[#2563EB] text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
-                @click="selectedDifficulty = d.key"
-              >{{ d.label }}</button>
+          <div class="flex items-center gap-4 mb-3">
+            <div>
+              <p class="text-xs text-gray-400">房间码</p>
+              <p class="text-3xl font-bold tracking-[0.2em] text-[#2563EB]">{{ myRoom.roomCode }}</p>
+            </div>
+            <div class="flex-1">
+              <p class="text-xs text-gray-400">
+                <Icon v-if="myRoom.isPublic" icon="ph:globe-bold" class="text-green-500 inline" />
+                <Icon v-else icon="ph:lock-bold" class="text-gray-500 inline" />
+                {{ myRoom.isPublic ? '公开房间' : '私密房间' }}
+              </p>
+              <p class="text-xs text-gray-400 mt-1">难度：{{ difficultyLabel(myRoom.difficulty) }}</p>
             </div>
           </div>
 
-          <button
-            v-if="roomReady"
-            class="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-red-400 to-pink-500 text-white font-bold hover:shadow-lg transition-all disabled:opacity-30"
-            @click="startGame"
-          >
-            <Icon icon="ph:play-circle-bold" class="inline mr-1" />开始对战
-          </button>
-          <button
-            v-if="!roomReady"
-            class="mt-4 w-full py-3 rounded-xl bg-red-50 text-red-400 font-bold hover:bg-red-100 transition-all"
-            @click="cancelRoom"
-          >
-            取消房间
-          </button>
+          <!-- 房主操作：难度调整 + 解散 -->
+          <div v-if="myRoom.isHost" class="space-y-3">
+            <div>
+              <p class="text-xs font-bold text-gray-500 mb-2">调整难度</p>
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="d in difficulties" :key="d.key"
+                  class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                  :class="myRoom.difficulty === d.key ? 'bg-[#2563EB] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+                  @click="updateRoomDifficulty(d.key)"
+                >{{ d.label }}</button>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button v-if="myRoom.isReady" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-400 to-pink-500 text-white font-bold hover:shadow-lg transition-all" @click="startGame">
+                <Icon icon="ph:play-circle-bold" class="inline mr-1" />开始对战
+              </button>
+              <button v-else class="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-400 to-pink-500 text-white font-bold opacity-50 cursor-not-allowed text-sm">
+                <Icon icon="ph:spinner-bold" class="inline mr-1 animate-spin" />等待玩家加入...
+              </button>
+              <button class="px-4 py-3 rounded-xl bg-red-50 text-red-400 font-bold hover:bg-red-100 transition-all text-sm" @click="disbandMyRoom">
+                <Icon icon="ph:trash-bold" /> 解散
+              </button>
+            </div>
+          </div>
+
+          <!-- 加入者：等待 -->
+          <div v-else class="text-center py-2">
+            <Icon icon="ph:spinner-bold" class="text-3xl text-blue-400 animate-spin mx-auto mb-2" />
+            <p class="text-sm text-gray-400">等待房主开启PK...</p>
+            <button class="mt-3 text-xs text-red-400 hover:text-red-600 transition-colors" @click="leaveMyRoom">退出房间</button>
+          </div>
         </div>
 
-        <!-- 加入房间 -->
-        <div v-if="joiningRoom" class="card mt-4 text-center">
-          <h3 class="font-bold mb-4">加入房间</h3>
-          <p class="text-sm text-gray-400 mb-4">输入好友分享的4位房间码</p>
-          <div class="flex justify-center gap-2 mb-4">
-            <input
-              v-for="(_, i) in 4"
-              :key="i"
-              :ref="el => { if (el) codeInputs[i] = el }"
-              v-model="codeDigits[i]"
-              type="text"
-              inputmode="numeric"
-              maxlength="1"
-              class="w-14 h-16 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-[#2563EB] focus:outline-none transition-colors"
-              @input="onCodeInput(i)"
-              @keydown.backspace="onCodeBackspace(i)"
-            />
+        <!-- 公开房间列表 -->
+        <div class="mt-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-gray-500 flex items-center gap-2">
+              <Icon icon="ph:globe-bold" /> 公开房间
+            </h3>
+            <button class="text-gray-400 hover:text-[#2563EB] transition-colors p-1" title="刷新列表" @click="loadRoomList(roomPage)">
+              <Icon icon="ph:arrow-clockwise-bold" />
+            </button>
           </div>
-          <p v-if="joinError" class="text-xs text-red-400 mb-3">{{ joinError }}</p>
-          <button
-            class="w-full py-3 rounded-xl bg-gradient-to-r from-red-400 to-pink-500 text-white font-bold hover:shadow-lg transition-all disabled:opacity-30"
-            :disabled="codeDigits.join('').length < 4 || joining"
-            @click="doJoinRoom"
-          >
-            <span v-if="joining">加入中...</span>
-            <span v-else>加入房间</span>
-          </button>
-          <button
-            class="mt-3 w-full text-sm text-gray-400 hover:text-gray-600 transition-colors"
-            @click="joiningRoom = false"
-          >取消</button>
+          <div v-if="roomList.length === 0" class="text-center py-10 text-gray-400">
+            <Icon icon="ph:users-bold" class="text-4xl mx-auto mb-2 opacity-30" />
+            <p class="text-sm">暂无公开房间，快来创建一个吧！</p>
+          </div>
+          <div v-else class="grid grid-cols-2 gap-3">
+            <div
+              v-for="room in roomList" :key="room.roomCode"
+              class="card transition-all border-2"
+              :class="room.isReady
+                ? 'border-gray-100 opacity-60 cursor-not-allowed'
+                : 'border-transparent hover:border-red-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer'"
+              @click="!room.isReady && joinPublicRoom(room.roomCode)"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-lg font-bold tracking-wider" :class="room.isReady ? 'text-gray-400' : 'text-[#2563EB]'">{{ room.roomCode }}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" :class="room.isReady ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'">
+                  {{ room.isReady ? '已满' : '等待中' }}
+                </span>
+              </div>
+              <p class="text-xs" :class="room.isReady ? 'text-gray-400' : 'text-gray-500'">房主：{{ room.hostName }}</p>
+              <p class="text-xs" :class="room.isReady ? 'text-gray-300' : 'text-gray-400'">难度：{{ difficultyLabel(room.difficulty) }}</p>
+            </div>
+          </div>
+          <!-- 分页 -->
+          <div v-if="roomTotalPages > 1" class="flex items-center justify-center gap-3 mt-4">
+            <button class="px-3 py-1.5 rounded-lg text-sm font-bold transition-all"
+              :class="roomPage > 1 ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'text-gray-300 cursor-not-allowed'"
+              :disabled="roomPage <= 1" @click="loadRoomList(roomPage - 1)">
+              <Icon icon="ph:arrow-left-bold" />
+            </button>
+            <span class="text-xs text-gray-400">{{ roomPage }} / {{ roomTotalPages }}</span>
+            <button class="px-3 py-1.5 rounded-lg text-sm font-bold transition-all"
+              :class="roomPage < roomTotalPages ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'text-gray-300 cursor-not-allowed'"
+              :disabled="roomPage >= roomTotalPages" @click="loadRoomList(roomPage + 1)">
+              <Icon icon="ph:arrow-right-bold" />
+            </button>
+          </div>
         </div>
+
+        <!-- 悬浮房间码输入 -->
+        <Teleport to="body">
+          <div v-if="showCodeOverlay" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="showCodeOverlay = false">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4" @click.stop>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold">输入房间码</h3>
+                <button class="text-gray-400 hover:text-gray-600 text-xl leading-none" @click="showCodeOverlay = false">&times;</button>
+              </div>
+              <div class="flex justify-center gap-3 mb-4">
+                <input
+                  v-for="(_, i) in 4" :key="i"
+                  :ref="el => { if (el) codeInputs[i] = el }"
+                  v-model="codeDigits[i]"
+                  type="text" inputmode="numeric" maxlength="1"
+                  class="w-14 h-16 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-[#2563EB] focus:outline-none transition-colors"
+                  @input="onCodeInput(i)"
+                  @keydown.backspace="onCodeBackspace(i)"
+                  @keydown.enter="doJoinRoom"
+                />
+              </div>
+              <p v-if="joinError" class="text-xs text-red-400 mb-3 text-center">{{ joinError }}</p>
+              <button
+                class="w-full py-3 rounded-xl bg-gradient-to-r from-red-400 to-pink-500 text-white font-bold hover:shadow-lg transition-all disabled:opacity-30"
+                :disabled="codeDigits.join('').length < 4 || joining"
+                @click="doJoinRoom"
+              >
+                <span v-if="joining">加入中...</span>
+                <span v-else>加入房间</span>
+              </button>
+            </div>
+          </div>
+        </Teleport>
       </div>
     </template>
 
     <!-- ====== PK 答题中 ====== -->
     <template v-if="pkState === 'playing'">
-      <div class="max-w-2xl mx-auto">
-        <div class="flex items-center justify-between mb-8">
-          <button class="text-gray-400 hover:text-red-500 text-sm flex items-center gap-1 transition-colors" @click="showQuitConfirm = true">
+      <div class="max-w-2xl mx-auto border-2 border-gray-200 rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <button class="px-4 py-2 rounded-xl bg-blue-50 text-gray-700 font-bold hover:bg-blue-100 transition-all text-sm flex items-center gap-1" @click="showQuitConfirm = true">
             <Icon icon="ph:sign-out-bold" /> 退出对战
           </button>
           <div class="flex items-center gap-4">
@@ -191,13 +300,44 @@
           </div>
         </div>
 
-        <!-- 进度条 -->
-        <div class="w-full h-1.5 bg-gray-100 rounded-full mb-8">
-          <div class="h-full bg-[#2563EB] rounded-full transition-all duration-500" :style="{ width: ((currentQuestion + 1) / totalQuestions * 100) + '%' }"></div>
+        <!-- 双人进度条 -->
+        <div class="mb-1">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-[#2563EB] font-bold">你 ({{ myCorrect }}✓)</span>
+            <span class="text-gray-400">{{ myAnswered }}/{{ totalQuestions }}</span>
+          </div>
+          <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-[#2563EB] rounded-full transition-all duration-500" :style="{ width: (myAnswered / totalQuestions * 100) + '%' }"></div>
+          </div>
+        </div>
+        <div class="mb-6">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-red-400 font-bold">对手 ({{ opponentCorrect }}✓)</span>
+            <span class="text-gray-400">{{ opponentAnswered }}/{{ totalQuestions }}</span>
+          </div>
+          <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-red-400 rounded-full transition-all duration-500" :style="{ width: (opponentAnswered / totalQuestions * 100) + '%' }"></div>
+          </div>
+        </div>
+
+        <!-- 等待提示 -->
+        <div v-if="myFinished && !bothFinished" class="text-center py-4 mb-4">
+          <Icon icon="ph:spinner-bold" class="text-3xl text-blue-400 animate-spin mx-auto mb-2" />
+          <p class="text-sm text-gray-500">你已完成答题，等待对手完成...</p>
+        </div>
+
+        <!-- 倒计时 -->
+        <div v-if="!answered && !myFinished" class="text-center mb-4">
+          <span class="text-sm font-bold" :class="questionTimeLeft <= 5 ? 'text-red-500 animate-pulse' : 'text-gray-500'">
+            剩余时间：{{ questionTimeLeft }}s
+          </span>
+          <div class="w-full h-1.5 bg-gray-100 rounded-full mt-1">
+            <div class="h-full rounded-full transition-all duration-1000" :class="questionTimeLeft <= 5 ? 'bg-red-500' : 'bg-[#2563EB]'" :style="{ width: (questionTimeLeft / 15 * 100) + '%' }"></div>
+          </div>
         </div>
 
         <!-- 题目卡片 -->
-        <div v-if="currentQ" class="card mb-8">
+        <div v-if="currentQ && !myFinished" class="card mb-8">
           <p class="text-xs text-gray-400 mb-2">选择正确的释义</p>
           <h3 class="text-2xl font-bold mb-6">{{ currentQ.word }}</h3>
           <div class="space-y-3">
@@ -218,34 +358,15 @@
           <div v-if="answered" class="mt-4 p-3 rounded-xl text-sm" :class="feedbackCorrect ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-600'">
             {{ feedbackText }}
           </div>
-        </div>
-
-        <!-- 下一题 / 查看结果 -->
-        <div class="text-center">
-          <button
-            v-if="answered && currentQuestion < totalQuestions - 1"
-            class="px-8 py-3 rounded-xl bg-[#2563EB] text-white font-bold hover:bg-blue-600 transition-all"
-            @click="nextQuestion"
-          >
-            下一题
-          </button>
-          <button
-            v-if="answered && currentQuestion >= totalQuestions - 1"
-            class="px-8 py-3 rounded-xl bg-gradient-to-r from-red-400 to-pink-500 text-white font-bold hover:shadow-lg transition-all"
-            @click="finishGame"
-          >
-            查看结果
-          </button>
+          <div v-if="answered && currentQuestion < totalQuestions - 1" class="mt-4 text-center">
+            <span class="text-xs text-gray-400">3秒后自动跳转下一题...</span>
+          </div>
         </div>
       </div>
 
       <!-- 退出确认弹窗 -->
       <Teleport to="body">
-        <div
-          v-if="showQuitConfirm"
-          class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm"
-          @click.self="showQuitConfirm = false"
-        >
+        <div v-if="showQuitConfirm" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="showQuitConfirm = false">
           <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 text-center">
             <Icon icon="ph:warning-circle-bold" class="text-5xl text-yellow-500 mx-auto mb-3" />
             <h3 class="text-lg font-bold mb-2">确认退出对战</h3>
@@ -253,14 +374,8 @@
               中途退出将被视为<strong class="text-red-500">失败</strong>，对方将<strong class="text-green-500">自动获胜</strong>。确定要退出吗？
             </p>
             <div class="flex gap-3">
-              <button
-                class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-all"
-                @click="showQuitConfirm = false"
-              >继续答题</button>
-              <button
-                class="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-all"
-                @click="confirmQuit"
-              >确认退出</button>
+              <button class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-all" @click="showQuitConfirm = false">继续答题</button>
+              <button class="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-all" @click="confirmQuit">确认退出</button>
             </div>
           </div>
         </div>
@@ -269,7 +384,7 @@
 
     <!-- ====== PK 结果 ====== -->
     <template v-if="pkState === 'result'">
-      <div class="max-w-md mx-auto card text-center">
+      <div class="max-w-md mx-auto border-2 border-gray-200 rounded-2xl p-6 text-center">
         <div class="text-6xl mb-4">{{ resultEmoji }}</div>
         <h2 class="text-2xl font-bold mb-2">{{ resultTitle }}</h2>
         <p class="text-gray-500 mb-6">{{ resultSub }}</p>
@@ -280,36 +395,32 @@
         </div>
 
         <!-- 正常完成时的分数 -->
-        <div v-if="!quitBySomeone" class="flex justify-center gap-8 mb-8">
+        <div v-if="!quitBySomeone" class="flex justify-center gap-8 mb-6">
           <div class="text-center">
             <div class="text-3xl font-bold text-[#2563EB]">{{ myCorrect }}/{{ totalQuestions }}</div>
             <div class="text-xs text-gray-400">我 · {{ Math.round(myCorrect / totalQuestions * 100) }}%</div>
+            <div class="text-xs text-gray-400 mt-1">耗时 {{ myTimeSec }}s</div>
           </div>
           <div class="w-px bg-gray-200"></div>
           <div class="text-center">
             <div class="text-3xl font-bold text-red-400">{{ opponentCorrect }}/{{ totalQuestions }}</div>
             <div class="text-xs text-gray-400">对手 · {{ Math.round(opponentCorrect / totalQuestions * 100) }}%</div>
+            <div class="text-xs text-gray-400 mt-1">耗时 {{ opponentTimeSec }}s</div>
           </div>
         </div>
 
-        <div class="flex gap-3">
+        <div class="flex justify-center">
           <button
-            class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-all"
+            class="px-8 py-3 rounded-xl bg-[#2563EB] text-white font-bold hover:bg-blue-600 transition-all"
             @click="pkState = 'lobby'; resetRoom()"
           >
-            再来一局
-          </button>
-          <button
-            class="flex-1 py-3 rounded-xl bg-[#2563EB] text-white font-bold hover:bg-blue-600 transition-all"
-            @click="pkState = null; resetRoom()"
-          >
-            返回首页
+            返回大厅
           </button>
         </div>
       </div>
     </template>
 
-    <!-- ====== 角色扮演 - 场景选择 ====== -->
+    <!-- ====== 情景对话 - 场景选择 ====== -->
     <template v-if="rpState === 'scene-select'">
       <div class="max-w-2xl mx-auto border-2 border-gray-200 rounded-2xl p-6">
         <button class="px-4 py-2 rounded-xl bg-blue-50 text-gray-700 font-bold hover:bg-blue-100 transition-all mb-6 flex items-center gap-1 text-sm" @click="rpState = null">
@@ -335,7 +446,7 @@
       </div>
     </template>
 
-    <!-- ====== 角色扮演 - 对话界面 ====== -->
+    <!-- ====== 情景对话 - 对话界面 ====== -->
     <template v-if="rpState === 'chatting'">
       <div class="max-w-3xl mx-auto border-2 border-gray-200 rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
@@ -578,14 +689,16 @@
 
         <!-- 结束按钮 -->
         <div v-if="!wcGameOver" class="text-center mt-3">
-          <button class="text-xs text-gray-400 hover:text-gray-600 transition-colors" @click="endWordChain">结束接龙</button>
+          <button class="text-xs text-gray-400 hover:text-gray-600 transition-colors" @click="endWordChain(true)">结束接龙</button>
         </div>
 
         <!-- 游戏结束 -->
         <div v-if="wcGameOver" class="card text-center mt-4">
-          <div class="text-5xl mb-3">🎉</div>
-          <h3 class="text-xl font-bold mb-2">接龙结束！</h3>
-          <p class="text-lg text-gray-500 mb-1">{{ wcMode === 'endless' ? '无尽模式下，你和AI共完成了' : '5分钟内，你和AI共完成了' }}</p>
+          <div class="text-5xl mb-3">{{ wcEarlyEnd ? '⏹️' : '🎉' }}</div>
+          <h3 class="text-xl font-bold mb-2">{{ wcEarlyEnd ? '中途结束' : '接龙结束！' }}</h3>
+          <p class="text-lg text-gray-500 mb-1">
+            {{ wcEarlyEnd ? '你在 ' + wcElapsedDisplay + ' 内接龙了' : (wcMode === 'endless' ? '无尽模式下，你和AI共完成了' : '5分钟内，你和AI共完成了') }}
+          </p>
           <p class="text-4xl font-extrabold text-[#2563EB] mb-1">{{ wcChain.length }} 个单词</p>
           <p class="text-sm text-gray-400 mb-4">其中你贡献了 <strong class="text-green-600">{{ wcUserCount }}</strong> 个单词</p>
           <div v-if="wcChain.length > 0" class="flex flex-wrap justify-center gap-1.5 mb-6">
@@ -605,13 +718,13 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import request from '@/utils/request'
 
 const pkState = ref(null) // null | 'lobby' | 'playing' | 'result'
 
-// ========== 角色扮演系统 ==========
+// ========== 情景对话系统 ==========
 const rpState = ref(null) // null | 'scene-select' | 'chatting'
 const rpScene = ref('')
 const rpRole = ref('')
@@ -791,11 +904,20 @@ const wcLoading = ref(false)
 const wcMessage = ref('')
 const wcMessageType = ref('info')
 const wcGameOver = ref(false)
+const wcEarlyEnd = ref(false)
+const wcElapsedSeconds = ref(0)
+let wcStartTime = 0
 const wcTimeLeft = ref(300)    // 标准模式：300秒总时长；无尽模式：8秒每轮
 const wcLetterChanged = ref(false)
 const wcTurn = ref('user')
 const wcInputRef = ref(null)
 let wcTimer = null
+
+const wcElapsedDisplay = computed(() => {
+  const s = wcElapsedSeconds.value
+  if (s < 60) return s + '秒'
+  return Math.floor(s / 60) + '分' + (s % 60) + '秒'
+})
 
 const WC_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWY'
 const ENDLESS_PER_TURN = 8
@@ -852,6 +974,9 @@ async function startWordChain(mode) {
   wcInput.value = ''
   wcMessage.value = ''
   wcGameOver.value = false
+  wcEarlyEnd.value = false
+  wcElapsedSeconds.value = 0
+  wcStartTime = Date.now()
   wcTimeLeft.value = mode === 'endless' ? ENDLESS_PER_TURN : 300
 
   const letter = randomStartLetter()
@@ -1023,8 +1148,10 @@ function flashLetter() {
   setTimeout(() => { wcLetterChanged.value = false }, 300)
 }
 
-function endWordChain() {
+function endWordChain(isEarly = false) {
   clearInterval(wcTimer)
+  wcElapsedSeconds.value = Math.floor((Date.now() - wcStartTime) / 1000)
+  wcEarlyEnd.value = isEarly
   wcGameOver.value = true
   wcTurn.value = 'user'
   wcLoading.value = false
@@ -1037,7 +1164,8 @@ function quitWordChain() {
   wcModeSelect.value = true
 }
 
-// ========== 房间系统 ==========
+
+// ========== 房间系统（基于后端 API） ==========
 const creatingRoom = ref(false)
 const joiningRoom = ref(false)
 const roomCode = ref('')
@@ -1045,8 +1173,27 @@ const isHost = ref(false)
 const roomReady = ref(false)
 const joinError = ref('')
 const joining = ref(false)
+let roomPollTimer = null
+let opponentPollTimer = null
 
-// 房间码输入
+// 创建房间
+const showCreateDialog = ref(false)
+const createIsPublic = ref(true)
+const createError = ref('')
+
+// 我的房间
+const myRoom = ref(null)
+const roomRefreshing = ref(false)
+let lobbyRefreshTimer = null
+
+// 房间列表
+const roomList = ref([])
+const roomPage = ref(1)
+const roomTotalPages = ref(1)
+const roomTotal = ref(0)
+
+// 悬浮房间码输入
+const showCodeOverlay = ref(false)
 const codeDigits = ref(['', '', '', ''])
 const codeInputs = ref([])
 
@@ -1064,80 +1211,282 @@ const selectedDifficultyLabel = computed(() => {
   const d = difficulties.find(d => d.key === selectedDifficulty.value)
   return d ? d.label : '四级'
 })
-
-function startCreateRoom() {
-  creatingRoom.value = true
-  joiningRoom.value = false
-  joinError.value = ''
-  isHost.value = true
-  roomReady.value = false
-  // 生成4位随机房间码
-  roomCode.value = String(Math.floor(1000 + Math.random() * 9000))
+function difficultyLabel(key) {
+  const d = difficulties.find(d => d.key === key)
+  return d ? d.label : key
 }
 
+// ===== 房间列表操作 =====
+async function loadRoomList(page = 1) {
+  try {
+    const data = await request.get('/pk/room', { params: { action: 'list', page } })
+    if (data.success) {
+      roomList.value = data.rooms || []
+      roomPage.value = data.page || 1
+      roomTotalPages.value = data.totalPages || 1
+      roomTotal.value = data.total || 0
+    }
+  } catch (e) { /* 静默 */ }
+}
+
+async function joinPublicRoom(code) {
+  roomCode.value = ''
+  codeDigits.value = code.split('')
+  joining.value = true
+  joinError.value = ''
+  try {
+    const data = await request.post('/pk/room', { action: 'join', roomCode: code })
+    if (data.success) {
+      roomCode.value = code
+      isHost.value = false
+      roomReady.value = true
+      joiningRoom.value = true
+      await loadMyRoom()
+      startRoomPolling()
+      loadRoomList(roomPage.value)
+    } else {
+      // 加入失败，通过悬浮框显示错误
+      showCodeOverlay.value = true
+      joinError.value = data.message || '房间码无效或房间不存在，请检查后重试'
+      nextTick(() => codeInputs.value[0]?.focus())
+    }
+  } catch (e) {
+    showCodeOverlay.value = true
+    joinError.value = '网络错误，请重试'
+  } finally {
+    joining.value = false
+  }
+}
+
+async function doJoinRoomWithCode(code) {
+  joining.value = true
+  joinError.value = ''
+  try {
+    const data = await request.post('/pk/room', { action: 'join', roomCode: code })
+    if (data.success) {
+      roomCode.value = code
+      isHost.value = false
+      roomReady.value = true
+      joiningRoom.value = true
+      showCodeOverlay.value = false
+      await loadMyRoom()
+      startRoomPolling()
+    } else {
+      joinError.value = data.message || '房间码无效或房间不存在，请检查后重试'
+    }
+  } catch (e) {
+    joinError.value = '网络错误，请重试'
+  } finally {
+    joining.value = false
+  }
+}
+
+// ===== 创建房间 =====
+async function doCreateRoom() {
+  createError.value = ''
+  showCreateDialog.value = false
+  isHost.value = true
+  roomReady.value = false
+  joiningRoom.value = false
+  joinError.value = ''
+
+  try {
+    const data = await request.post('/pk/room', {
+      action: 'create',
+      isPublic: createIsPublic.value,
+      difficulty: selectedDifficulty.value,
+    })
+    if (data.success) {
+      creatingRoom.value = true
+      roomCode.value = data.roomCode
+      await loadMyRoom()
+      startRoomPolling()
+      loadRoomList(1)
+    } else {
+      createError.value = data.message || '创建房间失败'
+      creatingRoom.value = false
+    }
+  } catch (e) {
+    createError.value = '网络错误，请重试'
+    creatingRoom.value = false
+  }
+}
+
+// ===== 加入房间（通过悬浮输入框） =====
 function startJoinRoom() {
-  joiningRoom.value = true
-  creatingRoom.value = false
+  showCodeOverlay.value = true
   joinError.value = ''
   codeDigits.value = ['', '', '', '']
-  isHost.value = false
-  roomReady.value = false
   nextTick(() => codeInputs.value[0]?.focus())
 }
 
 function onCodeInput(i) {
   codeDigits.value[i] = codeDigits.value[i].replace(/[^0-9]/g, '')
-  if (codeDigits.value[i] && i < 3) {
-    codeInputs.value[i + 1]?.focus()
-  }
+  if (codeDigits.value[i] && i < 3) codeInputs.value[i + 1]?.focus()
 }
 
 function onCodeBackspace(i) {
-  if (!codeDigits.value[i] && i > 0) {
-    codeInputs.value[i - 1]?.focus()
-  }
+  if (!codeDigits.value[i] && i > 0) codeInputs.value[i - 1]?.focus()
 }
 
 async function doJoinRoom() {
   const code = codeDigits.value.join('')
-  joining.value = true
-  joinError.value = ''
-  await new Promise(r => setTimeout(r, 800))
-  // 模拟：检查房间码（需与当前已创建的房间码匹配）
-  if (roomCode.value && code === roomCode.value) {
-    roomReady.value = true
-    joiningRoom.value = false
-    isHost.value = false
-    // 在创建房间那边也同步更新
-  } else {
-    joinError.value = '房间码无效或房间不存在，请检查后重试'
-  }
-  joining.value = false
+  if (code.length !== 4) return
+  await doJoinRoomWithCode(code)
 }
 
-function cancelRoom() {
+// ===== 我的房间 =====
+async function loadMyRoom() {
+  try {
+    const data = await request.post('/pk/room', { action: 'myroom' })
+    if (data.success && data.hasRoom) {
+      myRoom.value = {
+        hasRoom: true,
+        roomCode: data.roomCode,
+        isHost: data.isHost,
+        isPublic: data.isPublic,
+        isReady: data.isReady,
+        difficulty: data.difficulty,
+        status: data.status,
+      }
+      roomCode.value = data.roomCode
+      isHost.value = data.isHost
+      roomReady.value = data.isReady
+      if (data.isReady && !data.isHost) joiningRoom.value = true
+      if (data.isHost) creatingRoom.value = true
+    } else {
+      myRoom.value = null
+    }
+  } catch (e) { myRoom.value = null }
+}
+
+async function disbandMyRoom() {
+  try {
+    await request.post('/pk/room', { action: 'disband' })
+  } catch (e) {}
+  myRoom.value = null
   creatingRoom.value = false
   roomCode.value = ''
   roomReady.value = false
   isHost.value = false
+  stopRoomPolling()
+  loadRoomList(roomPage.value)
 }
 
-function leaveLobby() {
-  cancelRoom()
+async function updateRoomDifficulty(diffKey) {
+  selectedDifficulty.value = diffKey
+  try {
+    const data = await request.post('/pk/room', {
+      action: 'update',
+      roomCode: roomCode.value,
+      difficulty: diffKey,
+    })
+    if (data.success) {
+      await loadMyRoom()
+    }
+  } catch (e) {}
+}
+
+async function leaveMyRoom() {
+  try {
+    await request.post('/pk/room', { action: 'leave', roomCode: roomCode.value })
+  } catch (e) {}
+  myRoom.value = null
   joiningRoom.value = false
+  roomCode.value = ''
+  roomReady.value = false
+  isHost.value = false
+  stopRoomPolling()
+}
+
+// ===== 轮询房间状态 =====
+function startRoomPolling() {
+  stopRoomPolling()
+  roomPollTimer = setInterval(async () => {
+    if (!roomCode.value) return
+    try {
+      const data = await request.get('/pk/room', { params: { roomCode: roomCode.value } })
+      if (!data.success || !data.exists) {
+        if (!isHost.value) {
+          joinError.value = '房间已解散'
+          joiningRoom.value = false
+          roomReady.value = false
+          roomCode.value = ''
+        }
+        stopRoomPolling()
+        return
+      }
+      // 检测对手加入
+      if (isHost.value && data.isReady && !roomReady.value) {
+        roomReady.value = true
+      }
+      // 检测游戏开始
+      if (data.status === 'PLAYING' && pkState.value !== 'playing') {
+        stopRoomPolling()
+        if (isHost.value) {
+          // host 已经通过 startGame 进入
+        } else {
+          await joinGameAsGuest()
+        }
+      }
+      // 检测游戏结束
+      if (data.status === 'FINISHED' && pkState.value === 'playing') {
+        stopRoomPolling()
+        stopOpponentPolling()
+        quitBySomeone.value = true
+        quitByMe.value = false
+        await showGameResult()
+      }
+      // 如果 guest 等待中且 roomReady 但游戏未开始
+      if (!isHost.value && data.isReady && data.status === 'WAITING') {
+        roomReady.value = true
+      }
+    } catch (e) { /* 静默 */ }
+  }, 2000)
+}
+
+function stopRoomPolling() {
+  if (roomPollTimer) { clearInterval(roomPollTimer); roomPollTimer = null }
+}
+
+function stopOpponentPolling() {
+  if (opponentPollTimer) { clearInterval(opponentPollTimer); opponentPollTimer = null }
+}
+
+async function cancelRoom() {
+  await disbandMyRoom()
+}
+
+async function leaveLobby() {
+  if (myRoom.value?.isHost) await disbandMyRoom()
+  else if (myRoom.value?.hasRoom) await leaveMyRoom()
+  stopRoomPolling()
+  stopLobbyRefresh()
+  joiningRoom.value = false
+  showCodeOverlay.value = false
+  showCreateDialog.value = false
   pkState.value = null
 }
 
 // ========== 答题系统 ==========
 const currentQuestion = ref(0)
-const totalQuestions = 10
+const totalQuestions = ref(20)
 const answered = ref(false)
 const selectedOption = ref(-1)
 const myCorrect = ref(0)
 const opponentCorrect = ref(0)
+const myAnswered = ref(0)
+const opponentAnswered = ref(0)
+const myTimeSec = ref(0)
+const opponentTimeSec = ref(0)
+const myFinished = ref(false)
+const bothFinished = ref(false)
 const feedbackText = ref('')
 const feedbackCorrect = ref(true)
 const allQuestions = ref([])
+const questionTimeLeft = ref(15)
+let questionTimer = null
+let questionStartTime = 0
 
 // 退出相关
 const showQuitConfirm = ref(false)
@@ -1145,88 +1494,218 @@ const quitByMe = ref(false)
 const quitBySomeone = ref(false)
 const gameActive = ref(false)
 
-function generateQuestions(difficulty) {
-  const mockWords = {
-    junior: [
-      { word: 'abandon', options: ['放弃', '获得', '开始', '结束'], correct: 0 },
-      { word: 'ability', options: ['能力', '残疾', '可能', '责任'], correct: 0 },
-      { word: 'abroad', options: ['国内', '国外', '船上', '车上'], correct: 1 },
-      { word: 'accept', options: ['拒绝', '接受', '发送', '等待'], correct: 1 },
-      { word: 'accident', options: ['意图', '计划', '事故', '成功'], correct: 2 },
-      { word: 'achieve', options: ['失去', '达到', '开始', '停止'], correct: 1 },
-      { word: 'active', options: ['消极的', '积极的', '安静的', '快速的'], correct: 1 },
-      { word: 'actual', options: ['虚拟的', '实际的', '理论的', '假设的'], correct: 1 },
-      { word: 'admire', options: ['厌恶', '羡慕', '忽视', '批评'], correct: 1 },
-      { word: 'adventure', options: ['冒险', '安全', '平凡', '休息'], correct: 0 },
-    ],
-    cet4: [
-      { word: 'abandon', options: ['放弃', '获得', '开始', '结束'], correct: 0 },
-      { word: 'elaborate', options: ['简略的', '精心制作的', '模糊的', '过时的'], correct: 1 },
-      { word: 'fluctuate', options: ['稳定', '波动', '上升', '下降'], correct: 1 },
-      { word: 'genuine', options: ['伪造的', '真正的', '临时的', '昂贵的'], correct: 1 },
-      { word: 'hypothesis', options: ['结论', '事实', '假设', '证据'], correct: 2 },
-      { word: 'inevitable', options: ['可避免的', '不可避免的', '随机的', '罕见的'], correct: 1 },
-      { word: 'jeopardize', options: ['保护', '危及', '改善', '忽视'], correct: 1 },
-      { word: 'negotiate', options: ['拒绝', '接受', '谈判', '发送'], correct: 2 },
-      { word: 'perspective', options: ['图片', '计划', '观点', '比例'], correct: 2 },
-      { word: 'substantial', options: ['微小的', '大量的', '临时的', '表面的'], correct: 1 },
-    ],
-    cet6: [
-      { word: 'ambiguous', options: ['清晰的', '模糊的', '简短的', '冗长的'], correct: 1 },
-      { word: 'benevolent', options: ['恶意的', '仁慈的', '冷漠的', '贪婪的'], correct: 1 },
-      { word: 'conscientious', options: ['粗心的', '认真的', '懒惰的', '傲慢的'], correct: 1 },
-      { word: 'deteriorate', options: ['改善', '恶化', '稳定', '波动'], correct: 1 },
-      { word: 'extravagant', options: ['节俭的', '奢侈的', '普通的', '简朴的'], correct: 1 },
-      { word: 'formidable', options: ['容易的', '可怕的', '微小的', '普通的'], correct: 1 },
-      { word: 'gregarious', options: ['孤僻的', '群居的', '安静的', '害羞的'], correct: 1 },
-      { word: 'homogeneous', options: ['多样的', '同质的', '异质的', '混合的'], correct: 1 },
-      { word: 'indigenous', options: ['外来的', '本土的', '进口的', '出口的'], correct: 1 },
-      { word: 'meticulous', options: ['粗心的', '一丝不苟的', '懒惰的', '随意的'], correct: 1 },
-    ],
-  }
-
-  const words = mockWords[difficulty] || mockWords.cet4
-  return words.slice(0, totalQuestions).map(q => {
-    const correctText = q.options[q.correct]
-    const shuffled = shuffleArray([...q.options])
-    const newCorrect = shuffled.indexOf(correctText)
-    return { word: q.word, options: shuffled, correct: newCorrect }
-  })
-}
-
-function shuffleArray(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]]
-  }
-  return arr
-}
-
 const currentQ = computed(() => {
   if (allQuestions.value.length === 0) return null
   return allQuestions.value[currentQuestion.value]
 })
 
-function selectAnswer(idx) {
+// ===== 开始游戏（房主） =====
+async function startGame() {
+  if (!roomReady.value) return
+  try {
+    const data = await request.post('/pk/game', { action: 'start', roomCode: roomCode.value, difficulty: selectedDifficulty.value })
+    if (data.success && data.questions) {
+      setupGame(data.questions)
+      startOpponentPolling()
+    } else {
+      alert(data.message || '开始游戏失败')
+    }
+  } catch (e) {
+    alert('网络错误，无法开始游戏')
+  }
+}
+
+// ===== 加入游戏（guest） =====
+async function joinGameAsGuest() {
+  try {
+    const data = await request.post('/pk/game', { action: 'questions', roomCode: roomCode.value })
+    if (data.success && data.questions) {
+      setupGame(data.questions)
+      startOpponentPolling()
+    }
+  } catch (e) {
+    console.error('加入游戏失败:', e)
+  }
+}
+
+function setupGame(questions) {
+  allQuestions.value = questions.map(q => ({
+    ...q,
+    correct: q.correctIndex !== undefined ? q.correctIndex : 0,
+  }))
+  // 同步难度标签
+  if (myRoom.value?.difficulty) {
+    selectedDifficulty.value = myRoom.value.difficulty
+  }
+  totalQuestions.value = allQuestions.value.length
+  currentQuestion.value = 0
+  myCorrect.value = 0
+  opponentCorrect.value = 0
+  myAnswered.value = 0
+  opponentAnswered.value = 0
+  myTimeSec.value = 0
+  opponentTimeSec.value = 0
+  myFinished.value = false
+  bothFinished.value = false
+  answered.value = false
+  selectedOption.value = -1
+  quitByMe.value = false
+  quitBySomeone.value = false
+  showQuitConfirm.value = false
+  gameActive.value = true
+  pkState.value = 'playing'
+  startQuestionTimer()
+}
+
+// ===== 单题倒计时 =====
+function startQuestionTimer() {
+  stopQuestionTimer()
+  questionTimeLeft.value = 15
+  questionStartTime = Date.now()
+  questionTimer = setInterval(() => {
+    if (!gameActive.value || myFinished.value) {
+      stopQuestionTimer()
+      return
+    }
+    questionTimeLeft.value--
+    if (questionTimeLeft.value <= 0) {
+      // 超时自动跳到下一题
+      handleTimeout()
+    }
+  }, 1000)
+}
+
+function stopQuestionTimer() {
+  if (questionTimer) { clearInterval(questionTimer); questionTimer = null }
+}
+
+function handleTimeout() {
   if (answered.value || !gameActive.value) return
+  const elapsed = Date.now() - questionStartTime
+  // 超时视为答错
+  answered.value = true
+  selectedOption.value = -1
+  feedbackCorrect.value = false
+  const q = allQuestions.value[currentQuestion.value]
+  feedbackText.value = q ? `⏰ 时间到！正确答案是：${q.options[q.correct]}` : '⏰ 时间到！'
+
+  submitAnswer(currentQuestion.value, -1, elapsed)
+
+  // 2秒后自动跳转
+  setTimeout(() => {
+    if (!gameActive.value) return
+    if (currentQuestion.value < totalQuestions.value - 1) {
+      nextQuestion()
+    } else {
+      finishCurrentPlayer()
+    }
+  }, 2000)
+}
+
+// ===== 选择答案 =====
+function selectAnswer(idx) {
+  if (answered.value || !gameActive.value || myFinished.value) return
+  stopQuestionTimer()
+  const elapsed = Date.now() - questionStartTime
   answered.value = true
   selectedOption.value = idx
-  const correct = allQuestions.value[currentQuestion.value].correct
-  if (idx === correct) {
+
+  const q = allQuestions.value[currentQuestion.value]
+  if (!q) return
+  const isCorrect = (idx === q.correct)
+
+  if (isCorrect) {
     myCorrect.value++
     feedbackCorrect.value = true
     feedbackText.value = '✓ 回答正确！'
   } else {
     feedbackCorrect.value = false
-    feedbackText.value = `✗ 回答错误，正确答案是：${allQuestions.value[currentQuestion.value].options[correct]}`
+    feedbackText.value = `✗ 回答错误，正确答案是：${q.options[q.correct]}`
   }
-  // 模拟对手作答
-  if (Math.random() > 0.35) opponentCorrect.value++
+
+  myAnswered.value = currentQuestion.value + 1
+
+  // 提交答案（发送 selectedOption，服务端校验）
+  submitAnswer(currentQuestion.value, idx, elapsed)
+
+  // 2秒后跳转或结束
+  setTimeout(() => {
+    if (!gameActive.value) return
+    if (currentQuestion.value < totalQuestions.value - 1) {
+      nextQuestion()
+    } else {
+      finishCurrentPlayer()
+    }
+  }, 2000)
 }
 
+async function submitAnswer(qIdx, selectedOpt, elapsedMs) {
+  try {
+    const data = await request.post('/pk/game', {
+      action: 'answer', roomCode: roomCode.value,
+      questionIndex: qIdx, selectedOption: selectedOpt, elapsedMs,
+    })
+    if (data.success) {
+      myFinished.value = data.myFinished || false
+      bothFinished.value = data.bothFinished || false
+      if (data.bothFinished) {
+        stopOpponentPolling()
+        stopQuestionTimer()
+        gameActive.value = false
+        setTimeout(() => showGameResult(), 500)
+      }
+    }
+  } catch (e) { console.error('提交答案失败:', e) }
+}
+
+function finishCurrentPlayer() {
+  myFinished.value = true
+  stopQuestionTimer()
+  // 服务器已在最后一题提交时自动标记完成，无需额外通知
+}
+
+// ===== 对手轮询 =====
+function startOpponentPolling() {
+  stopOpponentPolling()
+  opponentPollTimer = setInterval(async () => {
+    if (!roomCode.value) { stopOpponentPolling(); return }
+    try {
+      const data = await request.post('/pk/game', { action: 'opponent', roomCode: roomCode.value })
+      if (data.success) {
+        opponentCorrect.value = data.opponentCorrect || 0
+        opponentAnswered.value = data.opponentAnswered || 0
+        opponentTimeSec.value = data.opponentTime || 0
+        myCorrect.value = data.myCorrect || 0
+        myAnswered.value = data.myAnswered || 0
+        myTimeSec.value = data.myTime || 0
+        bothFinished.value = data.bothFinished || false
+
+        if (data.status === 'FINISHED' && !bothFinished.value) {
+          // 对手退出
+          stopOpponentPolling()
+          stopQuestionTimer()
+          quitBySomeone.value = true
+          quitByMe.value = false
+          gameActive.value = false
+          await showGameResult()
+        }
+        if (data.bothFinished) {
+          stopOpponentPolling()
+          stopQuestionTimer()
+          gameActive.value = false
+          await showGameResult()
+        }
+      }
+    } catch (e) { /* 静默 */ }
+  }, 2000)
+}
+
+// ===== 答题 UI =====
 function getOptionClass(idx) {
   if (!answered.value) return 'border-gray-200 hover:border-[#2563EB] hover:bg-blue-50 cursor-pointer'
-  const correct = allQuestions.value[currentQuestion.value].correct
+  const q = allQuestions.value[currentQuestion.value]
+  if (!q) return ''
+  const correct = q.correct
   if (idx === correct) return 'border-green-400 bg-green-50 text-green-700'
   if (idx === selectedOption.value && idx !== correct) return 'border-red-400 bg-red-50 text-red-700'
   return 'border-gray-100 text-gray-300'
@@ -1234,7 +1713,9 @@ function getOptionClass(idx) {
 
 function getOptionDotClass(idx) {
   if (!answered.value) return 'bg-gray-100 text-gray-500'
-  const correct = allQuestions.value[currentQuestion.value].correct
+  const q = allQuestions.value[currentQuestion.value]
+  if (!q) return ''
+  const correct = q.correct
   if (idx === correct) return 'bg-green-500 text-white'
   if (idx === selectedOption.value && idx !== correct) return 'bg-red-500 text-white'
   return 'bg-gray-100 text-gray-400'
@@ -1245,37 +1726,56 @@ function nextQuestion() {
   answered.value = false
   selectedOption.value = -1
   feedbackText.value = ''
+  startQuestionTimer()
 }
 
-function startGame() {
-  if (!roomReady.value) return
-  allQuestions.value = generateQuestions(selectedDifficulty.value)
-  currentQuestion.value = 0
-  myCorrect.value = 0
-  opponentCorrect.value = 0
-  answered.value = false
-  selectedOption.value = -1
-  quitByMe.value = false
-  quitBySomeone.value = false
-  showQuitConfirm.value = false
-  gameActive.value = true
-  pkState.value = 'playing'
-}
-
-function finishGame() {
-  gameActive.value = false
+// ===== 结果 =====
+async function showGameResult() {
+  try {
+    const data = await request.post('/pk/game', { action: 'result', roomCode: roomCode.value })
+    if (data.success) {
+      myCorrect.value = data.myCorrect || 0
+      opponentCorrect.value = data.opponentCorrect || 0
+      myTimeSec.value = data.myTime || 0
+      opponentTimeSec.value = data.opponentTime || 0
+      bothFinished.value = true
+    }
+  } catch (e) { /* 使用本地数据 */ }
   pkState.value = 'result'
 }
 
-function confirmQuit() {
+async function confirmQuit() {
   showQuitConfirm.value = false
   gameActive.value = false
+  stopQuestionTimer()
+  stopOpponentPolling()
   quitByMe.value = true
   quitBySomeone.value = true
+  try { await request.post('/pk/game', { action: 'quit', roomCode: roomCode.value }) } catch (e) {}
   pkState.value = 'result'
+}
+
+// 再来一局
+async function playAgain() {
+  stopRoomPolling()
+  stopOpponentPolling()
+  // 保留房间，重置状态
+  try {
+    // 作为房主才能重新开始
+    if (isHost.value) {
+      // 重置游戏状态
+      try { await request.post('/pk/room', { action: 'leave', roomCode: roomCode.value }) } catch (e) {}
+    }
+  } catch (e) {}
+  resetRoom()
+  pkState.value = 'lobby'
+  loadRoomList(1)
 }
 
 function resetRoom() {
+  stopRoomPolling()
+  stopOpponentPolling()
+  stopQuestionTimer()
   creatingRoom.value = false
   joiningRoom.value = false
   roomCode.value = ''
@@ -1286,8 +1786,16 @@ function resetRoom() {
   quitByMe.value = false
   quitBySomeone.value = false
   gameActive.value = false
+  myFinished.value = false
+  bothFinished.value = false
+  showCreateDialog.value = false
+  showCodeOverlay.value = false
+  allQuestions.value = []
+  myRoom.value = null
+  createError.value = ''
 }
 
+// ===== 计算属性 =====
 const resultEmoji = computed(() => {
   if (quitByMe.value) return '🏳️'
   if (quitBySomeone.value && !quitByMe.value) return '🏆'
@@ -1301,6 +1809,8 @@ const resultTitle = computed(() => {
   if (quitBySomeone.value && !quitByMe.value) return '对方已退出'
   if (myCorrect.value > opponentCorrect.value) return '恭喜获胜！'
   if (myCorrect.value < opponentCorrect.value) return '惜败一局'
+  if (myTimeSec.value < opponentTimeSec.value) return '恭喜获胜！（耗时更短）'
+  if (myTimeSec.value > opponentTimeSec.value) return '惜败一局（对手更快）'
   return '势均力敌！'
 })
 
@@ -1309,12 +1819,51 @@ const resultSub = computed(() => {
   if (quitBySomeone.value && !quitByMe.value) return '对方中途退出对战，你自动获胜'
   if (myCorrect.value > opponentCorrect.value) return `你以 ${myCorrect.value}:${opponentCorrect.value} 赢得比赛`
   if (myCorrect.value < opponentCorrect.value) return `对手以 ${opponentCorrect.value}:${myCorrect.value} 赢得比赛`
-  return `双方打成 ${myCorrect.value}:${opponentCorrect.value} 平手`
+  const myT = myTimeSec.value, opT = opponentTimeSec.value
+  if (myT < opT) return `正确数相同，你耗时更短（${myT}s vs ${opT}s）获胜`
+  if (myT > opT) return `正确数相同，对手耗时更短（${opT}s vs ${myT}s）获胜`
+  return `正确数和耗时均相同（${myT}s），平局！`
 })
 
-// ========== 页面切换时滚动到顶部 ==========
 watch(rpState, (val) => { if (val) nextTick(() => window.scrollTo(0, 0)) })
 watch(wcModeSelect, (val) => { if (val) nextTick(() => window.scrollTo(0, 0)) })
 watch(wcPlaying, (val) => { if (val) nextTick(() => window.scrollTo(0, 0)) })
-watch(pkState, (val) => { if (val) nextTick(() => window.scrollTo(0, 0)) })
+watch(pkState, (val) => {
+  if (val) {
+    nextTick(() => window.scrollTo(0, 0))
+    if (val === 'lobby') {
+      loadRoomList(1)
+      loadMyRoom()
+      startLobbyRefresh()
+    } else {
+      stopLobbyRefresh()
+    }
+  }
+})
+
+// ===== 页面加载时检测是否有活跃房间 =====
+onMounted(async () => {
+  try {
+    const data = await request.post('/pk/room', { action: 'myroom' })
+    if (data.success && data.hasRoom) {
+      // 有活跃房间，自动跳转到大厅
+      pkState.value = 'lobby'
+    }
+  } catch (e) { /* 静默 */ }
+})
+
+// ===== 大厅5秒自动刷新 =====
+function startLobbyRefresh() {
+  stopLobbyRefresh()
+  lobbyRefreshTimer = setInterval(async () => {
+    if (pkState.value !== 'lobby') { stopLobbyRefresh(); return }
+    roomRefreshing.value = true
+    await Promise.all([loadMyRoom(), loadRoomList(roomPage.value)])
+    roomRefreshing.value = false
+  }, 5000)
+}
+function stopLobbyRefresh() {
+  if (lobbyRefreshTimer) { clearInterval(lobbyRefreshTimer); lobbyRefreshTimer = null }
+  roomRefreshing.value = false
+}
 </script>

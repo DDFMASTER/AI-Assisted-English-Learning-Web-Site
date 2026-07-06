@@ -11,16 +11,16 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 
 /**
- * 管理员 — 查阅 IP 请求日志
+ * 管理员 — 查阅/管理 IP 请求日志
  *
- * GET /api/admin/monitor/request-logs?adminUserId=<adminId>&limit=<limit>
- *
- * 参数 limit 可选，默认返回最近 100 条，最大 500 条。
- * 返回请求日志列表（ip、path、method、timestamp、username、sessionId）
+ * GET  /api/admin/monitor/request-logs?adminUserId=&page=1&pageSize=15
+ * POST /api/admin/monitor/request-logs  body: { "action": "delete|clear|backup", "index": 5 }
  */
 @WebServlet("/api/admin/monitor/request-logs")
 public class AdminRequestLogsServlet extends HttpServlet {
@@ -34,36 +34,23 @@ public class AdminRequestLogsServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
 
-        Long adminUserId = Utils.ServletUtil.authenticateAdmin(request, response, adminService);
+        Long adminUserId = ServletUtil.authenticateAdmin(request, response, adminService);
         if (adminUserId == null) return;
 
-        // 获取 limit 参数（默认 100，最大 500）
-        int limit = 100;
-        String limitParam = request.getParameter("limit");
-        if (limitParam != null && !limitParam.isBlank()) {
-            try {
-                limit = Integer.parseInt(limitParam);
-                if (limit < 1) limit = 1;
-                if (limit > 500) limit = 500;
-            } catch (NumberFormatException ignored) {
-                // 使用默认值
-            }
-        }
+        int page = ServletUtil.parseInt(request.getParameter("page"), 1);
+        int pageSize = ServletUtil.parseInt(request.getParameter("pageSize"), 15);
 
         ServletContext ctx = getServletContext();
+        MonitorService.LogPageResult result = monitorService.getLogsPage(ctx, page, pageSize);
 
-        int totalCount = monitorService.getTotalLogCount(ctx);
-        List<RequestLogEntry> logs = monitorService.getRecentLogs(ctx, limit);
-
-        // 构建 JSON 响应
         StringBuilder json = new StringBuilder();
-        json.append("{\"success\":true,");
-        json.append("\"totalCount\":").append(totalCount).append(",");
-        json.append("\"returnedCount\":").append(logs.size()).append(",");
-        json.append("\"logs\":[");
-
+        json.append("{\"success\":true");
+        json.append(",\"totalCount\":").append(result.getTotal());
+        json.append(",\"page\":").append(result.getPage());
+        json.append(",\"totalPages\":").append(result.getTotalPages());
+        json.append(",\"logs\":[");
         boolean first = true;
-        for (RequestLogEntry entry : logs) {
+        for (RequestLogEntry entry : result.getItems()) {
             if (!first) json.append(",");
             first = false;
             json.append("{");
@@ -72,17 +59,165 @@ public class AdminRequestLogsServlet extends HttpServlet {
             json.append("\"method\":").append(JsonUtil.strVal(entry.getMethod())).append(",");
             json.append("\"timestamp\":").append(JsonUtil.strVal(entry.getFormattedTime())).append(",");
             json.append("\"username\":").append(JsonUtil.strVal(entry.getUsername())).append(",");
-            json.append("\"sessionId\":").append(JsonUtil.strVal(entry.getSessionId())).append(",");
-            json.append("\"queryString\":").append(JsonUtil.strVal(entry.getQueryString())).append(",");
-            json.append("\"userAgent\":").append(JsonUtil.strVal(entry.getUserAgent()));
+            json.append("\"sessionId\":").append(JsonUtil.strVal(entry.getSessionId() != null ? entry.getSessionId().substring(0, Math.min(8, entry.getSessionId().length())) : ""));
             json.append("}");
         }
-
         json.append("]}");
         response.getWriter().write(json.toString());
+    }
 
-        // 记录操作日志
-        adminService.logAction(adminUserId, "monitor", null,
-                "view_request_logs", "limit=" + limit);
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        request.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json;charset=UTF-8");
+
+        Long adminUserId = ServletUtil.authenticateAdmin(request, response, adminService);
+        if (adminUserId == null) return;
+
+        String body = readBody(request);
+        String action = extractField(body, "action");
+
+        if (action == null) {
+            response.getWriter().write(JsonUtil.error("缺少 action 参数"));
+            return;
+        }
+
+        String result;
+        switch (action) {
+            case "delete" -> result = handleDelete(request, body, adminUserId);
+            case "clear"  -> result = handleClear(request, adminUserId);
+            case "backup" -> {
+                handleBackup(response);
+                return;
+            }
+            default -> result = JsonUtil.error("未知操作: " + action);
+        }
+
+        response.getWriter().write(result);
+    }
+
+    // ============================================
+    // 删除单条日志
+    // ============================================
+    private String handleDelete(HttpServletRequest request, String body, Long adminUserId) {
+        int index = extractIntField(body, "index", -1);
+        if (index < 0) return JsonUtil.error("缺少有效的 index 参数");
+
+        boolean ok = monitorService.deleteLog(getServletContext(), index);
+        if (ok) {
+            adminService.logAction(adminUserId, "monitor", null, "delete_log", "index=" + index);
+            return "{\"success\":true,\"message\":\"已删除\"}";
+        }
+        return JsonUtil.error("删除失败，索引无效");
+    }
+
+    // ============================================
+    // 清空全部日志
+    // ============================================
+    private String handleClear(HttpServletRequest request, Long adminUserId) {
+        monitorService.clearLogs(getServletContext());
+        adminService.logAction(adminUserId, "monitor", null, "clear_all_logs", "");
+        return "{\"success\":true,\"message\":\"已清空全部日志\"}";
+    }
+
+    // ============================================
+    // 备份（导出 TXT 文件下载）
+    // ============================================
+    private void handleBackup(HttpServletResponse response) throws IOException {
+        List<RequestLogEntry> all = monitorService.getAllLogs(getServletContext());
+
+        response.setContentType("text/plain;charset=UTF-8");
+        response.setHeader("Content-Disposition",
+                "attachment; filename=AAEL-IP-logs-" + System.currentTimeMillis() + ".txt");
+
+        PrintWriter pw = response.getWriter();
+        pw.println("=== AAEL IP 请求日志备份 ===");
+        pw.println("导出时间: " + java.time.LocalDateTime.now().format(
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        pw.println("总条数: " + all.size());
+        pw.println("===========================================");
+        pw.println();
+
+        for (RequestLogEntry e : all) {
+            pw.printf("[%s] %s %s | IP: %s | 用户: %s | Session: %s%n",
+                    e.getFormattedTime(),
+                    e.getMethod(),
+                    e.getPath(),
+                    e.getIp(),
+                    e.getUsername() != null ? e.getUsername() : "-",
+                    e.getSessionId() != null ? e.getSessionId() : "-");
+        }
+        pw.flush();
+    }
+
+    // ============================================
+    // JSON 辅助
+    // ============================================
+    private String readBody(HttpServletRequest request) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = request.getReader()) {
+            String line;
+            while ((line = reader.readLine()) != null) sb.append(line);
+        }
+        return sb.toString();
+    }
+
+    private String extractField(String body, String fieldName) {
+        for (String pattern : new String[]{
+                "\"" + fieldName + "\":\"",
+                "\"" + fieldName + "\": \"",
+                "\"" + fieldName + "\" :\""
+        }) {
+            int start = body.indexOf(pattern);
+            if (start != -1) {
+                start += pattern.length();
+                StringBuilder val = new StringBuilder();
+                for (int i = start; i < body.length(); i++) {
+                    char c = body.charAt(i);
+                    if (c == '\\' && i + 1 < body.length()) {
+                        char next = body.charAt(i + 1);
+                        switch (next) {
+                            case '"' -> { val.append('"'); i++; }
+                            case '\\' -> { val.append('\\'); i++; }
+                            case 'n' -> { val.append('\n'); i++; }
+                            case 'r' -> { val.append('\r'); i++; }
+                            case 't' -> { val.append('\t'); i++; }
+                            default -> val.append(c);
+                        }
+                    } else if (c == '"') {
+                        break;
+                    } else {
+                        val.append(c);
+                    }
+                }
+                return val.toString();
+            }
+        }
+        return null;
+    }
+
+    private int extractIntField(String body, String fieldName, int defaultVal) {
+        for (String pattern : new String[]{
+                "\"" + fieldName + "\":",
+                "\"" + fieldName + "\": ",
+                "\"" + fieldName + "\" :"
+        }) {
+            int start = body.indexOf(pattern);
+            if (start != -1) {
+                start += pattern.length();
+                while (start < body.length() && body.charAt(start) == ' ') start++;
+                StringBuilder num = new StringBuilder();
+                while (start < body.length() && Character.isDigit(body.charAt(start))) {
+                    num.append(body.charAt(start));
+                    start++;
+                }
+                if (num.length() > 0) {
+                    try { return Integer.parseInt(num.toString()); }
+                    catch (NumberFormatException e) { return defaultVal; }
+                }
+            }
+        }
+        return defaultVal;
     }
 }

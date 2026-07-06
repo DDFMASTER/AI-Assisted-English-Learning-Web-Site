@@ -33,6 +33,9 @@ public class AppContextListener implements ServletContextListener {
     /** ServletContext 中存储应用启动时间的 key */
     public static final String APP_START_TIME = "appStartTime";
 
+    /** ServletContext 中存储 PK 游戏房间的 key (ConcurrentHashMap<String, GameRoom>) */
+    public static final String ROOMS_MAP = "pkRooms";
+
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         ServletContext ctx = sce.getServletContext();
@@ -41,6 +44,7 @@ public class AppContextListener implements ServletContextListener {
         ctx.setAttribute(ONLINE_COUNT, new AtomicInteger(0));
         ctx.setAttribute(USER_SESSION_MAP, new ConcurrentHashMap<Long, String>());
         ctx.setAttribute(KICKED_USER_IDS, ConcurrentHashMap.newKeySet());
+        ctx.setAttribute(ROOMS_MAP, new ConcurrentHashMap<String, Entities.GameRoom>());
         ctx.setAttribute(APP_START_TIME, LocalDateTime.now());
 
         // 设置会话超时时间
@@ -75,6 +79,7 @@ public class AppContextListener implements ServletContextListener {
         ctx.removeAttribute(ONLINE_COUNT);
         ctx.removeAttribute(USER_SESSION_MAP);
         ctx.removeAttribute(KICKED_USER_IDS);
+        ctx.removeAttribute(ROOMS_MAP);
         ctx.removeAttribute("requestLogs");
         ctx.removeAttribute(APP_START_TIME);
     }
