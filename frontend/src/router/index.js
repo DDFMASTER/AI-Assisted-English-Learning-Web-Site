@@ -32,6 +32,12 @@ const routes = [
     meta: { title: '个人中心', requiresAuth: true }
   },
   {
+    path: '/english-world',
+    name: 'EnglishWorld',
+    component: () => import('@/pages/EnglishWorldPage.vue'),
+    meta: { title: '英语天地', requiresAuth: true }
+  },
+  {
     path: '/reader',
     name: 'Reader',
     component: () => import('@/pages/ReaderPage.vue'),

@@ -18,14 +18,8 @@
           <router-link to="/assessment" class="nav-link text-gray-500" active-class="nav-active" aria-label="测评中心">
             测评中心
           </router-link>
-          <router-link
-            v-if="userStore.user?.role === 'admin'"
-            to="/admin"
-            class="nav-link text-gray-500"
-            active-class="nav-active"
-            aria-label="管理"
-          >
-            管理
+          <router-link to="/english-world" class="nav-link text-gray-500" active-class="nav-active" aria-label="英语天地">
+            英语天地
           </router-link>
         </div>
       </div>
@@ -119,6 +113,17 @@
 
       <!-- 右侧操作 -->
       <div class="flex items-center gap-4 shrink-0">
+
+        <!-- 管理（仅管理员可见，放在搜索框右侧） -->
+        <router-link
+          v-if="userStore.user?.role === 'admin'"
+          to="/admin"
+          class="nav-link text-gray-500 text-sm"
+          active-class="nav-active"
+          aria-label="管理"
+        >
+          管理
+        </router-link>
 
         <!-- 主题切换 -->
         <div class="relative" @mouseenter="showThemeCardFn" @mouseleave="hideThemeCard">

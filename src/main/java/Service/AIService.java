@@ -22,6 +22,12 @@ public class AIService {
     private static final String TITLE_PROMPT =
             ConfigUtil.readResourceText("prompts/title-generation.txt");
 
+    private static final String ROLEPLAY_PROMPT_TEMPLATE =
+            ConfigUtil.readResourceText("prompts/roleplay.txt");
+
+    private static final String WORDCHAIN_PROMPT_TEMPLATE =
+            ConfigUtil.readResourceText("prompts/wordchain.txt");
+
     private final AIClient client;
 
     public AIService(AIClient client) {
@@ -111,6 +117,96 @@ public class AIService {
         return null;
     }
 
+    // ==================== 单词接龙 ====================
+
+    public WordChainResult wordChain(String task, String letter, String userWord, String usedWords) {
+        WordChainResult result = new WordChainResult();
+        long startTime = System.currentTimeMillis();
+
+        String prompt = WORDCHAIN_PROMPT_TEMPLATE
+                .replace("{task}", task)
+                .replace("{letter}", letter)
+                .replace("{userWord}", userWord)
+                .replace("{usedWords}", usedWords);
+
+        String response = client.call(prompt, "[Go]", 20, result);
+
+        if (response != null) {
+            result.valid = "true".equals(extractSimpleField(response, "valid"));
+            result.word = extractJsonField(response, "word");
+            result.reason = extractJsonField(response, "reason");
+        }
+
+        result.duration = System.currentTimeMillis() - startTime;
+        return result;
+    }
+
+    private String extractSimpleField(String json, String fieldName) {
+        // 提取布尔或字符串值，不带引号处理
+        for (String key : new String[]{
+                "\"" + fieldName + "\":",
+                "\"" + fieldName + "\": ",
+        }) {
+            int start = json.indexOf(key);
+            if (start != -1) {
+                start += key.length();
+                while (start < json.length() && json.charAt(start) == ' ') start++;
+                if (start < json.length() && json.charAt(start) == '"') {
+                    return client.extractStringValue(json, start + 1);
+                }
+                // 布尔值
+                int end = start;
+                while (end < json.length() && json.charAt(end) != ',' && json.charAt(end) != '}' && json.charAt(end) != '\n') end++;
+                return json.substring(start, end).trim();
+            }
+        }
+        return null;
+    }
+
+    // ==================== 角色扮演对话 ====================
+
+    public RolePlayResult rolePlayChat(String scene, String role, String message, String history) {
+        RolePlayResult result = new RolePlayResult();
+        long startTime = System.currentTimeMillis();
+
+        String prompt = ROLEPLAY_PROMPT_TEMPLATE
+                .replace("{scene}", scene)
+                .replace("{role}", role)
+                .replace("{history}", history != null ? history : "")
+                .replace("{userMessage}", message != null ? message : "");
+
+        String response = client.call(prompt, "[Start conversation]", 30, result);
+
+        if (response != null) {
+            // 解析 narrator
+            result.narratorEn = extractJsonField(response, "en");
+            result.narratorZh = extractJsonField(response, "zh");
+            // 解析 character
+            result.characterName = extractJsonField(response, "name");
+            result.characterDialogue = extractJsonField(response, "dialogue");
+            // 解析 suggestion
+            result.suggestion = extractJsonField(response, "suggestion");
+        }
+
+        result.duration = System.currentTimeMillis() - startTime;
+        return result;
+    }
+
+    private String extractJsonField(String json, String fieldName) {
+        for (String key : new String[]{
+                "\"" + fieldName + "\":\"",
+                "\"" + fieldName + "\": \"",
+                "\"" + fieldName + "\" :\""
+        }) {
+            int start = json.indexOf(key);
+            if (start != -1) {
+                start += key.length();
+                return client.extractStringValue(json, start);
+            }
+        }
+        return null;
+    }
+
     // ==================== 结果类 ====================
 
     public static class CulturalNote {
@@ -134,6 +230,46 @@ public class AIService {
                 map.put("rawResponse", rawResponse.length() > 3000
                         ? rawResponse.substring(0, 3000) + "..." : rawResponse);
             }
+            return GsonUtil.toJson(map);
+        }
+    }
+
+    public static class WordChainResult extends AIClient.AIResultBase {
+        public boolean valid;
+        public String word;
+        public String reason;
+
+        public String toJson() {
+            var map = new java.util.LinkedHashMap<String, Object>();
+            map.put("success", error == null);
+            map.put("httpStatus", httpStatus);
+            map.put("duration", duration);
+            if (error != null) map.put("message", error);
+            map.put("valid", valid);
+            map.put("word", word);
+            map.put("reason", reason);
+            return GsonUtil.toJson(map);
+        }
+    }
+
+    public static class RolePlayResult extends AIClient.AIResultBase {
+        public String narratorEn;
+        public String narratorZh;
+        public String characterName;
+        public String characterDialogue;
+        public String suggestion;
+
+        public String toJson() {
+            var map = new java.util.LinkedHashMap<String, Object>();
+            map.put("success", error == null);
+            map.put("httpStatus", httpStatus);
+            map.put("duration", duration);
+            if (error != null) map.put("message", error);
+            map.put("narratorEn", narratorEn);
+            map.put("narratorZh", narratorZh);
+            map.put("characterName", characterName);
+            map.put("characterDialogue", characterDialogue);
+            map.put("suggestion", suggestion);
             return GsonUtil.toJson(map);
         }
     }
