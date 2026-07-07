@@ -1,14 +1,14 @@
 <template>
   <div
     v-if="visible"
-    class="fixed z-[55] w-[300px] max-h-[calc(100vh-160px)] overflow-y-auto"
-    :style="{ right: position.x + 'px', top: position.y + 'px' }"
+    class="w-full"
+    :style="{ fontSize: sideBasePx + 'px' }"
   >
     <!-- ========== 文化背景 ========== -->
-    <div class="glass-popover p-4 mb-4">
+    <div v-if="showCulturalNotes" class="glass-popover p-4 mb-4">
       <div class="flex items-center gap-2 mb-3">
         <Icon icon="ph:globe-hemisphere-east-bold" class="text-amber-500 text-lg" />
-        <h3 class="text-sm font-bold text-gray-700">文化背景讲解</h3>
+        <h3 class="font-bold text-gray-700" :style="{ fontSize: '1.05em' }">文化背景讲解</h3>
       </div>
 
       <!-- VIP 限制提示 -->
@@ -51,14 +51,14 @@
             class="w-full flex items-center justify-between px-3 py-2 bg-amber-50/50 hover:bg-amber-50 text-left transition-colors"
             @click="toggleNote(idx)"
           >
-            <span class="text-xs font-bold text-amber-700">{{ note.title }}</span>
+            <span class="font-bold text-amber-700" :style="{ fontSize: '0.95em' }">{{ note.title }}</span>
             <Icon
               :icon="expandedNotes.has(idx) ? 'ph:caret-up-bold' : 'ph:caret-down-bold'"
               class="text-xs text-amber-400 flex-none"
             />
           </button>
           <div v-if="expandedNotes.has(idx)" class="px-3 py-2 bg-white">
-            <p class="text-xs text-gray-700 leading-relaxed">
+            <p class="text-gray-700 leading-relaxed" :style="{ fontSize: '0.9em' }">
               <template v-for="(seg, sIdx) in tokenizeText(note.content)" :key="sIdx">
                 <span v-if="seg.type === 'text'">{{ seg.text }}</span>
                 <span
@@ -77,22 +77,22 @@
               <Icon icon="ph:translate-bold" class="inline text-[10px] mr-0.5" />
               {{ showZh.has(idx) ? '收起翻译' : '查看中文翻译' }}
             </button>
-            <p v-if="showZh.has(idx) && note.zh" class="mt-1 text-xs text-gray-500 leading-relaxed pl-2 border-l-2 border-blue-200">
+            <p v-if="showZh.has(idx) && note.zh" class="mt-1 text-gray-500 leading-relaxed pl-2 border-l-2 border-blue-200" :style="{ fontSize: '0.85em' }">
               {{ note.zh }}
             </p>
           </div>
         </div>
-        <p class="text-[9px] text-gray-300 text-center pt-1">
+        <p class="text-gray-300 text-center pt-1" :style="{ fontSize: '0.7em' }">
           内容由 AI 生成，仅供参考
         </p>
       </div>
     </div>
 
     <!-- ========== 阅读选择题 ========== -->
-    <div class="glass-popover p-4">
+    <div v-if="showQuiz" class="glass-popover p-4">
       <div class="flex items-center gap-2 mb-3">
         <Icon icon="ph:question-bold" class="text-[#2563EB] text-lg" />
-        <h3 class="text-sm font-bold text-gray-700">阅读选择题</h3>
+        <h3 class="font-bold text-gray-700" :style="{ fontSize: '1.05em' }">阅读选择题</h3>
       </div>
 
       <!-- 未加载 -->
@@ -129,14 +129,14 @@
           :key="qIdx"
           class="border border-gray-100 rounded-lg p-3"
         >
-          <p class="text-xs font-bold text-gray-700 mb-2">
+          <p class="font-bold text-gray-700 mb-2" :style="{ fontSize: '0.9em' }">
             {{ qIdx + 1 }}. {{ q.question }}
           </p>
           <div class="space-y-1.5">
             <button
               v-for="(opt, oIdx) in q.options"
               :key="oIdx"
-              class="w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all"
+              class="w-full text-left px-3 py-1.5 rounded-lg transition-all" :style="{ fontSize: '0.85em' }"
               :class="getOptionClass(qIdx, oIdx)"
               :disabled="hasAnswered(qIdx)"
               @click="selectAnswer(qIdx, oIdx)"
@@ -158,21 +158,42 @@
           <!-- 答案解析 -->
           <div
             v-if="hasAnswered(qIdx)"
-            class="mt-2 px-3 py-2 bg-blue-50 rounded-lg"
+            class="mt-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg"
           >
-            <p class="text-[11px] text-blue-700">
+            <p class="text-blue-700 dark:text-blue-300" :style="{ fontSize: '0.85em' }">
               <span class="font-bold">解析：</span>{{ q.explanation }}
+            </p>
+            <!-- 查看中文翻译 -->
+            <button
+              class="mt-1.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+              :style="{ fontSize: '0.7em' }"
+              @click.stop="toggleExplanationZh(qIdx)"
+            >
+              <Icon icon="ph:translate-bold" class="inline mr-0.5" />
+              {{ showExplanationZh.has(qIdx) ? '收起翻译' : '查看中文翻译' }}
+            </button>
+            <p
+              v-if="showExplanationZh.has(qIdx)"
+              class="mt-1 text-gray-500 dark:text-gray-300 leading-relaxed pl-2 border-l-2 border-blue-200 dark:border-blue-700"
+              :style="{ fontSize: '0.8em' }"
+            >
+              <template v-if="getExplanationZh(qIdx)?.loading">
+                <Icon icon="ph:spinner-bold" class="inline animate-spin mr-1" />翻译中...
+              </template>
+              <template v-else-if="getExplanationZh(qIdx)?.zh">{{ getExplanationZh(qIdx).zh }}</template>
+              <template v-else-if="getExplanationZh(qIdx)?.error">{{ getExplanationZh(qIdx).error }}</template>
             </p>
           </div>
         </div>
-        <p class="text-[9px] text-gray-300 text-center pt-1">
+        <p class="text-gray-300 text-center pt-1" :style="{ fontSize: '0.7em' }">
           内容由 AI 生成，仅供参考
         </p>
       </div>
     </div>
 
-    <!-- 单词查词浮窗 -->
+    <!-- 单词查词浮窗（仅桌面端） -->
     <WordPopover
+      v-if="!isMobile"
       :visible="wordPopover.visible"
       :word="wordPopover.word"
       :loading="wordPopover.loading"
@@ -183,7 +204,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
 import { tokenizeText } from '@/utils/tokenize.js'
@@ -194,11 +215,23 @@ const props = defineProps({
   visible: { type: Boolean, default: true },
   culturalNotes: { type: Object, default: () => null },
   quizData: { type: Object, default: () => null },
+  /** 是否为移动端：影响布局模式和单词查词行为 */
+  isMobile: { type: Boolean, default: false },
+  /** 文章正文字号，面板按比例缩放（默认 18px → 面板 ~14px） */
+  fontSize: { type: Number, default: 18 },
+  /** 是否显示文化背景讲解 */
+  showCulturalNotes: { type: Boolean, default: true },
+  /** 是否显示阅读选择题 */
+  showQuiz: { type: Boolean, default: true },
+  /** 是否按比例缩放字体（侧边栏使用）；false 时使用正文同等字号 */
+  scaleFont: { type: Boolean, default: true },
   position: {
     type: Object,
     default: () => ({ x: 20, y: 140 }),
   },
 })
+
+const sideBasePx = computed(() => props.scaleFont ? Math.round(props.fontSize * 0.78) : props.fontSize)
 
 const userStore = useUserStore()
 const readerStore = useReaderStore()
@@ -213,6 +246,12 @@ const wordPopover = reactive({
 
 function handleCultureWordClick(wordData, event) {
   event.stopPropagation()
+  // 移动端：发射事件给父组件，使用底部弹出查词
+  if (props.isMobile) {
+    emit('word-click', wordData)
+    return
+  }
+  // 桌面端：使用内部浮窗
   wordPopover.word = { word: wordData.word, results: [] }
   wordPopover.loading = true
   wordPopover.visible = true
@@ -250,11 +289,34 @@ async function lookupCultureWord(word) {
   wordPopover.loading = false
 }
 
-const emit = defineEmits(['quiz-completed'])
+const emit = defineEmits(['quiz-completed', 'word-click'])
 
 const expandedNotes = ref(new Set())
 const showZh = ref(new Set())
 const userAnswers = ref({}) // { questionIndex: selectedOptionIndex }
+
+// ========== 题目解析翻译 ==========
+const showExplanationZh = ref(new Set())
+
+function toggleExplanationZh(qIdx) {
+  if (showExplanationZh.value.has(qIdx)) {
+    showExplanationZh.value.delete(qIdx)
+    showExplanationZh.value = new Set(showExplanationZh.value)
+    return
+  }
+  showExplanationZh.value = new Set([...showExplanationZh.value, qIdx])
+  // 按需请求翻译
+  const q = props.quizData?.questions?.[qIdx]
+  if (q?.explanation) {
+    const key = `quiz_${qIdx}`
+    readerStore.fetchExplanationTranslation(key, q.explanation)
+  }
+}
+
+function getExplanationZh(qIdx) {
+  const key = `quiz_${qIdx}`
+  return readerStore.getExplanationTranslation(key)
+}
 
 function toggleNote(idx) {
   if (expandedNotes.value.has(idx)) {
@@ -289,10 +351,10 @@ function getOptionClass(qIdx, oIdx) {
     return 'text-gray-700 bg-white border border-gray-200 hover:bg-blue-50 hover:border-blue-300 cursor-pointer'
   }
   if (oIdx === props.quizData.questions[qIdx].answer) {
-    return 'bg-green-50 text-green-700 font-bold'
+    return 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-bold'
   }
   if (userAnswers.value[qIdx] === oIdx) {
-    return 'bg-red-50 text-red-500'
+    return 'bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-300'
   }
   return 'text-gray-400'
 }

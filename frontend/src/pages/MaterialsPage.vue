@@ -10,9 +10,36 @@
       </p>
     </div>
 
+    <!-- 移动端快捷操作按钮 -->
+    <div class="lg:hidden flex gap-2 mb-6">
+      <router-link to="/assessment" class="flex-1 py-3 bg-[#2563EB] text-white rounded-xl text-sm font-bold text-center hover:bg-blue-600 transition-colors">📝 测评中心</router-link>
+      <router-link to="/english-world" class="flex-1 py-3 bg-green-500 text-white rounded-xl text-sm font-bold text-center hover:bg-green-600 transition-colors">🎮 英语天地</router-link>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <!-- 左栏：文章推荐区 -->
       <div class="col-span-1 lg:col-span-8">
+        <!-- 移动端：今日任务 -->
+        <div class="lg:hidden card mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">🎯 今日任务</h3>
+            <span class="text-xs text-gray-400">{{ taskStore.todayDoneCount }}/{{ taskStore.todayTotalCount }}</span>
+          </div>
+          <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
+            <div class="h-full bg-[#2563EB] rounded-full transition-all" :style="{ width: taskProgressPercent + '%' }"></div>
+          </div>
+          <div v-if="taskStore.todayTotalCount === 0" class="text-xs text-gray-400">完成一篇文章的阅读与练习以开始</div>
+          <div v-else class="space-y-2">
+            <div v-for="task in taskStore.todayTasks" :key="task.id" class="flex items-center gap-3 text-sm" :class="task.done ? 'text-gray-400' : 'text-gray-700'">
+              <span class="w-5 h-5 rounded border-2 flex items-center justify-center flex-none cursor-pointer" :class="task.done ? 'bg-green-400 border-green-400 text-white' : 'border-gray-300'" @click="taskStore.toggleTask(task.id)">
+                <Icon v-if="task.done" icon="ph:check-bold" class="text-xs" />
+              </span>
+              <span :class="task.done ? 'line-through' : ''">{{ task.name }}</span>
+              <span class="ml-auto text-xs font-bold" :class="task.done ? 'text-green-500' : 'text-orange-400'">+{{ task.xp }}XP</span>
+            </div>
+          </div>
+        </div>
+
         <!-- ====== 推荐区 ====== -->
         <section class="mb-10" aria-label="为你推荐">
           <h2 class="text-lg font-bold text-gray-700 mb-4">
@@ -47,7 +74,7 @@
       </div>
 
       <!-- 右栏 -->
-      <div class="col-span-1 lg:col-span-4 space-y-8">
+      <div class="col-span-1 lg:col-span-4 space-y-8 hidden lg:block">
         <!-- 今日任务 -->
         <div class="card">
           <div class="flex items-center justify-between mb-4">

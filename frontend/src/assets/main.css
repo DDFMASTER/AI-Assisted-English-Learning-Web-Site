@@ -313,6 +313,18 @@ body {
   border: 1px solid var(--border-light);
 }
 
+/* ========== 移动端底部弹出动画 ========== */
+.sheet-enter-active { animation: sheet-slide-up 0.3s ease-out; }
+.sheet-leave-active { animation: sheet-slide-down 0.25s ease-in; }
+@keyframes sheet-slide-up {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+@keyframes sheet-slide-down {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100%); }
+}
+
 /* 行截断 */
 .line-clamp-2 {
   display: -webkit-box;

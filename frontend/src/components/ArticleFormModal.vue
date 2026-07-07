@@ -6,7 +6,7 @@
       @click.self="$emit('close')"
       @keydown.escape="$emit('close')"
     >
-      <div class="bg-white rounded-xl shadow-xl p-6 w-[560px] max-h-[90vh] overflow-y-auto">
+      <div class="bg-white rounded-xl shadow-xl p-6 w-[560px] max-w-[95vw] max-h-[85vh] overflow-y-auto mx-2 sm:mx-0">
         <h3 class="text-lg font-bold text-gray-800 mb-4">
           {{ isEditMode ? '修改文章' : '上传文章' }}
         </h3>

@@ -3,7 +3,7 @@
     <!-- 顶部结果卡片 -->
     <div ref="resultTopRef" class="card mb-8 overflow-hidden relative">
       <div class="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full -mr-20 -mt-20 z-0"></div>
-      <div class="relative z-10 flex items-center gap-12">
+      <div class="relative z-10 flex flex-col lg:flex-row items-center gap-12">
         <!-- 等级环形图 -->
         <div class="flex-none text-center">
           <div class="relative w-40 h-40 flex items-center justify-center mx-auto mb-4">
@@ -81,9 +81,9 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-12 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <!-- 左侧：雷达图 -->
-      <div class="col-span-5 flex flex-col gap-8">
+      <div class="lg:col-span-5 flex flex-col gap-8">
         <div class="card h-full">
           <h3 class="text-lg font-bold mb-6">能力雷达图</h3>
           <div ref="radarChartRef" class="w-full h-80"></div>
@@ -91,7 +91,7 @@
       </div>
 
       <!-- 右侧：分项能力 -->
-      <div class="col-span-7 flex flex-col gap-8">
+      <div class="lg:col-span-7 flex flex-col gap-8">
         <div class="card">
           <h3 class="text-lg font-bold mb-8">分项能力详情</h3>
           <div class="space-y-8">
@@ -138,11 +138,30 @@
           <Icon icon="ph:caret-left-bold" class="text-sm" />
         </button>
 
-        <div class="flex items-center gap-1.5 overflow-x-auto py-1 px-2">
+        <!-- 桌面端：窗口化题号 -->
+        <div class="hidden lg:flex items-center gap-1.5 py-1 px-2">
+          <button
+            v-for="(item, idx) in visibleDots"
+            :key="item.id"
+            class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-none"
+            :class="getProgressDotClass(visibleDotStart + idx, item)"
+            @click="goToQuestion(visibleDotStart + idx)"
+          >
+            {{ item.id }}
+          </button>
+        </div>
+
+        <!-- 移动端：可滑动题号条，自由滚动不换页，点击题号选中居中 -->
+        <div
+          ref="dotsStripRef"
+          class="lg:hidden flex items-center gap-1.5 py-1 overflow-x-auto scroll-smooth no-scrollbar"
+          :style="{ maxWidth: (5 * 36 + 4 * 6) + 'px' }"
+          @scroll="onDotsScroll"
+        >
           <button
             v-for="(item, idx) in questionReview"
             :key="item.id"
-            class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-none"
+            class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-none shrink-0"
             :class="getProgressDotClass(idx, item)"
             @click="goToQuestion(idx)"
           >
@@ -162,10 +181,13 @@
         </button>
       </div>
 
-      <!-- 当前题目卡片（带动画过渡） -->
-      <div class="card border-l-4 transition-all duration-300"
+      <!-- 当前题目卡片（移动端支持触摸滑动切换） -->
+      <Transition :name="isMobile ? 'card-slide-' + slideDirection : ''" mode="out-in">
+      <div class="card border-l-4 select-none"
         :class="currentItem.isCorrect ? 'border-l-green-400' : 'border-l-red-400'"
         :key="currentReviewIndex"
+        @touchstart="onTouchStart"
+        @touchend="onTouchEnd"
       >
         <!-- 题号与结果 -->
         <div class="flex items-center justify-between mb-4">
@@ -237,13 +259,13 @@
               {{ opt.id }}
             </div>
             <span class="font-medium">{{ opt.text }}</span>
-            <span v-if="opt.id === currentItem.correctAnswer" class="ml-auto text-xs font-bold text-green-600">
+            <span v-if="opt.id === currentItem.correctAnswer" class="ml-auto text-xs font-bold text-green-600 dark:text-green-300">
               ✓ 正确答案
             </span>
-            <span v-else-if="opt.id === currentItem.userAnswer && !currentItem.isCorrect" class="ml-auto text-xs font-bold text-red-500">
+            <span v-else-if="opt.id === currentItem.userAnswer && !currentItem.isCorrect" class="ml-auto text-xs font-bold text-red-500 dark:text-red-300">
               ✗ 你的答案
             </span>
-            <span v-else-if="opt.id === currentItem.userAnswer && currentItem.isCorrect" class="ml-auto text-xs font-bold text-green-600">
+            <span v-else-if="opt.id === currentItem.userAnswer && currentItem.isCorrect" class="ml-auto text-xs font-bold text-green-600 dark:text-green-300">
               ✓ 你的答案
             </span>
           </div>
@@ -251,7 +273,9 @@
 
         <!-- 解析 -->
         <div class="p-4 rounded-xl"
-          :class="currentItem.isCorrect ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'"
+          :class="currentItem.isCorrect
+            ? 'bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800'
+            : 'bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-800'"
         >
           <div class="flex items-start gap-2">
             <Icon
@@ -261,19 +285,42 @@
             />
             <div>
               <p class="text-xs font-bold mb-1"
-                :class="currentItem.isCorrect ? 'text-green-700' : 'text-amber-700'"
+                :class="currentItem.isCorrect ? 'text-green-700 dark:text-green-300' : 'text-amber-700 dark:text-amber-300'"
               >
                 {{ currentItem.isCorrect ? '题目解析' : '错题解析' }}
               </p>
               <p class="text-sm leading-relaxed"
-                :class="currentItem.isCorrect ? 'text-green-800' : 'text-amber-800'"
+                :class="currentItem.isCorrect ? 'text-green-800 dark:text-green-200' : 'text-amber-800 dark:text-amber-200'"
               >
                 {{ currentItem.explanation }}
+              </p>
+              <!-- 查看中文翻译 -->
+              <button
+                class="mt-2 text-xs transition-colors"
+                :class="currentItem.isCorrect
+                  ? 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'
+                  : 'text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300'"
+                @click.stop="toggleReviewExplanationZh"
+              >
+                <Icon icon="ph:translate-bold" class="inline mr-0.5" />
+                {{ showReviewExplanationZh ? '收起翻译' : '查看中文翻译' }}
+              </button>
+              <p
+                v-if="showReviewExplanationZh"
+                class="mt-1.5 text-sm leading-relaxed pl-2 border-l-2 border-blue-200 dark:border-blue-700"
+                :class="currentItem.isCorrect ? 'text-green-700 dark:text-green-200' : 'text-amber-700 dark:text-amber-200'"
+              >
+                <template v-if="reviewExplanationState?.loading">
+                  <Icon icon="ph:spinner-bold" class="inline animate-spin mr-1" />翻译中...
+                </template>
+                <template v-else-if="reviewExplanationState?.zh">{{ reviewExplanationState.zh }}</template>
+                <template v-else-if="reviewExplanationState?.error">{{ reviewExplanationState.error }}</template>
               </p>
             </div>
           </div>
         </div>
       </div>
+      </Transition>
 
       <!-- 底部翻页按钮 -->
       <div class="flex items-center justify-between mt-6">
@@ -312,18 +359,38 @@
       </p>
     </div>
 
+    <!-- 桌面端：页面右下角上下滚动按钮 -->
+    <div class="hidden lg:flex flex-col gap-2 fixed bottom-8 right-8 z-50">
+      <button
+        class="w-10 h-10 rounded-full bg-white dark:bg-gray-700 shadow-lg border border-gray-200 dark:border-gray-600 flex items-center justify-center hover:scale-110 transition-all text-gray-500 dark:text-gray-300"
+        @click="scrollToTop"
+        title="回到顶部"
+      >
+        <Icon icon="ph:caret-up-bold" class="text-lg" />
+      </button>
+      <button
+        class="w-10 h-10 rounded-full bg-white dark:bg-gray-700 shadow-lg border border-gray-200 dark:border-gray-600 flex items-center justify-center hover:scale-110 transition-all text-gray-500 dark:text-gray-300"
+        @click="scrollToReview"
+        title="跳至答题回顾"
+      >
+        <Icon icon="ph:caret-down-bold" class="text-lg" />
+      </button>
+    </div>
+
   </main>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 let echartsMod = null
 import { useAssessmentStore } from '@/stores/assessment'
+import { useReaderStore } from '@/stores/reader'
 
 const router = useRouter()
 const assessmentStore = useAssessmentStore()
+const readerStore = useReaderStore()
 const storeResult = assessmentStore.assessmentResult
 
 // 无结果时重定向
@@ -334,7 +401,14 @@ if (!storeResult) {
 // ========== 答题回顾数据 ==========
 const resultTopRef = ref(null)
 const reviewSectionRef = ref(null)
+const dotsStripRef = ref(null)
 const currentReviewIndex = ref(0)
+const slideDirection = ref('left')  // 移动端卡片滑动方向
+let isProgrammaticScroll = false    // 程序化滚动守卫，防止 onDotsScroll 反馈循环
+
+// 移动端检测
+const isMobile = ref(false)
+function updateIsMobile() { isMobile.value = window.innerWidth < 1024 }
 
 const questionReview = computed(() => assessmentStore.questionReview)
 
@@ -352,6 +426,31 @@ const wrongCount = computed(() =>
 
 // ========== 错题本 ==========
 const wrongBookIds = ref(new Set())
+
+// ========== 题目解析翻译 ==========
+const showReviewExplanationZh = ref(false)
+const reviewExplanationState = computed(() => {
+  const item = currentItem.value
+  if (!item?.id) return null
+  const key = `review_${item.id}`
+  return readerStore.getExplanationTranslation(key) || null
+})
+
+function toggleReviewExplanationZh() {
+  showReviewExplanationZh.value = !showReviewExplanationZh.value
+  if (showReviewExplanationZh.value) {
+    const item = currentItem.value
+    if (item?.explanation) {
+      const key = `review_${item.id}`
+      readerStore.fetchExplanationTranslation(key, item.explanation)
+    }
+  }
+}
+
+// 切换题目时重置翻译展开状态
+watch(currentReviewIndex, () => {
+  showReviewExplanationZh.value = false
+})
 
 /** 加载已在错题本中的题号 */
 async function loadWrongBookIds() {
@@ -394,8 +493,68 @@ async function addCurrentToWrongBook() {
 
 /** 跳转到指定题号的题目 */
 function goToQuestion(index) {
-  if (index >= 0 && index < questionReview.value.length) {
+  if (index < 0 || index >= questionReview.value.length) return
+  // 仅当索引变化时更新方向和索引（避免同索引触发无意义的状态更新）
+  if (index !== currentReviewIndex.value) {
+    slideDirection.value = index > currentReviewIndex.value ? 'left' : 'right'
     currentReviewIndex.value = index
+  }
+  // 移动端：滚动题号条使选中项居中，同时取消自动归位计时器
+  if (dotsStripRef.value && isMobile.value) {
+    clearAutoReturnTimer()
+    isProgrammaticScroll = true
+    nextTick(() => {
+      const dot = dotsStripRef.value.children[index]
+      if (dot) {
+        dot.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+      }
+      // 延时清除守卫，确保 scrollIntoView 触发的 scroll 事件不会启动归位计时器
+      setTimeout(() => { isProgrammaticScroll = false }, 500)
+    })
+  }
+}
+
+/** 移动端题号条滚动事件：只滚动不选页 → 启动 5s 自动归位计时器 */
+let dotsScrollTimer = null
+let autoReturnTimer = null
+
+function onDotsScroll() {
+  // 跳过程序化滚动（goToQuestion 触发的 scrollIntoView）
+  if (!dotsStripRef.value || !isMobile.value || isProgrammaticScroll) return
+  // 每次用户滚动时重置计时器
+  clearAutoReturnTimer()
+  clearTimeout(dotsScrollTimer)
+  dotsScrollTimer = setTimeout(() => {
+    // 滚动停止后启动 5s 归位计时器
+    autoReturnTimer = setTimeout(() => {
+      const strip = dotsStripRef.value
+      if (!strip) return
+      const idx = currentReviewIndex.value
+      const dot = strip.children[idx]
+      if (dot) {
+        isProgrammaticScroll = true
+        dot.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+        setTimeout(() => { isProgrammaticScroll = false }, 500)
+      }
+    }, 3000)
+  }, 250)
+}
+
+function clearAutoReturnTimer() {
+  if (autoReturnTimer) {
+    clearTimeout(autoReturnTimer)
+    autoReturnTimer = null
+  }
+}
+
+// 移动端触摸滑动切换题目
+let touchStartX = 0
+function onTouchStart(e) { touchStartX = e.touches[0].clientX }
+function onTouchEnd(e) {
+  const diff = touchStartX - e.changedTouches[0].clientX
+  if (Math.abs(diff) > 60) {
+    if (diff > 0) goToQuestion(currentReviewIndex.value + 1)
+    else goToQuestion(currentReviewIndex.value - 1)
   }
 }
 
@@ -408,12 +567,37 @@ function getProgressDotClass(idx, item) {
     return `${base} bg-[#2563EB] text-white shadow-md shadow-blue-200 scale-110`
   }
   if (item.isCorrect) {
-    return `${base} bg-green-50 text-green-600 border border-green-200 cursor-pointer`
+    return `${base} bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 border border-green-200 dark:border-green-700 cursor-pointer`
   }
-  return `${base} bg-red-50 text-red-600 border border-red-200 cursor-pointer`
+  return `${base} bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-700 cursor-pointer`
 }
 
-/** 滚动到解析区域 */
+// 滑动窗口：一次展示 5 个题号圆点，选中项居中（首尾两题除外）
+const DOT_WINDOW = 5
+const visibleDotStart = computed(() => {
+  const total = questionReview.value.length
+  if (total <= DOT_WINDOW) return 0
+  const idx = currentReviewIndex.value
+  let start = idx - 2
+  if (start < 0) start = 0
+  if (start + DOT_WINDOW > total) start = total - DOT_WINDOW
+  return start
+})
+const visibleDots = computed(() => {
+  const start = visibleDotStart.value
+  return questionReview.value.slice(start, start + DOT_WINDOW)
+})
+
+/** 滚动到顶部 */
+function scrollToTop() {
+  if (resultTopRef.value) {
+    resultTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+/** 滚动到答题回顾区域 */
 function scrollToReview() {
   if (reviewSectionRef.value) {
     reviewSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -431,31 +615,6 @@ function handleReviewKeydown(e) {
   }
 }
 
-/** 监听滚轮：上滚回到结果页顶部，下滚定位到解析 */
-let wheelFired = false
-function handleReviewWheel(e) {
-  if (wheelFired) return
-  const reviewRect = reviewSectionRef.value?.getBoundingClientRect()
-  const topRect = resultTopRef.value?.getBoundingClientRect()
-  if (!reviewRect) return
-
-  if (e.deltaY > 0) {
-    // 向下滚动 → 定位到解析区域
-    if (reviewRect.top > window.innerHeight * 0.3) {
-      wheelFired = true
-      scrollToReview()
-      setTimeout(() => { wheelFired = false }, 800)
-    }
-  } else if (e.deltaY < 0 && topRect) {
-    // 向上滚动 → 回到结果页顶部
-    if (topRect.top < -50) {
-      wheelFired = true
-      resultTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      setTimeout(() => { wheelFired = false }, 800)
-    }
-  }
-}
-
 /**
  * 选项卡片样式
  */
@@ -465,18 +624,18 @@ function getOptionClass(optionId, item) {
 
   if (isCorrectAnswer && isUserAnswer) {
     // 答对了 — 绿色高亮
-    return 'bg-green-50 border border-green-300'
+    return 'bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
   }
   if (isCorrectAnswer && !isUserAnswer) {
     // 正确答案（用户选错了）— 绿色边框提示
-    return 'bg-green-50 border border-green-300'
+    return 'bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
   }
   if (isUserAnswer && !isCorrectAnswer) {
     // 用户选错了 — 红色高亮
-    return 'bg-red-50 border border-red-300'
+    return 'bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700'
   }
   // 普通选项
-  return 'bg-gray-50 border border-transparent'
+  return 'bg-gray-50 dark:bg-gray-700/50 border border-transparent'
 }
 
 /**
@@ -572,20 +731,52 @@ function handleResize() {
 }
 
 onMounted(async () => {
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
   await nextTick()
   initRadarChart()
   loadWrongBookIds()
   window.addEventListener('keydown', handleReviewKeydown)
-  window.addEventListener('wheel', handleReviewWheel, { passive: true })
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('resize', updateIsMobile)
   window.removeEventListener('keydown', handleReviewKeydown)
-  window.removeEventListener('wheel', handleReviewWheel)
+  clearAutoReturnTimer()
   if (radarChart) {
     radarChart.dispose()
     radarChart = null
   }
 })
 </script>
+
+<style scoped>
+/* 移动端卡片滑动切换动画 */
+.card-slide-left-enter-active,
+.card-slide-left-leave-active,
+.card-slide-right-enter-active,
+.card-slide-right-leave-active {
+  transition: all 0.25s ease-out;
+}
+.card-slide-left-enter-from {
+  transform: translateX(60px);
+  opacity: 0;
+}
+.card-slide-left-leave-to {
+  transform: translateX(-60px);
+  opacity: 0;
+}
+.card-slide-right-enter-from {
+  transform: translateX(-60px);
+  opacity: 0;
+}
+.card-slide-right-leave-to {
+  transform: translateX(60px);
+  opacity: 0;
+}
+
+/* 移动端题号条隐藏滚动条 */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

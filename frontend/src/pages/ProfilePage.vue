@@ -14,7 +14,7 @@
     </Teleport>
 
     <!-- 用户信息卡片 -->
-    <div class="card flex items-center gap-8 mb-8">
+    <div class="card flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-8 mb-8">
       <div
         class="w-20 h-20 rounded-xl flex items-center justify-center flex-none cursor-pointer hover:ring-4 hover:ring-blue-200 transition-all overflow-hidden relative group"
         @click="showAvatarPicker = true"
@@ -60,7 +60,7 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-8 mt-4">
+        <div class="flex items-center gap-4 lg:gap-8 mt-4 flex-wrap justify-center lg:justify-start">
           <div class="text-center">
             <div class="text-xl font-bold">{{ streak }}</div>
             <div class="text-[10px] text-gray-400">连续学习 天</div>
@@ -77,7 +77,7 @@
           </div>
           <div class="w-px h-10 bg-gray-100"></div>
           <button
-            class="flex flex-col items-center justify-center px-4 py-1 rounded-xl transition-all"
+            class="flex flex-col items-center justify-center px-4 py-1 rounded-xl transition-all w-full lg:w-auto"
             :class="profileCheckinDone ? 'bg-green-50' : 'bg-[#2563EB] hover:bg-blue-600 cursor-pointer'"
             :disabled="profileCheckinLoading || profileCheckinDone"
             @click="doProfileCheckin"
@@ -93,7 +93,7 @@
 
       <!-- 右侧 VIP 卡片 -->
       <div
-        class="flex-none w-36 p-4 rounded-xl text-center cursor-pointer transition-all hover:scale-105"
+        class="flex-none w-full lg:w-36 p-4 rounded-xl text-center cursor-pointer transition-all hover:scale-105"
         :class="isVip ? 'bg-gradient-to-br from-yellow-100 to-yellow-200 border border-yellow-300' : 'bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 hover:border-yellow-300'"
         @click="showVipExchange = true"
       >
@@ -145,11 +145,11 @@
     </Teleport>
 
     <!-- 抽屉式便签栏 -->
-    <div class="drawer-tabs flex items-center gap-2 mb-0 flex-wrap">
+    <div class="drawer-tabs flex items-center gap-2 mb-0 flex-wrap flex-col lg:flex-row text-xs lg:text-sm">
       <button
         v-for="tab in drawerTabs"
         :key="tab.key"
-        class="drawer-tab-label"
+        class="drawer-tab-label justify-between lg:justify-center w-full lg:w-auto text-left lg:text-center"
         :class="{ active: activeDrawer === tab.key }"
         @click="toggleDrawer(tab.key)"
       >
@@ -166,7 +166,10 @@
     <div class="drawer-content-wrapper">
       <Transition name="drawer">
         <!-- 学习趋势 -->
-        <div v-if="activeDrawer === 'trend'" key="trend" class="card drawer-card">
+        <div v-if="activeDrawer === 'trend'" key="trend" class="card drawer-card relative">
+          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
+            <Icon icon="ph:x-bold" class="text-gray-500" />
+          </button>
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold">📊 每日在线时长</h3>
             <div class="flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-xl">
@@ -178,7 +181,10 @@
         </div>
 
         <!-- 学习记录 -->
-        <div v-else-if="activeDrawer === 'records'" key="records" class="card drawer-card">
+        <div v-else-if="activeDrawer === 'records'" key="records" class="card drawer-card relative">
+          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
+            <Icon icon="ph:x-bold" class="text-gray-500" />
+          </button>
           <h3 class="text-lg font-bold mb-6">📖 学习记录</h3>
           <div v-if="historyRecords.length === 0" class="text-center py-12 text-gray-400">
             <Icon icon="ph:book-open-bold" class="text-3xl mx-auto mb-3 opacity-30" />
@@ -212,7 +218,10 @@
         </div>
 
         <!-- 生词本 -->
-        <div v-else-if="activeDrawer === 'vocab'" key="vocab" class="card drawer-card">
+        <div v-else-if="activeDrawer === 'vocab'" key="vocab" class="card drawer-card relative">
+          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
+            <Icon icon="ph:x-bold" class="text-gray-500" />
+          </button>
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold">📝 生词本</h3>
             <span class="text-xs text-gray-400">{{ vocabWords.length }} 个单词</span>
@@ -249,7 +258,10 @@
         </div>
 
         <!-- 错题本 -->
-        <div v-else-if="activeDrawer === 'wrongbook'" key="wrongbook" class="card drawer-card">
+        <div v-else-if="activeDrawer === 'wrongbook'" key="wrongbook" class="card drawer-card relative">
+          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
+            <Icon icon="ph:x-bold" class="text-gray-500" />
+          </button>
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold">📋 错题本</h3>
             <span class="text-xs text-gray-400">{{ wrongQuestions.length }} 道错题</span>
@@ -404,7 +416,10 @@
         </div>
 
         <!-- 收藏夹 -->
-        <div v-else-if="activeDrawer === 'favorites'" key="favorites" class="card drawer-card">
+        <div v-else-if="activeDrawer === 'favorites'" key="favorites" class="card drawer-card relative">
+          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
+            <Icon icon="ph:x-bold" class="text-gray-500" />
+          </button>
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold">📌 收藏夹</h3>
             <span class="text-xs text-gray-400">{{ favoriteArticles.length }} 篇文章</span>
@@ -452,7 +467,10 @@
         </div>
 
         <!-- 设置 -->
-        <div v-else-if="activeDrawer === 'settings'" key="settings" class="card drawer-card">
+        <div v-else-if="activeDrawer === 'settings'" key="settings" class="card drawer-card relative">
+          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
+            <Icon icon="ph:x-bold" class="text-gray-500" />
+          </button>
           <h3 class="text-lg font-bold mb-6">⚙️ 设置</h3>
           <div class="space-y-1">
             <!-- 学习目标时长 -->

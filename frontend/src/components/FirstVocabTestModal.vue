@@ -6,7 +6,7 @@
       tabindex="-1"
       @keydown.escape="$emit('close')"
     >
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
         <!-- ========== 开始界面 ========== -->
         <div v-if="phase === 'start'" class="p-8 text-center">
           <Icon icon="ph:book-open-text-bold" class="text-5xl text-[#2563EB] mx-auto mb-4" />
@@ -53,7 +53,7 @@
           </p>
 
           <!-- 单词网格 -->
-          <div class="grid grid-cols-5 gap-2 mb-6 max-h-[50vh] overflow-y-auto">
+          <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-6 max-h-[50vh] overflow-y-auto">
             <div
               v-for="(item, idx) in words"
               :key="idx"
@@ -95,7 +95,7 @@
           <h2 class="text-2xl font-bold mb-1">检测完成！</h2>
           <p class="text-gray-400 text-sm mb-6">AI 已评估你的初始英语能力</p>
 
-          <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div class="bg-blue-50 rounded-xl p-4">
               <p class="text-3xl font-black text-[#2563EB]">{{ resultVocab.toLocaleString() }}</p>
               <p class="text-xs text-gray-400">估算词汇量</p>

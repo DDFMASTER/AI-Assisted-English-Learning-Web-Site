@@ -11,7 +11,7 @@
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
 
       <!-- 弹窗 -->
-      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 z-10">
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-sm p-8 z-10 mx-4">
         <!-- 关闭按钮 -->
         <button
           class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"

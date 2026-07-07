@@ -28,7 +28,7 @@
       <div v-if="savedProgress" class="mb-6">
         <div class="inline-flex items-center gap-2 px-5 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 mb-4">
           <Icon icon="ph:clock-counter-clockwise-bold" class="text-lg" />
-          <span>上次答到第 <strong>{{ savedProgress.currentIndex + 1 }}</strong> 题（共 {{ savedProgress.questions.length }} 题）</span>
+          <span>上次答到第 <strong>{{ savedProgress.currentIndex + 1 }}</strong> 题（共 10 题）</span>
         </div>
         <br />
         <button
@@ -84,18 +84,18 @@
     <!-- ========== 状态 2: 答题屏幕 ========== -->
     <div v-else-if="store.currentQuestion" class="max-w-4xl mx-auto">
       <!-- 顶部进度 -->
-      <div class="flex items-center justify-between mb-8">
-        <div class="flex items-center gap-3">
+      <div class="flex flex-col lg:flex-row items-center justify-between mb-8 gap-3">
+        <div class="flex items-center gap-3 w-full lg:w-auto">
           <span class="text-2xl font-bold text-[#2563EB]">
             {{ String(store.currentIndex + 1).padStart(2, '0') }}
           </span>
           <span class="text-gray-300 font-bold">/ {{ store.totalTarget }}</span>
+          <div v-if="!store.allQuestionsReady" class="flex items-center gap-1.5 ml-3">
+            <Icon icon="ph:spinner-bold" class="text-[11px] text-amber-500 animate-spin" />
+            <span class="text-[11px] text-amber-500">正在生成剩余题目...（{{ store.questions.length }}/{{ store.totalTarget }}）</span>
+          </div>
         </div>
-        <div v-if="!store.allQuestionsReady" class="flex items-center gap-1.5 ml-3">
-          <Icon icon="ph:spinner-bold" class="text-[11px] text-amber-500 animate-spin" />
-          <span class="text-[11px] text-amber-500">正在生成剩余题目...</span>
-        </div>
-        <div class="flex-1 max-w-md h-2 bg-gray-100 rounded-full mx-8 overflow-hidden">
+        <div class="w-full lg:flex-1 lg:max-w-md h-2 bg-gray-100 rounded-full lg:mx-8 overflow-hidden">
           <div
             class="h-full bg-[#2563EB] transition-all duration-500"
             :style="{ width: store.progressPercent + '%' }"
@@ -110,9 +110,9 @@
       </div>
 
       <!-- 题目内容 -->
-      <div class="grid grid-cols-12 gap-8">
+      <div class="flex flex-col lg:flex-row gap-8">
         <!-- 左侧：阅读文本 -->
-        <div class="col-span-7">
+        <div class="w-full lg:w-[55%]">
           <div class="card h-full">
             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
               Reading Passage
@@ -124,7 +124,7 @@
         </div>
 
         <!-- 右侧：问题与选项 -->
-        <div class="col-span-5 flex flex-col gap-6">
+        <div class="w-full lg:w-[45%] flex flex-col gap-6">
           <!-- 问题和选项 -->
           <div class="card flex-1">
             <h3 class="font-bold text-xl mb-6">{{ store.currentQuestion.question }}</h3>
@@ -158,9 +158,9 @@
       </div>
 
       <!-- 底部导航 -->
-      <div class="mt-12 flex justify-between items-center">
+      <div class="mt-12 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
         <button
-          class="px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-1.5"
+          class="w-full lg:w-auto px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5"
           :class="!store.isFirstQuestion
             ? 'bg-white border border-gray-200 text-gray-600 hover:border-[#2563EB] hover:text-[#2563EB]'
             : 'bg-gray-50 text-gray-300 cursor-not-allowed'"
@@ -170,10 +170,10 @@
           <Icon icon="ph:arrow-left-bold" class="text-sm" />
           上一题
         </button>
-        <div class="flex items-center gap-4">
-          <span class="text-sm text-gray-400">已自动保存进度</span>
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+          <span class="text-sm text-gray-400 text-center">已自动保存进度</span>
           <button
-            class="px-10 py-3 rounded-xl font-bold shadow-lg transition-all"
+            class="w-full lg:w-auto px-10 py-3 rounded-xl font-bold shadow-lg transition-all"
             :class="store.selectedOption && !submitting
               ? 'bg-[#2563EB] text-white shadow-blue-100 hover:scale-105'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
@@ -228,6 +228,12 @@
         </div>
       </div>
     </Teleport>
+    <footer class="mt-12 pt-6 pb-8 border-t border-gray-100 dark:border-gray-800">
+      <div class="max-w-[1200px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
+        <span>EngliAI — 智能英语学习平台</span>
+        <span>&copy; {{ new Date().getFullYear() }} EngliAI. All rights reserved.</span>
+      </div>
+    </footer>
   </main>
 </template>
 

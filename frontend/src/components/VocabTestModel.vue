@@ -6,7 +6,7 @@
       tabindex="-1"
       @keydown.escape="$emit('close')"
     >
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
         <!-- ========== 开始界面 ========== -->
         <div v-if="phase === 'start'" class="p-8 text-center">
           <Icon icon="ph:book-open-text-bold" class="text-5xl text-[#2563EB] mx-auto mb-4" />

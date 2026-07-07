@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import request from '@/utils/request'
 let _lemmatize = null
 async function getLemmatize() {
@@ -201,6 +201,30 @@ export const useReaderStore = defineStore('reader', () => {
    */
   function clearParagraphTranslation() {
     translatingIndex.value = -1
+  }
+
+  // ========== 题目解析翻译 ==========
+  const explanationTranslations = reactive({})
+
+  function getExplanationTranslation(key) {
+    return explanationTranslations[key] || null
+  }
+
+  async function fetchExplanationTranslation(key, englishText) {
+    if (explanationTranslations[key]?.zh) return
+    explanationTranslations[key] = { loading: true, zh: '' }
+    try {
+      const data = await request.post('/article/translate-paragraph', {
+        paragraph: englishText,
+      }, { timeout: 25000 })
+      if (data.success && data.translation) {
+        explanationTranslations[key] = { loading: false, zh: data.translation }
+      } else {
+        explanationTranslations[key] = { loading: false, error: data.message || '翻译失败' }
+      }
+    } catch (e) {
+      explanationTranslations[key] = { loading: false, error: '请求翻译失败' }
+    }
   }
 
   /**
@@ -631,5 +655,8 @@ export const useReaderStore = defineStore('reader', () => {
     translatingIndex,
     fetchParagraphTranslation,
     clearParagraphTranslation,
+    explanationTranslations,
+    getExplanationTranslation,
+    fetchExplanationTranslation,
   }
 })

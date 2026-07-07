@@ -1,9 +1,12 @@
 <template>
-  <Teleport to="body">
+  <Teleport to="body" :disabled="noTeleport">
     <div
       v-if="visible"
-      class="fixed z-[60] glass-popover p-5 w-80 max-h-[calc(100vh-160px)] overflow-y-auto"
-      :style="{ left: position.x + 'px', top: position.y + 'px' }"
+      class="z-[60] glass-popover p-5 overflow-y-auto"
+      :class="noTeleport ? 'w-full max-h-[calc(100vh-250px)]' : 'fixed w-80 max-h-[calc(100vh-160px)]'"
+      :style="noTeleport
+        ? { fontSize: sideBasePx + 'px' }
+        : { left: position.x + 'px', top: position.y + 'px', fontSize: sideBasePx + 'px' }"
       @click.stop
     >
       <!-- ========== 释义视图 ========== -->
@@ -11,10 +14,10 @@
         <!-- 页眉：单词 + 音标 + 收藏按钮 -->
         <div class="flex justify-between items-start mb-3">
           <div>
-            <h3 class="text-xl font-bold text-[#2563EB]">{{ word.word }}</h3>
-            <p v-if="word.phonetic" class="text-xs text-gray-400">{{ word.phonetic }}</p>
+            <h3 class="font-bold text-[#2563EB]" :style="{ fontSize: '1.3em' }">{{ word.word }}</h3>
+            <p v-if="word.phonetic" class="text-gray-400" :style="{ fontSize: '0.8em' }">{{ word.phonetic }}</p>
             <!-- 词形还原标注 -->
-            <p v-if="word.lemmaFrom && word.lemmaTo" class="text-xs text-amber-500 mt-0.5">
+            <p v-if="word.lemmaFrom && word.lemmaTo" class="text-amber-500 mt-0.5" :style="{ fontSize: '0.8em' }">
               <Icon icon="ph:arrows-split-bold" class="inline text-[10px] mr-0.5" />
               原形: {{ word.lemmaTo }}
             </p>
@@ -77,17 +80,17 @@
               :key="eIdx"
             >
               <div class="flex items-baseline gap-2 ml-1 mb-0.5">
-                <span v-if="entry.phonetic" class="text-[11px] text-gray-400 font-mono flex-none">
+                <span v-if="entry.phonetic" class="text-gray-400 font-mono flex-none" :style="{ fontSize: '0.75em' }">
                   {{ entry.phonetic }}
                 </span>
-                <span class="text-sm text-gray-700 leading-relaxed">
+                <span class="text-gray-700 leading-relaxed">
                   {{ entry.translation }}
                 </span>
               </div>
               <!-- AI 详细解释 -->
               <div
                 v-if="entry.explanation"
-                class="ml-1 mt-1 mb-2 px-2.5 py-1.5 bg-blue-50/50 rounded-lg text-[11px] text-gray-500 leading-relaxed"
+                class="ml-1 mt-1 mb-2 px-2.5 py-1.5 bg-blue-50/50 rounded-lg text-gray-500 leading-relaxed" :style="{ fontSize: '0.8em' }"
               >
                 {{ entry.explanation }}
               </div>
@@ -172,6 +175,10 @@ import { useReaderStore } from '@/stores/reader'
 const props = defineProps({
   visible: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
+  /** 禁用 Teleport，使内容渲染在父元素内部（移动端底部弹出使用） */
+  noTeleport: { type: Boolean, default: false },
+  /** 文章正文字号，面板按比例缩放 */
+  fontSize: { type: Number, default: 18 },
   word: {
     type: Object,
     default: () => ({ word: '', results: [] }),
@@ -193,6 +200,8 @@ const emit = defineEmits(['close', 'add-vocab', 'view-detail', 'back-to-summary'
 
 const readerStore = useReaderStore()
 const vocabToast = ref('')  // 加入生词本成功提示
+
+const sideBasePx = computed(() => Math.round(props.fontSize * 0.78))
 
 const detailWord = computed(() => props.word?.word || '')
 const detailLoading = computed(() => props.detailData?.loading || false)

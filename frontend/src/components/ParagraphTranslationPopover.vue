@@ -1,9 +1,10 @@
 <template>
-  <Teleport to="body">
+  <Teleport to="body" :disabled="noTeleport">
     <div
       v-if="visible"
-      class="fixed z-[60] glass-popover p-5 w-80 max-h-[calc(100vh-160px)] overflow-y-auto"
-      :style="{ left: position.x + 'px', top: position.y + 'px' }"
+      class="z-[60] glass-popover p-5 overflow-y-auto"
+      :class="noTeleport ? 'w-full max-h-[60vh]' : 'fixed w-80 max-h-[calc(100vh-160px)]'"
+      :style="noTeleport ? {} : { left: position.x + 'px', top: position.y + 'px' }"
       @click.stop
     >
       <!-- 页眉 -->
@@ -74,6 +75,8 @@ import { Icon } from '@iconify/vue'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
+  /** 禁用 Teleport，使内容渲染在父元素内部（移动端底部弹出使用） */
+  noTeleport: { type: Boolean, default: false },
   originalText: { type: String, default: '' },
   translationData: {
     type: Object,

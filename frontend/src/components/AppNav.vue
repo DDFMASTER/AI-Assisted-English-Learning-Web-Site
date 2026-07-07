@@ -22,10 +22,17 @@
             英语天地
           </router-link>
         </div>
+
+        <!-- 移动端汉堡按钮 -->
+        <div class="flex items-center gap-2 lg:hidden">
+          <button class="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ml-auto" @click="showMobileMenu = !showMobileMenu" aria-label="菜单">
+            <Icon :icon="showMobileMenu ? 'ph:x-bold' : 'ph:list-bold'" class="text-xl text-gray-500" />
+          </button>
+        </div>
       </div>
 
       <!-- 中间：搜索框（平板及以上可见） -->
-      <div class="relative flex-1 max-w-md mx-8 hidden sm:block" ref="searchContainer">
+      <div class="relative flex-1 max-w-full mx-8 hidden sm:block" ref="searchContainer">
         <div class="relative">
           <button
             class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#2563EB] transition-colors"
@@ -125,7 +132,7 @@
         <router-link
           v-if="userStore.user?.role === 'admin'"
           to="/admin"
-          class="nav-link text-gray-500 text-sm"
+          class="nav-link text-gray-500 text-sm hidden lg:block"
           active-class="nav-active"
           aria-label="管理"
         >
@@ -210,6 +217,17 @@
     </div>
 
   </nav>
+
+  <!-- 移动端下拉菜单 -->
+  <div v-if="showMobileMenu" class="lg:hidden fixed inset-0 z-30" @click="showMobileMenu = false"></div>
+  <div v-if="showMobileMenu" class="lg:hidden fixed top-16 left-0 right-0 bg-white dark:bg-[#252526] border-b border-gray-200 dark:border-gray-700 shadow-lg z-40 px-6 py-4 space-y-2">
+    <router-link to="/materials" class="block py-2 text-sm font-medium text-gray-700 dark:text-gray-200" @click="showMobileMenu = false">📚 读物匹配</router-link>
+    <router-link to="/assessment" class="block py-2 text-sm font-medium text-gray-700 dark:text-gray-200" @click="showMobileMenu = false">📝 测评中心</router-link>
+    <router-link to="/english-world" class="block py-2 text-sm font-medium text-gray-700 dark:text-gray-200" @click="showMobileMenu = false">🎮 英语天地</router-link>
+    <button class="block w-full text-left py-2 text-sm font-medium text-gray-700 dark:text-gray-200" @click="showMobileMenu = false; $router.push('/profile?tab=records')">📜 最近浏览</button>
+    <router-link v-if="userStore.user?.role === 'admin'" to="/admin" class="block py-2 text-sm font-medium text-gray-700 dark:text-gray-200" @click="showMobileMenu = false">⚙️ 管理</router-link>
+    <router-link to="/profile" class="block py-2 text-sm font-medium text-gray-700 dark:text-gray-200" @click="showMobileMenu = false">👤 个人中心</router-link>
+  </div>
 </template>
 
 <script setup>
@@ -229,6 +247,7 @@ const userStore = useUserStore()
 const readerStore = useReaderStore()
 
 const searchContainer = ref(null)
+const showMobileMenu = ref(false)
 
 // 搜索相关
 const searchQuery = ref('')

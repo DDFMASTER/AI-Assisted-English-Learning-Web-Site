@@ -1,13 +1,13 @@
 <template>
   <div class="min-h-screen">
     <!-- 沉浸式导航栏 -->
-    <nav class="sticky top-16 z-40 bg-white/60 backdrop-blur-md border-b border-gray-100">
+    <nav class="sticky top-16 z-40 bg-white/60 dark:bg-[#333]/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-700">
       <div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <router-link to="/materials" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <router-link to="/materials" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
             <Icon icon="ph:arrow-left-bold" class="text-xl" />
           </router-link>
-          <div class="h-6 w-px bg-gray-200"></div>
+          <div class="h-6 w-px bg-gray-200 dark:bg-gray-600"></div>
           <h2 class="font-bold truncate max-w-[400px]">{{ readerStore.articleTitle }}</h2>
         </div>
         <div class="flex items-center gap-1">
@@ -15,7 +15,7 @@
           <div class="relative group">
             <button
               class="p-2 transition-colors rounded-lg"
-              :class="showSidePanel ? 'text-[#2563EB] bg-blue-50' : 'text-gray-400 hover:text-[#2563EB]'"
+              :class="showSidePanel ? 'text-[#2563EB] bg-blue-50' : 'text-blue-400 hover:text-[#2563EB] dark:text-blue-300 dark:hover:text-blue-400'"
               @click="showSidePanel = !showSidePanel"
             >
               <Icon icon="ph:brain-bold" class="text-2xl" />
@@ -26,17 +26,39 @@
           </div>
 
           <!-- 字体设置（第二个） -->
-          <div class="relative group">
+          <div class="relative" @mouseenter="!isMobile && showFontPanelFn()" @mouseleave="!isMobile && hideFontPanelFn()">
             <button
               class="p-2 transition-colors rounded-lg"
-              :class="showFontPanel ? 'text-[#2563EB] bg-blue-50' : 'text-gray-400 hover:text-[#2563EB]'"
-              @click.stop="toggleFontPanel"
+              :class="showFontPanel ? 'text-[#2563EB] bg-blue-50' : 'text-blue-400 hover:text-[#2563EB] dark:text-blue-300 dark:hover:text-blue-400'"
+              @click.stop="toggleFontPanelClick"
             >
               <Icon icon="ph:text-aa-bold" class="text-2xl" />
             </button>
-            <div class="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded-lg px-3 py-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[60]">
-              字体设置
-            </div>
+            <Transition name="popover">
+              <div
+                v-if="showFontPanel"
+                class="absolute right-0 top-full mt-2 w-36 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-3 z-[60]"
+                @click.stop
+                @mouseenter="!isMobile && showFontPanelFn()"
+                @mouseleave="!isMobile && hideFontPanelFn()"
+              >
+                <p class="text-xs font-bold text-gray-400 dark:text-gray-500 mb-2">字体大小</p>
+                <div class="space-y-1">
+                  <button
+                    v-for="opt in fontOptions"
+                    :key="opt.value"
+                    class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    :class="readerStore.fontSize === opt.value
+                      ? 'bg-blue-50 dark:bg-blue-900 text-[#2563EB] dark:text-blue-300'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                    @click.stop="readerStore.setFontSize(opt.value); showFontPanel = false"
+                  >
+                    <Icon :icon="opt.icon" class="text-base" />
+                    {{ opt.label }}
+                  </button>
+                </div>
+              </div>
+            </Transition>
           </div>
 
           <!-- 书签 / 收藏夹（第三个） -->
@@ -59,9 +81,37 @@
       </div>
     </nav>
 
-    <!-- 阅读区域 -->
-    <main class="reader-container" style="max-width:800px;margin:0 auto" v-if="readerStore.article">
-      <header class="mb-12">
+    <!-- 阅读区域 + 左/右侧边栏（桌面端三列左右排列，移动端上下排列） -->
+    <div class="flex justify-center px-6" style="padding-top: 100px;" v-if="readerStore.article">
+      <div
+        class="flex flex-col lg:flex-row lg:gap-8"
+        :style="{ maxWidth: containerMaxWidth, width: '100%' }"
+      >
+        <!-- 桌面端左侧边栏：查词结果卡片，始终预留空间防止文章左右跳动 -->
+        <aside
+          class="hidden lg:block w-80 flex-none order-1"
+          :class="{ 'invisible': !wordPopover.visible }"
+        >
+          <div class="sticky" style="top: 175px;">
+          <WordPopover
+            :visible="wordPopover.visible"
+            :no-teleport="true"
+            :font-size="readerStore.fontSize"
+            :word="wordPopover.word"
+            :loading="wordPopover.loading"
+            :detail-visible="showAIDetail"
+            :detail-data="aiDetailData"
+            @close="wordPopover.visible = false"
+            @add-vocab="onAddVocab"
+            @view-detail="onViewDetail"
+            @back-to-summary="onBackToSummary"
+          />
+          </div>
+        </aside>
+
+        <!-- 文章内容列 -->
+        <main class="reader-container order-2" style="max-width: 800px; width: 100%; padding-top: 0; margin: 0;">
+          <header class="mb-12">
         <!-- 分类/阅读时间/难度（无数据时不展示） -->
         <div
           v-if="readerStore.article.difficulty || readerStore.article.readTime"
@@ -74,11 +124,38 @@
           <span v-if="readerStore.article.readTime">{{ readerStore.article.readTime }}</span>
         </div>
 
-        <!-- 标题（无数据时不展示） -->
-        <h1
-          v-if="readerStore.article.title"
-          class="text-4xl font-bold leading-tight mb-8"
-        >{{ readerStore.article.title }}</h1>
+        <!-- 标题行：标题 + 翻译模式切换 -->
+        <div v-if="readerStore.article.title" class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-8">
+          <h1 class="text-4xl font-bold leading-tight">{{ readerStore.article.title }}</h1>
+          <!-- 翻译模式切换（桌面端在标题右侧，移动端在标题下方） -->
+          <div class="flex flex-col items-center lg:items-end gap-1 flex-none">
+            <div class="flex items-center bg-gray-100 rounded-full p-0.5">
+              <button
+                class="px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap"
+                :class="translateMode === 'word'
+                  ? 'bg-white text-[#2563EB] shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600'"
+                @click="setTranslateMode('word')"
+              >
+                <Icon icon="ph:text-aa-bold" class="inline mr-1" />
+                单词翻译
+              </button>
+              <button
+                class="px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap"
+                :class="translateMode === 'paragraph'
+                  ? 'bg-white text-[#2563EB] shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600'"
+                @click="guard(() => setTranslateMode('paragraph'))"
+              >
+                <Icon icon="ph:article-bold" class="inline mr-1" />
+                段落翻译
+              </button>
+            </div>
+            <p class="text-[10px] text-gray-400 hidden lg:block">
+              {{ translateMode === 'word' ? '点击单词即可翻译' : '点击段落即可翻译' }}
+            </p>
+          </div>
+        </div>
 
         <!-- 作者信息（无数据时不展示） -->
         <div v-if="readerStore.article.author" class="flex items-center gap-3 mb-12">
@@ -172,62 +249,95 @@
         </template>
       </article>
 
-      <!-- 底部留白，防止被操作栏遮挡 -->
-      <div class="h-28"></div>
-    </main>
+      <!-- 移动端：选择题在前，文化背景讲解在后 -->
+      <div class="lg:hidden mt-12" v-if="showSidePanel && isMobile">
+        <ArticleSidePanel
+          :visible="true"
+          :is-mobile="true"
+          :font-size="readerStore.fontSize"
+          :show-cultural-notes="false"
+          :quiz-data="readerStore.quizCache"
+          :position="{ x: 0, y: 0 }"
+          @quiz-completed="onQuizCompleted"
+          @word-click="handleCulturePanelWordClick"
+        />
+      </div>
+      <div class="lg:hidden mt-8" v-if="showSidePanel && isMobile">
+        <ArticleSidePanel
+          :visible="true"
+          :is-mobile="true"
+          :font-size="readerStore.fontSize"
+          :show-quiz="false"
+          :cultural-notes="readerStore.culturalNotesCache"
+          :position="{ x: 0, y: 0 }"
+          @quiz-completed="onQuizCompleted"
+          @word-click="handleCulturePanelWordClick"
+        />
+      </div>
 
-    <!-- 加载中 -->
-    <div v-else class="text-center py-40">
-      <Icon icon="ph:spinner-bold" class="text-4xl text-[#2563EB] animate-spin mx-auto mb-4" />
-      <p class="text-gray-400">加载文章中...</p>
-    </div>
+      <!-- 桌面端：阅读选择题移至文章内容下方，字体与正文统一 -->
+      <div class="hidden lg:block mt-8" v-if="showSidePanel && !isMobile">
+        <ArticleSidePanel
+          :visible="true"
+          :font-size="readerStore.fontSize"
+          :scale-font="false"
+          :show-cultural-notes="false"
+          :quiz-data="readerStore.quizCache"
+          :position="{ x: 0, y: 0 }"
+          @quiz-completed="onQuizCompleted"
+          @word-click="handleCulturePanelWordClick"
+        />
+      </div>
 
-    <!-- 底部固定操作栏（单词/段落翻译切换） -->
-    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-t border-gray-100">
-      <div class="max-w-[800px] mx-auto px-6 py-2 flex flex-col items-center">
-        <!-- 翻译模式切换 -->
-        <div class="flex items-center bg-gray-100 rounded-full p-0.5">
-          <button
-            class="px-5 py-1.5 rounded-full text-xs font-bold transition-all"
-            :class="translateMode === 'word'
-              ? 'bg-white text-[#2563EB] shadow-sm'
-              : 'text-gray-400 hover:text-gray-600'"
-            @click="setTranslateMode('word')"
-          >
-            <Icon icon="ph:text-aa-bold" class="inline mr-1" />
-            单词翻译
-          </button>
-          <button
-            class="px-5 py-1.5 rounded-full text-xs font-bold transition-all"
-            :class="translateMode === 'paragraph'
-              ? 'bg-white text-[#2563EB] shadow-sm'
-              : 'text-gray-400 hover:text-gray-600'"
-            @click="guard(() => setTranslateMode('paragraph'))"
-          >
-            <Icon icon="ph:article-bold" class="inline mr-1" />
-            段落翻译
-          </button>
-        </div>
-        <!-- 操作提示 -->
-        <p class="text-[10px] text-gray-400 mt-1.5">
-          {{ translateMode === 'word' ? '点击想要翻译的单词即可一键AI翻译' : '点击想要翻译的段落即可一键AI翻译' }}
-        </p>
+      <!-- 底部留白 -->
+      <div class="h-12"></div>
+        </main>
+
+        <!-- 桌面端右侧边栏：仅文化背景讲解 -->
+        <aside class="hidden lg:block flex-none order-3" :style="{ width: SIDEBAR_RIGHT_W + 'px' }" v-if="showSidePanel && !isMobile">
+          <ArticleSidePanel
+            :visible="true"
+            :font-size="readerStore.fontSize"
+            :show-quiz="false"
+            :cultural-notes="readerStore.culturalNotesCache"
+            :position="{ x: 0, y: 0 }"
+            @quiz-completed="onQuizCompleted"
+            @word-click="handleCulturePanelWordClick"
+          />
+        </aside>
       </div>
     </div>
 
-    <!-- 单词查词浮窗 -->
-    <WordPopover
-      :visible="wordPopover.visible"
-      :word="wordPopover.word"
-      :loading="wordPopover.loading"
-      :position="wordPopover.position"
-      :detail-visible="showAIDetail"
-      :detail-data="aiDetailData"
-      @close="wordPopover.visible = false"
-      @add-vocab="onAddVocab"
-      @view-detail="onViewDetail"
-      @back-to-summary="onBackToSummary"
-    />
+    <!-- 移动端：底部弹出式查词结果 -->
+    <Teleport to="body">
+      <Transition name="sheet">
+        <div v-if="isMobile && wordPopover.visible" class="lg:hidden fixed inset-0 z-[200] flex flex-col justify-end" @click.self="wordPopover.visible = false">
+          <div class="bg-white dark:bg-[#252526] rounded-t-2xl shadow-2xl max-h-[70vh] overflow-y-auto p-5">
+            <div class="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-3"></div>
+            <WordPopover
+              :visible="true"
+              :no-teleport="true"
+              :font-size="readerStore.fontSize"
+              :word="wordPopover.word"
+              :loading="wordPopover.loading"
+              :position="{ x: 0, y: 0 }"
+              :detail-visible="showAIDetail"
+              :detail-data="aiDetailData"
+              @close="wordPopover.visible = false"
+              @add-vocab="onAddVocab"
+              @view-detail="onViewDetail"
+              @back-to-summary="onBackToSummary"
+            />
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- 加载中 -->
+    <div v-if="!readerStore.article" class="text-center py-40">
+      <Icon icon="ph:spinner-bold" class="text-4xl text-[#2563EB] animate-spin mx-auto mb-4" />
+      <p class="text-gray-400">加载文章中...</p>
+    </div>
 
     <!-- 文化注解浮窗 -->
     <CulturePopover
@@ -237,8 +347,28 @@
       :position="culturePopover.position"
     />
 
-    <!-- 段落翻译浮窗 -->
+    <!-- 移动端：段落翻译底部弹出 -->
+    <Teleport to="body">
+      <Transition name="sheet">
+        <div v-if="isMobile && showTranslationPopover" class="lg:hidden fixed inset-0 z-[200] flex flex-col justify-end" @click.self="showTranslationPopover = false">
+          <div class="bg-white dark:bg-[#252526] rounded-t-2xl shadow-2xl max-h-[70vh] overflow-y-auto p-5">
+            <div class="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-3"></div>
+            <ParagraphTranslationPopover
+              :visible="true"
+              :no-teleport="true"
+              :original-text="currentTranslationOriginal"
+              :translation-data="currentTranslationData"
+              :position="{ x: 0, y: 0 }"
+              @close="showTranslationPopover = false"
+            />
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- 桌面端：段落翻译浮窗 -->
     <ParagraphTranslationPopover
+      v-if="!isMobile"
       :visible="showTranslationPopover"
       :original-text="currentTranslationOriginal"
       :translation-data="currentTranslationData"
@@ -246,82 +376,12 @@
       @close="showTranslationPopover = false"
     />
 
-    <!-- 文章右侧 AI 面板（文化背景 + 选择题） -->
-    <ArticleSidePanel
-      :visible="showSidePanel"
-      :cultural-notes="readerStore.culturalNotesCache"
-      :quiz-data="readerStore.quizCache"
-      :position="{ x: sidePanelX, y: 175 }"
-      @quiz-completed="onQuizCompleted"
-    />
-
-    <!-- 字体设置面板（与 AI 面板等宽，点击字体按钮后打开） -->
-    <div
-      v-if="showFontPanel"
-      class="fixed z-[56] w-[300px]"
-      :style="{ right: sidePanelX + 'px', top: '175px' }"
-      @click.stop
-    >
-      <div class="glass-popover p-5">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <Icon icon="ph:text-aa-bold" class="text-[#2563EB] text-lg" />
-            <h3 class="text-sm font-bold text-gray-700">字体设置</h3>
-          </div>
-          <button
-            class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
-            @click="showFontPanel = false"
-          >
-            <Icon icon="ph:x-bold" class="text-xs text-gray-500" />
-          </button>
-        </div>
-
-        <!-- 当前字号预览 -->
-        <div class="text-center mb-5">
-          <span class="text-4xl font-bold text-[#2563EB]">{{ readerStore.fontSize }}</span>
-          <span class="text-sm text-gray-400 ml-1">px</span>
-        </div>
-
-        <!-- 字号调节按钮 -->
-        <div class="flex items-center justify-center gap-3 mb-5">
-          <button
-            class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 active:scale-95 transition-all flex items-center justify-center text-sm font-bold"
-            @click="adjustFontSize(-1)"
-            :disabled="readerStore.fontSize <= 12"
-          >−1</button>
-          <button
-            class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 active:scale-95 transition-all flex items-center justify-center text-sm font-bold"
-            @click="adjustFontSize(1)"
-            :disabled="readerStore.fontSize >= 28"
-          >+1</button>
-        </div>
-
-        <!-- 快捷预设 -->
-        <div class="mb-5">
-          <div class="text-xs text-gray-400 mb-2">快捷预设</div>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="size in [14, 16, 18, 20, 22, 24]"
-              :key="size"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-              :class="readerStore.fontSize === size
-                ? 'bg-[#2563EB] text-white shadow-sm'
-                : 'bg-gray-50 text-gray-500 hover:bg-gray-100'"
-              @click="readerStore.setFontSize(size)"
-            >{{ size }}px</button>
-          </div>
-        </div>
-
-        <!-- 示例文字 -->
-        <div class="p-3 bg-gray-50 rounded-xl">
-          <p class="text-gray-400 text-xs mb-1">预览效果</p>
-          <p class="text-gray-700 leading-relaxed" :style="{ fontSize: readerStore.fontSize + 'px' }">
-            The quick brown fox jumps over the lazy dog.
-          </p>
-        </div>
+    <footer class="mt-12 pt-6 pb-8 border-t border-gray-100 dark:border-gray-800">
+      <div class="max-w-[1200px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
+        <span>EngliAI — 智能英语学习平台</span>
+        <span>&copy; {{ new Date().getFullYear() }} EngliAI. All rights reserved.</span>
       </div>
-    </div>
-
+    </footer>
   </div>
 </template>
 
@@ -412,6 +472,10 @@ const showAIDetail = ref(false)
 const aiDetailWord = ref('')
 const showSidePanel = ref(true)
 
+// ========== 移动端检测 ==========
+const isMobile = ref(window.innerWidth < 1024)
+function onResize() { isMobile.value = window.innerWidth < 1024 }
+
 // ========== 段落翻译状态 ==========
 const showTranslationPopover = ref(false)
 const activeTranslationIndex = ref(-1)
@@ -444,6 +508,18 @@ const sidePanelX = computed(() => {
   // right = 文章右边缘偏移 - 面板宽 - 间距，但不小于滚动条宽度
   return Math.max(SCROLLBAR, marginR - PANEL_WIDTH - GAP)
 })
+
+// 弹性容器最大宽度：桌面端左侧查词栏始终预留空间，避免点击查词时文章左右跳动
+const SIDEBAR_RIGHT_W = 360       // 右侧面板宽度
+const SIDEBAR_GAP = 32           // lg:gap-8
+const containerMaxWidth = computed(() => {
+  if (isMobile.value) return '800px'
+  const hasRight = showSidePanel.value
+  // 桌面端左侧 320 + gap(32) = 352px 始终预留
+  if (hasRight) return (320 + SIDEBAR_GAP + 800 + SIDEBAR_GAP + SIDEBAR_RIGHT_W) + 'px'  // 1544
+  return '1152px'                 // 320 + 32 + 800
+})
+
 const aiDetailData = computed(() => {
   if (!aiDetailWord.value) return null
   return readerStore.getAIExamples(aiDetailWord.value) || { examples: [], loading: true }
@@ -457,6 +533,17 @@ const answerText = ref('')
 const showToc = ref(false)
 const showSettings = ref(false)
 const showFontPanel = ref(false)
+let fontPanelTimer = null
+function showFontPanelFn() {
+  clearTimeout(fontPanelTimer)
+  showFontPanel.value = true
+}
+function hideFontPanelFn() {
+  fontPanelTimer = setTimeout(() => { showFontPanel.value = false }, 200)
+}
+function toggleFontPanelClick() {
+  if (showFontPanel.value) { hideFontPanelFn() } else { showFontPanelFn() }
+}
 
 // ========== 翻译模式 ==========
 const translateMode = ref('word')  // 'word' | 'paragraph'
@@ -467,21 +554,11 @@ function setTranslateMode(mode) {
 }
 
 // ========== 字体调节 ==========
-function toggleFontPanel() {
-  // 关闭 AI 面板
-  if (showSidePanel.value) {
-    showSidePanel.value = false
-  }
-  showFontPanel.value = !showFontPanel.value
-}
-
-function adjustFontSize(delta) {
-  readerStore.setFontSize(readerStore.fontSize + delta)
-}
-
-function resetFontSize() {
-  readerStore.setFontSize(18)
-}
+const fontOptions = [
+  { value: 18, label: '默认', icon: 'ph:text-aa-bold' },
+  { value: 22, label: '大', icon: 'ph:text-aa-fill' },
+  { value: 26, label: '超大', icon: 'ph:text-aa-fill' },
+]
 
 // ========== 单词点击 ==========
 function handleWordClick(wordData, event) {
@@ -567,6 +644,17 @@ function handleCultureClick(data, event) {
   culturePopover.position = { x: left, y: top }
   culturePopover.visible = true
   wordPopover.visible = false
+}
+
+// ========== 移动端：文化面板内单词点击 → 使用底部查词弹窗 ==========
+function handleCulturePanelWordClick(wordData) {
+  showAIDetail.value = false
+  aiDetailWord.value = ''
+  wordPopover.word = { word: wordData.word, results: [] }
+  wordPopover.loading = true
+  wordPopover.visible = true
+  culturePopover.visible = false
+  lookupWordForPopover(wordData.word)
 }
 
 // ========== 段落点击（翻译模式） ==========
@@ -690,6 +778,7 @@ function handleGlobalClick() {
   showToc.value = false
   showSettings.value = false
   showFontPanel.value = false
+  clearTimeout(fontPanelTimer)
 }
 
 // ========== 滚动监听更新进度 ==========
@@ -743,6 +832,7 @@ onMounted(async () => {
   await initArticle(route.query.id)
   document.addEventListener('click', handleGlobalClick)
   window.addEventListener('scroll', handleScroll)
+  window.addEventListener('resize', onResize)
 })
 
 // 监听文章切换（同一路由不同 query 参数）
@@ -756,5 +846,6 @@ onUnmounted(() => {
   resetReadState()
   document.removeEventListener('click', handleGlobalClick)
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('resize', onResize)
 })
 </script>

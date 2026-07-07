@@ -5,7 +5,7 @@
   >
     <!-- 左侧封面图片（文字图片，显示难度类型） -->
     <div
-      class="w-48 h-32 rounded-xl overflow-hidden flex-none relative flex items-center justify-center select-none"
+      class="w-48 h-32 rounded-xl overflow-hidden flex-none relative hidden sm:flex items-center justify-center select-none"
       :class="bgClass"
     >
       <!-- 装饰背景圆 -->

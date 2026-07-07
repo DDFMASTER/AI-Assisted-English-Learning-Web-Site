@@ -5,9 +5,9 @@
   >
     <!-- 背景虚化装饰 -->
     <div class="absolute inset-0 backdrop-blur-[60px] bg-white/10"></div>
-    <div class="absolute top-1/4 -left-20 w-72 h-72 rounded-full opacity-20" :style="{ background: gradient.from }"></div>
-    <div class="absolute bottom-1/3 -right-20 w-96 h-96 rounded-full opacity-20" :style="{ background: gradient.to }"></div>
-    <div class="absolute top-10 right-1/4 w-48 h-48 rounded-full opacity-10 bg-white"></div>
+    <div class="absolute top-1/4 -left-20 w-72 h-72 rounded-full opacity-20 hidden sm:block" :style="{ background: gradient.from }"></div>
+    <div class="absolute bottom-1/3 -right-20 w-96 h-96 rounded-full opacity-20 hidden sm:block" :style="{ background: gradient.to }"></div>
+    <div class="absolute top-10 right-1/4 w-48 h-48 rounded-full opacity-10 bg-white hidden sm:block"></div>
 
     <!-- 左上 Logo -->
     <div class="absolute top-8 left-8 z-20 flex items-center gap-2">
@@ -19,7 +19,7 @@
 
     <!-- 中央卡片 -->
     <div class="relative z-10 w-full max-w-md mx-4">
-      <div class="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-8">
+      <div class="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-8 mx-4 max-w-[95vw] sm:max-w-sm">
         <!-- 标题 -->
         <div class="text-center mb-8">
           <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" :style="{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }">
