@@ -34,6 +34,15 @@ public class VocabTestCardService {
     /** 单次 AI 批量生成的词数上限 */
     private static final int BATCH_SIZE = 10;
 
+    /** 复习生词 AI 提示词 */
+    private static final String VOCAB_REVIEW_PROMPT;
+
+    static {
+        String loaded = null;
+        try { loaded = ConfigUtil.readResourceText("prompts/vocab-review.txt"); } catch (Exception ignored) {}
+        VOCAB_REVIEW_PROMPT = loaded;
+    }
+
     /** AI 选项缓存：wordLower → CachedOptions */
     private static final Map<String, CachedOptions> optionCache = new ConcurrentHashMap<>();
 
@@ -99,7 +108,7 @@ public class VocabTestCardService {
             CachedOptions cached = optionCache.get(key);
             if (cached != null) {
                 results.add(new WordOptions(cw.vocabId, cw.word, cw.isPseudo,
-                        cached.options, cached.correctIndex));
+                        new ArrayList<>(cached.options), cached.correctIndex));
             } else {
                 needAI.add(cw);
             }
@@ -114,6 +123,55 @@ public class VocabTestCardService {
         }
 
         return results;
+    }
+
+    /**
+     * 为复习生词生成选项（使用复习专用提示词，干扰项更具迷惑性）。
+     */
+    public List<WordOptions> generateReviewOptions(List<CardWord> batch) {
+        List<CardWord> needAI = new ArrayList<>();
+        List<WordOptions> results = new ArrayList<>();
+
+        for (CardWord cw : batch) {
+            String key = cw.word.toLowerCase();
+            CachedOptions cached = optionCache.get(key);
+            if (cached != null) {
+                // 缓存中已是 shuffle 后的顺序，直接使用
+                results.add(new WordOptions(cw.vocabId, cw.word, cw.isPseudo,
+                        new ArrayList<>(cached.options), cached.correctIndex));
+            } else {
+                needAI.add(cw);
+            }
+        }
+
+        if (!needAI.isEmpty()) {
+            List<WordOptions> aiResults = callAIForReviewOptions(needAI);
+            // 对 AI 新生成的选项进行 shuffle，然后缓存 shuffle 后的版本
+            shuffleWordOptions(aiResults);
+            for (WordOptions wo : aiResults) {
+                optionCache.put(wo.word.toLowerCase(),
+                        new CachedOptions(new ArrayList<>(wo.options), wo.correctIndex));
+            }
+            results.addAll(aiResults);
+        }
+
+        return results;
+    }
+
+    /** 将真词选项随机打乱，避免正确答案总是在固定位置 */
+    private void shuffleWordOptions(List<WordOptions> results) {
+        Random rand = new Random();
+        for (WordOptions wo : results) {
+            if (!wo.isPseudo && wo.correctIndex >= 0 && wo.correctIndex < wo.options.size()) {
+                String correct = wo.options.get(wo.correctIndex);
+                List<String> shuffled = new ArrayList<>(wo.options);
+                java.util.Collections.shuffle(shuffled, rand);
+                int newIdx = shuffled.indexOf(correct);
+                wo.options.clear();
+                wo.options.addAll(shuffled);
+                wo.correctIndex = newIdx;
+            }
+        }
     }
 
     /**
@@ -524,5 +582,109 @@ public class VocabTestCardService {
             this.cefrLabel = cefrLabel;
             this.honestyPercent = honestyPercent;
         }
+    }
+
+    /** 调用 AI 为复习生词生成选项（使用复习专用提示词） */
+    private List<WordOptions> callAIForReviewOptions(List<CardWord> batch) {
+        List<WordOptions> results = new ArrayList<>();
+
+        try {
+            String prompt = buildReviewPrompt(batch);
+            String requestBody = "{"
+                    + "\"model\":\"" + AI_MODEL + "\","
+                    + "\"messages\":["
+                    + "{\"role\":\"system\",\"content\":\"你是一个英语词汇复习助手。严格只输出 JSON。\"},"
+                    + "{\"role\":\"user\",\"content\":\"" + escapeJson(prompt) + "\"}"
+                    + "],"
+                    + "\"response_format\":{\"type\":\"json_object\"},"
+                    + "\"temperature\":0.7"
+                    + "}";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(AI_URL))
+                    .header("Authorization", "Bearer " + AI_KEY)
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(30))
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                String body = response.body();
+                String content = extractContent(body);
+                if (content != null) {
+                    List<WordOptions> parsed = parseBatchResult(content, batch);
+                    for (WordOptions wo : parsed) {
+                        if (wo.options != null && !wo.options.isEmpty()) {
+                            boolean allNonEmpty = true;
+                            for (String opt : wo.options) {
+                                if (opt == null || opt.trim().isEmpty()) {
+                                    allNonEmpty = false;
+                                    break;
+                                }
+                            }
+                            if (allNonEmpty) {
+                                results.add(wo);
+                            }
+                        }
+                    }
+                }
+            } else {
+                System.err.println("[VocabTestCard] 复习 AI 返回错误: " + response.statusCode());
+            }
+        } catch (Exception e) {
+            System.err.println("[VocabTestCard] 复习 AI 调用失败: " + e.getMessage());
+        }
+
+        // fallback
+        Set<Integer> doneIds = new HashSet<>();
+        for (WordOptions wo : results) doneIds.add(wo.vocabId);
+        for (CardWord cw : batch) {
+            if (!doneIds.contains(cw.vocabId)) {
+                results.add(fallbackOptions(cw));
+            }
+        }
+
+        return results;
+    }
+
+    /** 构建复习生词 AI 提示词 */
+    private String buildReviewPrompt(List<CardWord> batch) {
+        StringBuilder sb = new StringBuilder();
+
+        if (VOCAB_REVIEW_PROMPT != null) {
+            sb.append(VOCAB_REVIEW_PROMPT).append("\n\n");
+        } else {
+            // fallback 提示词
+            sb.append("为以下英语单词生成中文释义选项，用于帮助用户复习和巩固词汇记忆。\n\n");
+            sb.append("要求：\n");
+            sb.append("1. 每个单词生成 4 个中文释义，其中 1 个正确，3 个错误\n");
+            sb.append("2. 错误释义应与正确释义属于相近语义领域，具有一定迷惑性\n");
+            sb.append("3. 正确释义随机分布于 4 个位置\n");
+            sb.append("4. 每个释义 2-12 个汉字，语言简洁自然\n\n");
+        }
+
+        // 追加具体单词列表
+        sb.append("单词列表：\n");
+        for (int i = 0; i < batch.size(); i++) {
+            CardWord cw = batch.get(i);
+            sb.append("单词").append(i + 1).append(": \"").append(cw.word).append("\"\n");
+        }
+
+        sb.append("\n请严格以如下 JSON 格式输出：\n");
+        sb.append("{\n");
+        sb.append("  \"words\": [\n");
+        sb.append("    {\n");
+        sb.append("      \"index\": 1,\n");
+        sb.append("      \"options\": [\"释义1\", \"释义2\", \"释义3\", \"释义4\"],\n");
+        sb.append("      \"correctIndex\": 2\n");
+        sb.append("    }\n");
+        sb.append("  ]\n");
+        sb.append("}\n");
+        sb.append("注意：correctIndex 是 0-3 的整数，指向 options 中正确释义的位置（需随机分布）。");
+
+        return sb.toString();
     }
 }

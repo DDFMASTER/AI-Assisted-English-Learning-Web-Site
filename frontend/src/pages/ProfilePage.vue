@@ -75,6 +75,11 @@
             <div class="text-xl font-bold text-[#F59E0B]">{{ totalXp }}</div>
             <div class="text-[10px] text-gray-400">总经验 XP</div>
           </div>
+          <div class="w-px h-8 bg-gray-100"></div>
+          <div class="text-center">
+            <div class="text-xl font-bold text-[#2563EB]">{{ formattedLiteracy }}</div>
+            <div class="text-[10px] text-gray-400">{{ literacyLabel }}</div>
+          </div>
           <div class="w-px h-10 bg-gray-100"></div>
           <button
             class="flex flex-col items-center justify-center px-4 py-1 rounded-xl transition-all w-full lg:w-auto"
@@ -167,9 +172,6 @@
       <Transition name="drawer">
         <!-- 学习趋势 -->
         <div v-if="activeDrawer === 'trend'" key="trend" class="card drawer-card relative">
-          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
-            <Icon icon="ph:x-bold" class="text-gray-500" />
-          </button>
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold">📊 每日在线时长</h3>
             <div class="flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-xl">
@@ -182,9 +184,6 @@
 
         <!-- 学习记录 -->
         <div v-else-if="activeDrawer === 'records'" key="records" class="card drawer-card relative">
-          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
-            <Icon icon="ph:x-bold" class="text-gray-500" />
-          </button>
           <h3 class="text-lg font-bold mb-6">📖 学习记录</h3>
           <div v-if="historyRecords.length === 0" class="text-center py-12 text-gray-400">
             <Icon icon="ph:book-open-bold" class="text-3xl mx-auto mb-3 opacity-30" />
@@ -219,12 +218,20 @@
 
         <!-- 生词本 -->
         <div v-else-if="activeDrawer === 'vocab'" key="vocab" class="card drawer-card relative">
-          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
-            <Icon icon="ph:x-bold" class="text-gray-500" />
-          </button>
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold">📝 生词本</h3>
-            <span class="text-xs text-gray-400">{{ vocabWords.length }} 个单词</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-400">{{ vocabWords.length }} 个单词</span>
+              <button
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all"
+                :class="vocabWords.length >= 10
+                  ? 'bg-[#2563EB] text-white hover:bg-blue-600'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'"
+                @click="handleVocabReviewClick"
+              >
+                复习生词
+              </button>
+            </div>
           </div>
           <div v-if="vocabWords.length === 0" class="text-center py-12 text-gray-400">
             <Icon icon="ph:bookmark-simple-bold" class="text-3xl mx-auto mb-3 opacity-30" />
@@ -232,7 +239,7 @@
             <p class="text-xs mt-1">在阅读时点击单词卡片右上角的 <span class="text-[#2563EB] font-bold">+</span> 即可收藏</p>
           </div>
           <div v-else class="max-h-96 overflow-y-auto">
-            <div class="grid grid-cols-4 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div
                 v-for="item in vocabWords"
                 :key="item.wordLower"
@@ -259,167 +266,198 @@
 
         <!-- 错题本 -->
         <div v-else-if="activeDrawer === 'wrongbook'" key="wrongbook" class="card drawer-card relative">
-          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
-            <Icon icon="ph:x-bold" class="text-gray-500" />
-          </button>
-          <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold">📋 错题本</h3>
-            <span class="text-xs text-gray-400">{{ wrongQuestions.length }} 道错题</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-400">{{ wrongQuestions.length }} 道错题</span>
+              <!-- 导出下拉按钮 -->
+              <div class="relative" v-if="wrongQuestions.length > 0">
+                <button
+                  class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                  @click.stop="showExportMenu = !showExportMenu"
+                >
+                  <Icon icon="ph:export-bold" class="text-sm" />
+                  <span class="hidden sm:inline">导出</span>
+                  <Icon :icon="showExportMenu ? 'ph:caret-up-bold' : 'ph:caret-down-bold'" class="text-[10px]" />
+                </button>
+                <!-- 下拉菜单 -->
+                <div
+                  v-if="showExportMenu"
+                  class="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-1 z-50"
+                  @click.stop
+                >
+                  <button
+                    class="w-full text-left px-4 py-2.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center gap-2"
+                    @click="handleExportEWB"
+                  >
+                    <Icon icon="ph:device-mobile-bold" class="text-sm text-blue-500" />
+                    将错题迁移至其他设备
+                  </button>
+                  <button
+                    class="w-full text-left px-4 py-2.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center gap-2"
+                    @click="handleExportJSON"
+                  >
+                    <Icon icon="ph:file-text-bold" class="text-sm text-green-500" />
+                    导出为可编辑文件
+                  </button>
+                  <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                  <button
+                    class="w-full text-left px-4 py-2.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center gap-2"
+                    @click="triggerImportFile"
+                  >
+                    <Icon icon="ph:upload-bold" class="text-sm text-amber-500" />
+                    从其他设备导入错题
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- 隐藏的文件导入 input -->
+          <input
+            ref="importFileInput"
+            type="file"
+            accept=".ewb"
+            class="hidden"
+            @change="handleImportFile"
+          />
+
+          <!-- 导入结果提示 -->
+          <div
+            v-if="importToast.show"
+            class="mb-4 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2"
+            :class="importToast.success
+              ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-700'
+              : 'bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 border border-red-200 dark:border-red-700'"
+          >
+            <Icon :icon="importToast.success ? 'ph:check-circle-bold' : 'ph:warning-circle-bold'" class="text-sm" />
+            {{ importToast.message }}
+            <button class="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" @click="importToast.show = false">
+              <Icon icon="ph:x-bold" class="text-[10px]" />
+            </button>
+          </div>
+
           <div v-if="wrongQuestions.length === 0" class="text-center py-12 text-gray-400">
             <Icon icon="ph:clipboard-text-bold" class="text-3xl mx-auto mb-3 opacity-30" />
             <p class="text-sm">暂无错题</p>
             <p class="text-xs mt-1">在测评结果页点击题目旁的 <span class="text-[#2563EB] font-bold">+</span> 即可加入错题本</p>
           </div>
           <div v-else>
-            <!-- 分页进度条 -->
-            <div class="flex items-center justify-center gap-2 mb-6">
-              <button
-                class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all hover:scale-110 flex-none"
-                :class="wrongBookIndex > 0
-                  ? 'bg-white border border-gray-200 text-gray-500 hover:border-[#2563EB] hover:text-[#2563EB] cursor-pointer'
-                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'"
-                :disabled="wrongBookIndex === 0"
-                @click="wrongBookIndex--"
-              >
-                <Icon icon="ph:caret-left-bold" class="text-sm" />
-              </button>
-
-              <div class="flex items-center gap-1.5 overflow-x-auto py-1 px-2">
-                <button
-                  v-for="(q, idx) in wrongQuestions"
-                  :key="q.id"
-                  class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-none"
-                  :class="idx === wrongBookIndex
-                    ? 'bg-[#2563EB] text-white shadow-md shadow-blue-200 scale-110'
-                    : 'bg-red-50 text-red-600 border border-red-200 cursor-pointer hover:scale-105'"
-                  @click="wrongBookIndex = idx"
-                >
-                  {{ idx + 1 }}
-                </button>
-              </div>
-
-              <button
-                class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all hover:scale-110 flex-none"
-                :class="wrongBookIndex < wrongQuestions.length - 1
-                  ? 'bg-white border border-gray-200 text-gray-500 hover:border-[#2563EB] hover:text-[#2563EB] cursor-pointer'
-                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'"
-                :disabled="wrongBookIndex === wrongQuestions.length - 1"
-                @click="wrongBookIndex++"
-              >
-                <Icon icon="ph:caret-right-bold" class="text-sm" />
-              </button>
-            </div>
-
-            <!-- 当前错题卡片 -->
-            <div class="card border-l-4 border-l-red-400 bg-white" :key="'wb-' + wrongBookIndex">
-              <!-- 题号 -->
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-3">
-                  <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-red-50 text-red-600">
-                    {{ currentWrongQuestion.questionId }}
-                  </span>
-                  <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                    错题 {{ wrongBookIndex + 1 }} / {{ wrongQuestions.length }}
-                  </span>
-                </div>
-                <button
-                  class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
-                  @click="removeWrongQuestion(currentWrongQuestion.id)"
-                  title="移出错题本"
-                >
-                  <Icon icon="ph:trash-bold" class="text-sm" />
-                  移除
-                </button>
-              </div>
-
-              <!-- 阅读文本 -->
-              <div v-if="currentWrongQuestion.passage" class="mb-4 p-4 bg-gray-50 rounded-xl">
-                <p class="text-sm text-gray-500 leading-relaxed">{{ currentWrongQuestion.passage }}</p>
-              </div>
-
-              <!-- 问题 -->
-              <p class="font-bold text-lg mb-4">{{ currentWrongQuestion.question }}</p>
-
-              <!-- 选项 -->
-              <div class="space-y-3 mb-4">
-                <div
-                  v-for="opt in currentWrongQuestion.options"
-                  :key="opt.id"
-                  class="flex items-center gap-3 p-3 rounded-xl text-sm"
-                  :class="getWrongOptClass(opt.id, currentWrongQuestion)"
-                >
-                  <div
-                    class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-none"
-                    :class="getWrongOptDotClass(opt.id, currentWrongQuestion)"
+            <!-- 桌面端：双栏布局（左侧索引列表 + 右侧题目卡片） -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+              <!-- 左侧：快捷索引列表（仅桌面端可见） -->
+              <div class="hidden lg:block lg:col-span-4 xl:col-span-3">
+                <div class="space-y-0.5 max-h-[480px] overflow-y-auto pr-1 rounded-lg">
+                  <button
+                    v-for="(q, idx) in wrongQuestions"
+                    :key="q.id"
+                    class="w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center gap-2.5 group"
+                    :class="idx === wrongBookIndex
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+                    @click="wrongBookIndex = idx"
                   >
-                    {{ opt.id }}
-                  </div>
-                  <span class="font-medium">{{ opt.text }}</span>
-                  <span v-if="opt.id === currentWrongQuestion.correctAnswer" class="ml-auto text-xs font-bold text-green-600">
-                    ✓ 正确答案
-                  </span>
-                  <span v-else-if="opt.id === currentWrongQuestion.userAnswer" class="ml-auto text-xs font-bold text-red-500">
-                    ✗ 你的答案
-                  </span>
+                    <span class="text-xs font-bold w-7 text-right flex-none"
+                      :class="idx === wrongBookIndex ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'"
+                    >#{{ wrongQuestions.length - idx }}</span>
+                    <span class="truncate text-xs leading-relaxed">{{ q.question }}</span>
+                  </button>
                 </div>
               </div>
 
-              <!-- 解析 -->
-              <div class="p-4 rounded-xl bg-amber-50 border border-amber-100">
-                <div class="flex items-start gap-2">
-                  <Icon icon="ph:info-fill" class="text-lg flex-none mt-0.5 text-amber-500" />
-                  <div>
-                    <p class="text-xs font-bold mb-1 text-amber-700">错题解析</p>
-                    <p class="text-sm leading-relaxed text-amber-800">{{ currentWrongQuestion.explanation || '暂无解析' }}</p>
+              <!-- 右侧：移动端下拉按钮 + 题目卡片 -->
+              <div class="lg:col-span-8 xl:col-span-9 min-w-0">
+                <!-- 移动端：下拉选择按钮 -->
+                <button
+                  class="lg:hidden flex items-center justify-between w-full px-4 py-2.5 mb-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 transition-all hover:border-[#2563EB] dark:hover:border-blue-500"
+                  @click="showWrongBookIndexOverlay = !showWrongBookIndexOverlay"
+                >
+                  <span>第 {{ wrongQuestions.length - wrongBookIndex }} / {{ wrongQuestions.length }} 题</span>
+                  <Icon icon="ph:caret-down-bold" class="text-sm transition-transform duration-200" :class="{ 'rotate-180': showWrongBookIndexOverlay }" />
+                </button>
+
+                <!-- 当前错题卡片 -->
+                <div class="card border-l-4 border-l-red-400 bg-white dark:bg-gray-800" :key="'wb-' + wrongBookIndex">
+                  <!-- 题号 -->
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                      <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                        #{{ wrongQuestions.length - wrongBookIndex }}
+                      </span>
+                      <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                        错题 {{ wrongQuestions.length - wrongBookIndex }} / {{ wrongQuestions.length }}
+                      </span>
+                    </div>
+                    <button
+                      class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all"
+                      @click="promptDeleteWrongQuestion(currentWrongQuestion.id)"
+                      title="移出错题本"
+                    >
+                      <Icon icon="ph:trash-bold" class="text-sm" />
+                      移除
+                    </button>
+                  </div>
+
+                  <!-- 加入时间 -->
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mb-4">
+                    于 {{ formatAddedAt(currentWrongQuestion.addedAt) }} 加入
+                  </p>
+
+                  <!-- 阅读文本 -->
+                  <div v-if="currentWrongQuestion.passage" class="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{{ currentWrongQuestion.passage }}</p>
+                  </div>
+
+                  <!-- 问题 -->
+                  <p class="font-bold text-lg mb-4 text-gray-800 dark:text-gray-200">{{ currentWrongQuestion.question }}</p>
+
+                  <!-- 选项 -->
+                  <div class="space-y-3 mb-4">
+                    <div
+                      v-for="opt in currentWrongQuestion.options"
+                      :key="opt.id"
+                      class="flex items-center gap-3 p-3 rounded-xl text-sm"
+                      :class="getWrongOptClass(opt.id, currentWrongQuestion)"
+                    >
+                      <div
+                        class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-none"
+                        :class="getWrongOptDotClass(opt.id, currentWrongQuestion)"
+                      >
+                        {{ opt.id }}
+                      </div>
+                      <span class="font-medium">{{ opt.text }}</span>
+                      <span v-if="opt.id === currentWrongQuestion.correctAnswer" class="ml-auto text-xs font-bold text-green-600 dark:text-green-400">
+                        ✓ 正确答案
+                      </span>
+                      <span v-else-if="opt.id === currentWrongQuestion.userAnswer" class="ml-auto text-xs font-bold text-red-500 dark:text-red-400">
+                        ✗ 你的答案
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- 解析 -->
+                  <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800">
+                    <div class="flex items-start gap-2">
+                      <Icon icon="ph:info-fill" class="text-lg flex-none mt-0.5 text-amber-500 dark:text-amber-400" />
+                      <div>
+                        <p class="text-xs font-bold mb-1 text-amber-700 dark:text-amber-300">错题解析</p>
+                        <p class="text-sm leading-relaxed text-amber-800 dark:text-amber-200">{{ currentWrongQuestion.explanation || '暂无解析' }}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-
-            <!-- 底部翻页 -->
-            <div class="flex items-center justify-between mt-6">
-              <button
-                class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
-                :class="wrongBookIndex > 0
-                  ? 'bg-white border border-gray-200 text-gray-600 hover:border-[#2563EB] hover:text-[#2563EB]'
-                  : 'bg-gray-50 text-gray-300 cursor-not-allowed'"
-                :disabled="wrongBookIndex === 0"
-                @click="wrongBookIndex--"
-              >
-                <Icon icon="ph:arrow-left-bold" class="text-base" />
-                上一题
-              </button>
-
-              <span class="text-sm text-gray-400 font-medium">
-                {{ wrongBookIndex + 1 }} / {{ wrongQuestions.length }}
-              </span>
-
-              <button
-                class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
-                :class="wrongBookIndex < wrongQuestions.length - 1
-                  ? 'bg-[#2563EB] text-white hover:bg-blue-600'
-                  : 'bg-gray-50 text-gray-300 cursor-not-allowed'"
-                :disabled="wrongBookIndex === wrongQuestions.length - 1"
-                @click="wrongBookIndex++"
-              >
-                下一题
-                <Icon icon="ph:arrow-right-bold" class="text-base" />
-              </button>
             </div>
 
             <!-- 键盘提示 -->
-            <p class="text-center text-xs text-gray-300 mt-4">
-              使用 ← → 方向键或点击题号快速切换题目
+            <p class="text-center text-xs text-gray-300 dark:text-gray-600 mt-4">
+              使用 ← → 方向键切换题目，点击左侧列表快速定位
             </p>
           </div>
         </div>
 
         <!-- 收藏夹 -->
         <div v-else-if="activeDrawer === 'favorites'" key="favorites" class="card drawer-card relative">
-          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
-            <Icon icon="ph:x-bold" class="text-gray-500" />
-          </button>
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold">📌 收藏夹</h3>
             <span class="text-xs text-gray-400">{{ favoriteArticles.length }} 篇文章</span>
@@ -468,9 +506,6 @@
 
         <!-- 设置 -->
         <div v-else-if="activeDrawer === 'settings'" key="settings" class="card drawer-card relative">
-          <button class="lg:hidden absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" @click="activeDrawer = null">
-            <Icon icon="ph:x-bold" class="text-gray-500" />
-          </button>
           <h3 class="text-lg font-bold mb-6">⚙️ 设置</h3>
           <div class="space-y-1">
             <!-- 学习目标时长 -->
@@ -569,8 +604,65 @@
       </div>
     </Teleport>
 
-    <!-- 词汇量测试弹窗 -->
-    <VocabTestModel :visible="showVocabTest" @close="showVocabTest = false" />
+    <!-- 词汇量测试弹窗（精确版） -->
+    <VocabTestModel :visible="showVocabTest" @close="onVocabTestClose" />
+
+    <!-- 词汇量测试弹窗（快速版） -->
+    <FirstVocabTestModal
+      :visible="showQuickVocabTest"
+      @done="onQuickVocabTestDone"
+      @close="showQuickVocabTest = false"
+      @skip="showQuickVocabTest = false"
+    />
+
+    <!-- 复习生词弹窗 -->
+    <VocabReviewModal
+      :visible="showVocabReview"
+      :words="vocabWords"
+      @close="showVocabReview = false"
+    />
+
+    <!-- 词汇量测试选择弹窗 -->
+    <Teleport to="body">
+      <div
+        v-if="showVocabTestChoice"
+        class="fixed inset-0 z-[250] flex items-end lg:items-center justify-center"
+        @click.self="showVocabTestChoice = false"
+      >
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-t-2xl lg:rounded-2xl shadow-2xl w-full lg:max-w-sm p-6 z-10 lg:mx-4">
+          <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">选择测试模式</h3>
+          <div class="space-y-3">
+            <button
+              class="w-full text-left p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-[#2563EB] dark:hover:border-blue-500 transition-all group"
+              @click="startQuickTest"
+            >
+              <div class="flex items-center gap-2 mb-1">
+                <Icon icon="ph:lightning-bold" class="text-lg text-amber-500" />
+                <span class="font-bold text-gray-700 dark:text-gray-200">快速测试</span>
+              </div>
+              <p class="text-xs text-gray-400 pl-7">勾选认识/不认识 · 约 5 分钟</p>
+            </button>
+            <button
+              class="w-full text-left p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-[#2563EB] dark:hover:border-blue-500 transition-all group"
+              @click="startPreciseTest"
+            >
+              <div class="flex items-center gap-2 mb-1">
+                <Icon icon="ph:target-bold" class="text-lg text-green-500" />
+                <span class="font-bold text-gray-700 dark:text-gray-200">精确测试</span>
+              </div>
+              <p class="text-xs text-gray-400 pl-7">四选一 + 认识/不认识 · 约 10 分钟</p>
+            </button>
+          </div>
+          <button
+            class="mt-4 w-full py-2.5 rounded-xl text-xs font-medium text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+            @click="showVocabTestChoice = false"
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- VIP 兑换弹窗 -->
     <Teleport to="body">
@@ -633,6 +725,78 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- 错题本移动端索引覆盖层 -->
+    <Teleport to="body">
+      <Transition name="sheet">
+        <div
+          v-if="showWrongBookIndexOverlay"
+          class="fixed inset-0 z-[250] flex items-end lg:hidden"
+          @click.self="showWrongBookIndexOverlay = false"
+        >
+          <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showWrongBookIndexOverlay = false"></div>
+          <div class="relative bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl w-full max-h-[65vh] overflow-y-auto p-5 z-10">
+            <div class="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-4"></div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400">选择错题（共 {{ wrongQuestions.length }} 道）</h3>
+              <button class="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center" @click="showWrongBookIndexOverlay = false">
+                <Icon icon="ph:x-bold" class="text-xs text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            <div class="space-y-0.5">
+              <button
+                v-for="(q, idx) in wrongQuestions"
+                :key="q.id"
+                class="w-full text-left px-3 py-3 rounded-lg transition-all flex items-center gap-3"
+                :class="idx === wrongBookIndex
+                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                @click="wrongBookIndex = idx; showWrongBookIndexOverlay = false"
+              >
+                <span class="text-xs font-bold w-8 text-right flex-none"
+                  :class="idx === wrongBookIndex ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'"
+                >#{{ wrongQuestions.length - idx }}</span>
+                <span class="text-sm truncate">{{ q.question }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- 错题本删除确认弹窗 -->
+    <Teleport to="body">
+      <div
+        v-if="showDeleteConfirm"
+        class="fixed inset-0 z-[250] flex items-center justify-center"
+        @click.self="showDeleteConfirm = false"
+      >
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-8 z-10 text-center mx-4">
+          <div class="w-14 h-14 bg-red-50 dark:bg-red-900/30 text-red-400 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <Icon icon="ph:warning-bold" class="text-3xl" />
+          </div>
+          <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">确认删除</h3>
+          <p class="text-sm text-gray-400 dark:text-gray-400 mb-6">
+            该题目将被永久删除，请确认操作。
+          </p>
+          <div class="flex gap-3">
+            <button
+              class="flex-1 h-11 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+              @click="showDeleteConfirm = false"
+            >
+              取消
+            </button>
+            <button
+              class="flex-1 h-11 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 transition-all"
+              @click="executeDeleteWrongQuestion"
+            >
+              确认删除
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </main>
 </template>
 
@@ -647,6 +811,8 @@ import { getRecentOnlineTime, getTodayMinutes, getDailyTarget, setDailyTarget, g
 import { getRecentHistory, countHistory } from '@/utils/historyDB'
 import request from '@/utils/request'
 import VocabTestModel from '@/components/VocabTestModel.vue'
+import FirstVocabTestModal from '@/components/FirstVocabTestModal.vue'
+import VocabReviewModal from '@/components/VocabReviewModal.vue'
 import { AVATAR_LIST, AVATAR_BASE_URL, getAvatarSrc } from '@/constants/avatars.js'
 const gggAudioModules = import.meta.glob('../ggg/*.mp3', { eager: true })
 const gggAudioFiles = Object.values(gggAudioModules).map(m => m.default)
@@ -781,6 +947,22 @@ const drawerTabs = [
 ]
 const activeDrawer = ref('trend')
 const showVocabTest = ref(false)
+const showQuickVocabTest = ref(false)
+const showVocabTestChoice = ref(false)
+
+// ========== 词汇量显示 ==========
+const literacyLabel = computed(() => {
+  const lit = userStore.user?.literacy
+  if (!lit) return '词汇量 未测试'
+  const level = literacyToLevel(lit)
+  return level ? `词汇量 ${level}` : `词汇量 ${lit}`
+})
+
+const formattedLiteracy = computed(() => {
+  const lit = userStore.user?.literacy
+  if (!lit) return '--'
+  return String(lit)
+})
 
 // ========== VIP 兑换 ==========
 const showVipExchange = ref(false)
@@ -900,19 +1082,52 @@ async function doVipExchange() {
 }
 
 function toggleDrawer(key) {
-  // 词汇量测试：打开弹窗而非抽屉
+  // 词汇量测试：弹出测试模式选择
   if (key === 'vocabtest') {
-    showVocabTest.value = true
+    showVocabTestChoice.value = true
     return
   }
   // 点击已打开的便签 → 关闭；点击其他便签 → 切换
   activeDrawer.value = activeDrawer.value === key ? null : key
 }
 
+/** 开始快速词汇量测试 */
+function startQuickTest() {
+  showVocabTestChoice.value = false
+  showQuickVocabTest.value = true
+}
+
+/** 开始精确词汇量测试 */
+function startPreciseTest() {
+  showVocabTestChoice.value = false
+  showVocabTest.value = true
+}
+
+/** 快速测试完成 */
+async function onQuickVocabTestDone() {
+  showQuickVocabTest.value = false
+  await userStore.fetchProfile()
+}
+
+/** 精确测试关闭 */
+async function onVocabTestClose() {
+  showVocabTest.value = false
+  await userStore.fetchProfile()
+}
+
 // ========== 生词本 ==========
 const vocabWords = ref([])
+const showVocabReview = ref(false)
 let vocabTimer = null
 const VOCAB_REVIEW_SECONDS = 30  // 停留 30 秒视为完成复习任务
+
+function handleVocabReviewClick() {
+  if (vocabWords.value.length >= 10) {
+    showVocabReview.value = true
+  } else {
+    showToast('当前单词少于 10 个，快去认识新词吧！')
+  }
+}
 
 // ========== 收藏夹 ==========
 const favoriteArticles = ref([])
@@ -1006,6 +1221,12 @@ function formatAddedTime(timestamp) {
 // ========== 错题本 ==========
 const wrongQuestions = ref([])
 const wrongBookIndex = ref(0)
+const showDeleteConfirm = ref(false)
+const pendingDeleteId = ref(null)
+const showWrongBookIndexOverlay = ref(false)
+const showExportMenu = ref(false)
+const importFileInput = ref(null)
+const importToast = ref({ show: false, success: true, message: '' })
 
 const currentWrongQuestion = computed(() =>
   wrongQuestions.value[wrongBookIndex.value] || {}
@@ -1024,7 +1245,18 @@ async function loadWrongQuestions() {
   }
 }
 
-async function removeWrongQuestion(id) {
+/** 点击删除按钮 → 弹出确认框 */
+function promptDeleteWrongQuestion(id) {
+  pendingDeleteId.value = id
+  showDeleteConfirm.value = true
+}
+
+/** 确认删除 → 执行实际删除 */
+async function executeDeleteWrongQuestion() {
+  const id = pendingDeleteId.value
+  showDeleteConfirm.value = false
+  pendingDeleteId.value = null
+  if (id == null) return
   try {
     const { removeFromWrongBook } = await import('@/utils/wrongBookDB')
     await removeFromWrongBook(id)
@@ -1036,6 +1268,89 @@ async function removeWrongQuestion(id) {
   } catch (e) {
     console.error('移出错题失败:', e)
   }
+}
+
+// ========== 错题本导出/导入 ==========
+
+/** 导出为设备迁移文件 (.ewb) */
+async function handleExportEWB() {
+  showExportMenu.value = false
+  const { exportToEWB } = await import('@/utils/wrongBookExport')
+  exportToEWB(wrongQuestions.value)
+}
+
+/** 导出为可编辑 JSON 文件 */
+async function handleExportJSON() {
+  showExportMenu.value = false
+  const { exportToJSON } = await import('@/utils/wrongBookExport')
+  exportToJSON(wrongQuestions.value)
+}
+
+/** 触发文件选择器 */
+function triggerImportFile() {
+  showExportMenu.value = false
+  if (importFileInput.value) {
+    importFileInput.value.value = ''
+    importFileInput.value.click()
+  }
+}
+
+/** 处理导入文件 */
+async function handleImportFile(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  const { importFromEWB } = await import('@/utils/wrongBookExport')
+  const result = await importFromEWB(file)
+
+  if (result.success) {
+    const { addToWrongBook } = await import('@/utils/wrongBookDB')
+    let added = 0
+    let skipped = 0
+    for (const q of result.questions) {
+      const res = await addToWrongBook({
+        uuid: q.uuid,
+        passage: q.passage,
+        question: q.question,
+        options: q.options,
+        userAnswer: q.userAnswer,
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation,
+      })
+      if (res.success) added++
+      else if (res.exists) skipped++
+    }
+    await loadWrongQuestions()
+    importToast.value = {
+      show: true,
+      success: true,
+      message: `导入完成：成功 ${added} 道，跳过 ${skipped} 道（已存在）`,
+    }
+  } else {
+    importToast.value = {
+      show: true,
+      success: false,
+      message: result.message || '导入失败',
+    }
+  }
+
+  // 重置 file input 以允许重复导入同一文件
+  event.target.value = ''
+  // 自动隐藏提示
+  setTimeout(() => { importToast.value = { ...importToast.value, show: false } }, 6000)
+}
+
+/** 格式化时间戳为本地日期时间字符串（精确到秒） */
+function formatAddedAt(ts) {
+  if (!ts) return '未知时间'
+  const d = new Date(ts)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const h = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  const s = String(d.getSeconds()).padStart(2, '0')
+  return `${y}-${m}-${day} ${h}:${min}:${s}`
 }
 
 function getWrongOptClass(optionId, item) {
@@ -1237,6 +1552,7 @@ function handleResize() {
 
 function handleGlobalClick() {
   showLogoutConfirm.value = false
+  showExportMenu.value = false
 }
 
 async function loadUserStats() {

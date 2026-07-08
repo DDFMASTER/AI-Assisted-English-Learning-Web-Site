@@ -199,6 +199,7 @@
                 <div class="flex justify-between"><span>🔥 连续学习</span><span class="font-bold">{{ navStreak }} 天</span></div>
                 <div class="flex justify-between"><span>📖 累计阅读</span><span class="font-bold">{{ navTotalRead }} 篇</span></div>
                 <div class="flex justify-between"><span>⭐ 经验值</span><span class="font-bold text-[#F59E0B]">{{ userStore.user?.experience || 0 }} XP</span></div>
+                <div class="flex justify-between"><span>📚 词汇量</span><span class="font-bold text-[#2563EB]">{{ navLiteracy }}</span></div>
               </div>
               <button
                 class="w-full py-2 rounded-lg text-xs font-bold transition-all"
@@ -309,6 +310,11 @@ const themeIcon = computed(() => {
 // 导航栏用户统计
 const navStreak = ref(0)
 const navTotalRead = ref(0)
+const navLiteracy = computed(() => {
+  const lit = userStore.user?.literacy
+  if (!lit) return '--'
+  return String(lit)
+})
 
 async function loadNavStats() {
   try {

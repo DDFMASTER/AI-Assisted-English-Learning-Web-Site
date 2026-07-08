@@ -55,6 +55,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
       const isCorrect = userAnswer === q.correctAnswer
       return {
         id: q.id,
+        questionNumber: q.questionNumber || (questions.value.indexOf(q) + 1),
         passage: q.passage,
         question: q.question,
         options: q.options,
@@ -142,7 +143,8 @@ export const useAssessmentStore = defineStore('assessment', () => {
   /** 将后端题目格式转为前端格式 */
   function transformQuestions(rawQuestions) {
     return rawQuestions.map((q, i) => ({
-      id: i + 1,
+      id: crypto.randomUUID(),    // 全局唯一标识，用于错题本等跨测评去重
+      questionNumber: i + 1,       // 题号（仅用于显示）
       passage: q.passage || '',
       question: q.question || '',
       options: [
@@ -157,6 +159,11 @@ export const useAssessmentStore = defineStore('assessment', () => {
         : q.answer,
       explanation: q.explanation || '',
     }))
+  }
+
+  /** 判断 id 是否为旧版数字 ID（需迁移为 UUID） */
+  function isLegacyNumericId(id) {
+    return typeof id === 'number' || /^\d+$/.test(String(id))
   }
 
   /** 轮询获取后台生成的剩余题目 */
@@ -483,8 +490,30 @@ export const useAssessmentStore = defineStore('assessment', () => {
 
   function restoreProgress(data) {
     questions.value = data.questions || []
+    // 迁移旧版数字 id → UUID（兼容旧进度数据）
+    if (questions.value.length > 0 && isLegacyNumericId(questions.value[0].id)) {
+      questions.value = questions.value.map((q, i) => ({
+        ...q,
+        id: crypto.randomUUID(),
+        questionNumber: typeof q.questionNumber === 'number' ? q.questionNumber : (i + 1),
+      }))
+    }
     currentIndex.value = data.currentIndex || 0
-    answers.value = data.answers || {}
+    // 迁移旧版 answers key（数字 id → UUID）
+    const oldAnswers = data.answers || {}
+    if (Object.keys(oldAnswers).length > 0 && isLegacyNumericId(Object.keys(oldAnswers)[0])) {
+      const migrated = {}
+      const idMap = {}
+      questions.value.forEach(q => { idMap[q.questionNumber] = q.id })
+      Object.entries(oldAnswers).forEach(([key, val]) => {
+        const qNum = parseInt(key, 10)
+        const newId = idMap[qNum]
+        if (newId) migrated[newId] = val
+      })
+      answers.value = migrated
+    } else {
+      answers.value = oldAnswers
+    }
     sessionId.value = data.sessionId || ''
     totalTarget.value = data.totalTarget || 10
     currentScreen.value = 'quiz'

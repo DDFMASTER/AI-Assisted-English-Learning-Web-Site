@@ -51,8 +51,13 @@ public class VocabTestOptionServlet extends HttpServlet {
             return;
         }
 
+        // 判断是否为复习模式
+        boolean isReview = body.contains("\"mode\"") && body.contains("\"review\"");
+
         VocabTestCardService service = new VocabTestCardService();
-        List<WordOptions> results = service.generateOptions(batch);
+        List<WordOptions> results = isReview
+                ? service.generateReviewOptions(batch)
+                : service.generateOptions(batch);
 
         // 构建响应 JSON
         StringBuilder json = new StringBuilder();

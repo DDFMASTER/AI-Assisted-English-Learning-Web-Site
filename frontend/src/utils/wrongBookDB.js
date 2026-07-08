@@ -1,16 +1,17 @@
 /**
  * IndexedDB 错题本存储工具
  *
- * 数据库: AAEL_WrongBookDB
+ * 数据库: AAEL_WrongBookDB (v2)
  * └─ wrongQuestions (key: id — 自增主键)
- *      { id, questionId, passage, question, options, userAnswer, correctAnswer, explanation, addedAt }
+ *      { id, uuid, passage, question, options, userAnswer, correctAnswer, explanation, addedAt }
  *
+ * v1 → v2 迁移：questionId → uuid，旧数据清除（旧 questionId 因跨测评冲突已不可靠）
  * 限制最多 200 道错题。
  */
 
 import { userDBName } from '@/utils/storage'
 
-const DB_VERSION = 1
+const DB_VERSION = 2
 const MAX_QUESTIONS = 200
 
 function openDB() {
@@ -19,13 +20,22 @@ function openDB() {
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result
+
+      // v1 → v2 迁移：删除旧 store（旧 questionId 索引不可靠）
+      if (event.oldVersion < 2) {
+        if (db.objectStoreNames.contains('wrongQuestions')) {
+          db.deleteObjectStore('wrongQuestions')
+        }
+      }
+
+      // 创建新 store：uuid 作为唯一标识
       if (!db.objectStoreNames.contains('wrongQuestions')) {
         const store = db.createObjectStore('wrongQuestions', {
           keyPath: 'id',
           autoIncrement: true,
         })
-        // 按 questionId 建立索引，用于快速判重
-        store.createIndex('questionIdIdx', 'questionId', { unique: true })
+        // 按 uuid 建立唯一索引，用于快速判重
+        store.createIndex('uuidIdx', 'uuid', { unique: true })
       }
     }
 
@@ -39,20 +49,20 @@ function openDB() {
 
 /**
  * 添加题目到错题本
- * @param {{ questionId: number, passage?: string, question: string, options: Array<{id: string, text: string}>, userAnswer?: string, correctAnswer: string, explanation?: string }} questionData
+ * @param {{ uuid: string, passage?: string, question: string, options: Array<{id: string, text: string}>, userAnswer?: string, correctAnswer: string, explanation?: string }} questionData
  * @returns {Promise<{success: boolean, exists?: boolean}>}
  */
 export async function addToWrongBook(questionData) {
-  if (!questionData || questionData.questionId == null) return { success: false }
+  if (!questionData || !questionData.uuid) return { success: false }
 
   const db = await openDB()
 
-  // 检查是否已存在（通过 questionId 索引）
+  // 检查是否已存在（通过 uuid 索引）
   const exists = await new Promise((resolve, reject) => {
     const tx = db.transaction('wrongQuestions', 'readonly')
     const store = tx.objectStore('wrongQuestions')
-    const idx = store.index('questionIdIdx')
-    const getReq = idx.get(questionData.questionId)
+    const idx = store.index('uuidIdx')
+    const getReq = idx.get(questionData.uuid)
     getReq.onsuccess = () => resolve(!!getReq.result)
     getReq.onerror = () => reject(getReq.error)
   })
@@ -67,7 +77,7 @@ export async function addToWrongBook(questionData) {
     const tx = db.transaction('wrongQuestions', 'readwrite')
     const store = tx.objectStore('wrongQuestions')
     const plainData = JSON.parse(JSON.stringify({
-      questionId: questionData.questionId,
+      uuid: questionData.uuid,
       passage: questionData.passage || '',
       question: questionData.question || '',
       options: questionData.options || [],
@@ -90,7 +100,7 @@ export async function addToWrongBook(questionData) {
 
 /**
  * 从错题本移除题目
- * @param {number} id — 错题本内部 id
+ * @param {number} id — 错题本内部自增 id
  */
 export async function removeFromWrongBook(id) {
   if (id == null) return
@@ -109,18 +119,18 @@ export async function removeFromWrongBook(id) {
 
 /**
  * 判断题目是否已在错题本中
- * @param {number} questionId — 原始题号
+ * @param {string} uuid — 题目唯一标识
  * @returns {Promise<boolean>}
  */
-export async function isInWrongBook(questionId) {
-  if (questionId == null) return false
+export async function isInWrongBook(uuid) {
+  if (!uuid) return false
   const db = await openDB()
 
   return new Promise((resolve, reject) => {
     const tx = db.transaction('wrongQuestions', 'readonly')
     const store = tx.objectStore('wrongQuestions')
-    const idx = store.index('questionIdIdx')
-    const getReq = idx.get(questionId)
+    const idx = store.index('uuidIdx')
+    const getReq = idx.get(uuid)
     getReq.onsuccess = () => resolve(!!getReq.result)
     getReq.onerror = () => reject(getReq.error)
     tx.oncomplete = () => db.close()

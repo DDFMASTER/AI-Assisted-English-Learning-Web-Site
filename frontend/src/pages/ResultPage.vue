@@ -147,7 +147,7 @@
             :class="getProgressDotClass(visibleDotStart + idx, item)"
             @click="goToQuestion(visibleDotStart + idx)"
           >
-            {{ item.id }}
+            {{ item.questionNumber }}
           </button>
         </div>
 
@@ -165,7 +165,7 @@
             :class="getProgressDotClass(idx, item)"
             @click="goToQuestion(idx)"
           >
-            {{ item.id }}
+            {{ item.questionNumber }}
           </button>
         </div>
 
@@ -197,10 +197,10 @@
                 ? 'bg-green-50 text-green-600'
                 : 'bg-red-50 text-red-600'"
             >
-              {{ currentItem.id }}
+              {{ currentItem.questionNumber }}
             </span>
             <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">
-              Question {{ currentItem.id }}
+              Question {{ currentItem.questionNumber }}
             </span>
           </div>
           <div class="flex items-center gap-3">
@@ -452,20 +452,20 @@ watch(currentReviewIndex, () => {
   showReviewExplanationZh.value = false
 })
 
-/** 加载已在错题本中的题号 */
+/** 加载已在错题本中的题目 UUID */
 async function loadWrongBookIds() {
   try {
     const { getAllWrongQuestions } = await import('@/utils/wrongBookDB')
     const all = await getAllWrongQuestions()
-    wrongBookIds.value = new Set(all.map(q => q.questionId))
+    wrongBookIds.value = new Set(all.map(q => q.uuid))
   } catch (e) {
     console.error('加载错题本失败:', e)
   }
 }
 
 /** 判断某题是否已在错题本中 */
-function isInWrongBookSet(questionId) {
-  return wrongBookIds.value.has(questionId)
+function isInWrongBookSet(uuid) {
+  return wrongBookIds.value.has(uuid)
 }
 
 /** 将当前题目加入错题本 */
@@ -475,7 +475,7 @@ async function addCurrentToWrongBook() {
   try {
     const { addToWrongBook } = await import('@/utils/wrongBookDB')
     const result = await addToWrongBook({
-      questionId: item.id,
+      uuid: item.id,
       passage: item.passage || '',
       question: item.question || '',
       options: item.options || [],
