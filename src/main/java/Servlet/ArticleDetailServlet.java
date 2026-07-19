@@ -60,7 +60,8 @@ public class ArticleDetailServlet extends HttpServlet {
                         String difficulty = rs.getString("difficulty");
                         int contentLen = content != null ? content.length() : 0;
                         int wordCount = Math.max(1, contentLen / 5);
-                        int readTime = Math.max(1, wordCount / 200);
+                        String studyPurpose = Utils.ReadingTimeUtil.getStudyPurpose(request);
+                        double readTime = Utils.ReadingTimeUtil.calculate(contentLen, difficulty, studyPurpose);
 
                         StringBuilder json = new StringBuilder();
                         json.append("{");

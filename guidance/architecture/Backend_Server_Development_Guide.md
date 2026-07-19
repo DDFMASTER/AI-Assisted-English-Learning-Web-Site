@@ -599,7 +599,7 @@ Utils 层用于存放通用工具类，例如：
 
 ### 10.1 DBUtil 职责
 
-`DBUtil` 负责创建数据库连接。
+`DBUtil` 负责创建数据库连接，底层使用 **HikariCP** 连接池管理连接生命周期，相比传统 JDBC 直连方式具有更好的并发性能和连接复用能力。
 
 示例职责：
 
@@ -967,3 +967,8 @@ Vue dev server → Vite proxy → 本地 Tomcat 8080 → Servlet → Service →
 用户 → Nginx 80/443 → Vue 静态资源
 用户 → Nginx /api → Tomcat 1145 → Servlet → Service → DAO → MySQL
 ```
+
+---
+
+**文档版本**：v1.2  
+**最后更新**：2026-07-19

@@ -40,7 +40,7 @@
 │   │          GameRoomManager (Service)           │             │
 │   │  - createRoom / joinRoom / leaveRoom         │             │
 │   │  - disbandRoom / listPublicRooms             │             │
-│   │  - 过期房间自动清理 (30分钟)                   │             │
+│   │  - 过期房间两级清理 (WAITING 30min/FINISHED 5min) │             │
 │   └──────────────────┬───────────────────────────┘             │
 │                      │                                        │
 │   ┌──────────────────┴───────────────────────────┐             │
@@ -308,17 +308,25 @@ ConcurrentHashMap<String, GameRoom> map =
 - `ConcurrentHashMap` 提供 O(1) 读写，比数据库快几个数量级
 - 应用重启后房间自然清空，符合预期
 
-### 8.2 过期清理机制
+### 8.2 过期清理机制（两级 TTL）
+
+系统采用**两级过期清理策略**，通过 `GameRoomManager.cleanupExpired()` 方法统一处理，在每次 `createRoom` 或 `joinRoom` 时触发：
 
 ```java
 // GameRoomManager.cleanupExpired()
-// 每次 createRoom 或 joinRoom 时触发
-// 清理超过 30 分钟未活动的 WAITING 状态房间
-if (WAITING.equals(room.getStatus())
-    && (now - room.getCreatedAt()) > 30 * 60 * 1000) {
-    it.remove();
-}
+// 两级 TTL：
+
+// 1. WAITING 房间：超过 30 分钟无人加入 → 清理
+private static final long ROOM_TIMEOUT_MS = 30 * 60 * 1000;
+
+// 2. FINISHED 房间：结束后超过 5 分钟 → 清理
+private static final long FINISHED_ROOM_TTL_MS = 5 * 60 * 1000;
 ```
+
+**清理逻辑**：
+- **WAITING 房间**（等待玩家加入）：从房间创建时间 `createdAt` 起算，超过 30 分钟仍未开始对战的房间被移除，防止大量空房间占用内存。
+- **FINISHED 房间**（对战已结束）：调用 `GameRoom.finish()` 时记录 `finishedAt` 时间戳。结束后保留 5 分钟供双方查看结果页，超时后自动移除，既保证用户体验又及时释放资源。
+- `cleanupExpired()` 遍历 `ConcurrentHashMap`，对两类过期房间分别判断并移除，无需额外的定时任务线程。
 
 ---
 
@@ -491,3 +499,8 @@ questionTimer          // 单题倒计时 (1s)
 5. **匹配系统**：当前仅支持手动创建/加入房间。可增加自动匹配功能（类似排位队列）。
 
 6. **更多题型**：当前仅支持"看单词选释义"单选题。可扩展为填空题、听力题、拼写题等。
+
+---
+
+**文档版本**：v1.2  
+**最后更新**：2026-07-19

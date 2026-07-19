@@ -55,4 +55,18 @@ public interface ArticleDAO {
      * @return 影响行数
      */
     int deleteById(Long articleId);
+
+    /**
+     * 文章点赞数 +1
+     * @param articleId 文章ID
+     * @return 影响行数
+     */
+    int incrementLikeCount(Long articleId);
+
+    /**
+     * 文章点赞数 -1（取消点赞，不低于 0）
+     * @param articleId 文章ID
+     * @return 影响行数
+     */
+    int decrementLikeCount(Long articleId);
 }

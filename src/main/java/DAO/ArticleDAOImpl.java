@@ -188,4 +188,28 @@ public class ArticleDAOImpl implements ArticleDAO {
             throw new RuntimeException("删除文章失败: " + articleId, e);
         }
     }
+
+    @Override
+    public int incrementLikeCount(Long articleId) {
+        String sql = "UPDATE article SET article_like_count = article_like_count + 1 WHERE article_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, articleId);
+            return ps.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException("文章点赞失败: " + articleId, e);
+        }
+    }
+
+    @Override
+    public int decrementLikeCount(Long articleId) {
+        String sql = "UPDATE article SET article_like_count = GREATEST(article_like_count - 1, 0) WHERE article_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, articleId);
+            return ps.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException("取消文章点赞失败: " + articleId, e);
+        }
+    }
 }

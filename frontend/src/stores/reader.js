@@ -1,6 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, computed } from 'vue'
 import request from '@/utils/request'
+
+/** 格式化阅读时间（后端返回分钟数，精确到 0.5） */
+function formatReadTime(minutes) {
+  if (minutes == null || minutes <= 0) return '—'
+  const m = Number(minutes)
+  if (m === 0.5) return '0.5 min read'
+  if (m % 1 === 0) return m + ' min read'
+  return m.toFixed(1) + ' min read'
+}
+
 let _lemmatize = null
 async function getLemmatize() {
   if (!_lemmatize) {
@@ -19,6 +29,8 @@ export const useReaderStore = defineStore('reader', () => {
   const bookmarks = ref([])
   const loading = ref(false)
   const isFavorited = ref(false)    // 当前文章是否已收藏
+  const isLiked = ref(false)        // 当前文章是否已点赞
+  const likeCount = ref(0)          // 当前文章点赞数
 
   // ========== AI 例句缓存 ==========
   /** @type {import('vue').Ref<Record<string, {examples: Array<{en:string,zh:string}>, loading: boolean}>>} */
@@ -77,7 +89,8 @@ export const useReaderStore = defineStore('reader', () => {
       source: raw.source || '',
       difficulty: raw.difficulty || '',
       wordCount: raw.wordCount || 0,
-      readTime: (raw.readTime || 5) + ' min read',
+      readTime: formatReadTime(raw.readTime),
+      articleLikeCount: raw.articleLikeCount || 0,
       category: raw.source || '',
     }
   }
@@ -303,6 +316,50 @@ export const useReaderStore = defineStore('reader', () => {
     } catch (e) {
       console.error('检查收藏状态失败:', e)
       isFavorited.value = false
+    }
+  }
+
+  // ========== 点赞 ==========
+
+  /** 获取点赞状态 localStorage key */
+  function likeStorageKey(articleId) {
+    return 'aael_liked_' + articleId
+  }
+
+  /** 检查当前文章是否已点赞（从 localStorage 读取） */
+  function checkLikeStatus() {
+    if (!article.value?.id) {
+      isLiked.value = false
+      return
+    }
+    isLiked.value = localStorage.getItem(likeStorageKey(article.value.id)) === '1'
+    likeCount.value = article.value?.articleLikeCount || 0
+  }
+
+  /** 切换点赞状态 */
+  async function toggleLike() {
+    if (!article.value?.id) return
+    const articleId = article.value.id
+    const key = likeStorageKey(articleId)
+    const currentlyLiked = localStorage.getItem(key) === '1'
+
+    try {
+      const params = new URLSearchParams()
+      params.append('articleId', String(articleId))
+      params.append('action', currentlyLiked ? 'unlike' : 'like')
+      await request.post('/article/like', params)
+
+      if (currentlyLiked) {
+        localStorage.removeItem(key)
+        isLiked.value = false
+        likeCount.value = Math.max(0, likeCount.value - 1)
+      } else {
+        localStorage.setItem(key, '1')
+        isLiked.value = true
+        likeCount.value = likeCount.value + 1
+      }
+    } catch (e) {
+      console.error('点赞操作失败:', e)
     }
   }
 
@@ -630,6 +687,8 @@ export const useReaderStore = defineStore('reader', () => {
     bookmarks,
     loading,
     isFavorited,
+    isLiked,
+    likeCount,
     articleTitle,
     articleContent,
     fetchArticle,
@@ -641,6 +700,8 @@ export const useReaderStore = defineStore('reader', () => {
     removeBookmark,
     toggleFavorite,
     checkFavoriteStatus,
+    toggleLike,
+    checkLikeStatus,
     lookupWord,
     addToVocabulary,
     aiExampleCache,

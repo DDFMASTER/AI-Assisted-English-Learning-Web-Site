@@ -33,7 +33,7 @@
       </p>
       <div class="flex items-center gap-6 text-[11px] text-gray-400 font-medium">
         <span class="flex items-center gap-1">
-          <Icon icon="ph:clock-bold" /> {{ article.readTime || '10 min read' }}
+          <Icon icon="ph:clock-bold" /> {{ article.readTime || '—' }}
         </span>
         <span class="flex items-center gap-1">
           <Icon icon="ph:text-t-bold" /> {{ article.wordCount || '850 words' }}
