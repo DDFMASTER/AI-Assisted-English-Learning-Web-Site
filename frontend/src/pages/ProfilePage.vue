@@ -610,6 +610,7 @@
     <!-- 词汇量测试弹窗（快速版） -->
     <FirstVocabTestModal
       :visible="showQuickVocabTest"
+      :is-initial="false"
       @done="onQuickVocabTestDone"
       @close="showQuickVocabTest = false"
       @skip="showQuickVocabTest = false"

@@ -74,14 +74,18 @@
           </div>
 
           <!-- 错误提示 -->
-          <div v-if="errorMsg" class="text-sm text-red-500 bg-red-50 rounded-lg px-4 py-2">
+          <div v-if="errorMsg" class="text-sm rounded-lg px-4 py-2"
+            :class="lockSeconds > 0 ? 'text-orange-600 bg-orange-50 border border-orange-200' : 'text-red-500 bg-red-50'">
             {{ errorMsg }}
+            <span v-if="lockSeconds > 0" class="font-bold tabular-nums">
+              （{{ Math.floor(lockSeconds / 60) }}:{{ String(lockSeconds % 60).padStart(2, '0') }}）
+            </span>
           </div>
 
           <!-- 提交按钮 -->
           <button
             type="submit"
-            :disabled="submitting"
+            :disabled="submitting || lockSeconds > 0"
             class="w-full h-11 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
             :style="{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }"
           >
@@ -150,6 +154,8 @@ const gradient = colorPairs[Math.floor(Math.random() * colorPairs.length)]
 const isRegisterMode = ref(false)
 const submitting = ref(false)
 const errorMsg = ref('')
+const lockSeconds = ref(0)
+let lockTimer = null
 
 const stages = ['初中', '高中', '四级', '六级', '考研', '托福']
 
@@ -173,21 +179,35 @@ async function handleSubmit() {
   try {
     if (isRegisterMode.value) {
       await userStore.register(form.username, form.password, form.studyPurpose)
-      // 注册成功后切换到登录
       isRegisterMode.value = false
       errorMsg.value = ''
     } else {
       await userStore.login(form.username, form.password)
-      // 清除可能存在的过期 pendingAction（全页面登录后会跳转，不需要重试原操作）
       userStore.runPendingAction()
-      // 登录成功后跳转
       const redirect = route.query.redirect || '/materials'
       router.push(redirect)
     }
   } catch (error) {
     errorMsg.value = error.message || '操作失败，请重试'
+    // 如果返回了锁定时间，启动倒计时
+    if (error.lockSeconds > 0) {
+      lockSeconds.value = error.lockSeconds
+      startLockCountdown()
+    }
   } finally {
     submitting.value = false
   }
+}
+
+function startLockCountdown() {
+  clearInterval(lockTimer)
+  lockTimer = setInterval(() => {
+    lockSeconds.value--
+    if (lockSeconds.value <= 0) {
+      clearInterval(lockTimer)
+      lockTimer = null
+      errorMsg.value = ''
+    }
+  }, 1000)
 }
 </script>

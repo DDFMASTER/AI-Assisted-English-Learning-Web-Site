@@ -40,8 +40,23 @@ public class AdminRequestLogsServlet extends HttpServlet {
         int page = ServletUtil.parseInt(request.getParameter("page"), 1);
         int pageSize = ServletUtil.parseInt(request.getParameter("pageSize"), 15);
 
+        // 筛选参数
+        String ipFilter = request.getParameter("ipFilter");
+        String timeFrom = request.getParameter("timeFrom");
+        String timeTo = request.getParameter("timeTo");
+        String userFilter = request.getParameter("userFilter");
+
         ServletContext ctx = getServletContext();
-        MonitorService.LogPageResult result = monitorService.getLogsPage(ctx, page, pageSize);
+        MonitorService.LogPageResult result;
+        if ((ipFilter != null && !ipFilter.isBlank())
+                || (timeFrom != null && !timeFrom.isBlank())
+                || (timeTo != null && !timeTo.isBlank())
+                || (userFilter != null && !userFilter.isBlank())) {
+            result = monitorService.getFilteredLogsPage(ctx, page, pageSize,
+                    ipFilter, timeFrom, timeTo, userFilter);
+        } else {
+            result = monitorService.getLogsPage(ctx, page, pageSize);
+        }
 
         StringBuilder json = new StringBuilder();
         json.append("{\"success\":true");

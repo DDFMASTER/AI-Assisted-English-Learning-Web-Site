@@ -4,6 +4,7 @@ import Entities.User;
 import DAO.UserDAOImpl;
 import Service.UserService;
 import Utils.JsonUtil;
+import Utils.ServletUtil;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,8 +16,8 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * 用户个人信息接口。
- * GET /api/user/profile?userId=xxx  或  ?username=xxx
- * 返回用户完整信息（含经验值、学习阶段等），供前端同步最新用户数据。
+ * GET /api/user/profile
+ * 从 Session 中获取当前登录用户，返回用户完整信息（含经验值、学习阶段等）。
  */
 @WebServlet("/api/user/profile")
 public class UserProfileServlet extends HttpServlet {
@@ -29,32 +30,16 @@ public class UserProfileServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
 
-        User user = null;
-
-        // 优先用 userId 查询
-        String userIdParam = request.getParameter("userId");
-        if (userIdParam != null && !userIdParam.isBlank()) {
-            try {
-                Long userId = Long.parseLong(userIdParam);
-                user = userDAO.findById(userId);
-            } catch (NumberFormatException e) {
-                response.getWriter().write(
-                        JsonUtil.error("userId 格式错误"));
-                return;
-            }
+        // 从 Session 获取当前登录用户 ID（不再接受 query param，防止用户枚举）
+        Long sessionUserId = ServletUtil.getSessionUserId(request);
+        if (sessionUserId == null) {
+            response.getWriter().write(JsonUtil.error("请先登录"));
+            return;
         }
 
-        // userId 查不到则尝试 username
+        User user = userDAO.findById(sessionUserId);
         if (user == null) {
-            String username = request.getParameter("username");
-            if (username != null && !username.isBlank()) {
-                user = userDAO.findByUsername(username);
-            }
-        }
-
-        if (user == null) {
-            response.getWriter().write(
-                    JsonUtil.error("用户不存在，请提供有效的 userId 或 username"));
+            response.getWriter().write(JsonUtil.error("用户不存在"));
             return;
         }
 

@@ -59,7 +59,11 @@ export const useUserStore = defineStore('user', () => {
       showLoginModal.value = false
       return data
     }
-    throw new Error(data.message || '登录失败')
+    // 携带限流相关字段供 LoginPage 使用
+    const error = new Error(data.message || '登录失败')
+    error.remainingAttempts = data.remainingAttempts
+    error.lockSeconds = data.lockSeconds
+    throw error
   }
 
   /**
@@ -93,22 +97,11 @@ export const useUserStore = defineStore('user', () => {
 
   /**
    * 获取用户信息（每次调用都从数据库同步最新值）。
-   * 支持 userId 或 username 任一方式查找，确保在任意状态下都能刷新。
+   * 后端从 Session 识别当前用户，无需传递查询参数。
    */
   async function fetchProfile() {
-    // 构建查询参数：有几个传几个
-    const params = {}
-    if (user.value?.userId) params.userId = user.value.userId
-    if (user.value?.username) params.username = user.value.username
-
-    // 没有任何可用的标识符则放弃
-    if (Object.keys(params).length === 0) {
-      console.warn('fetchProfile: 无可用用户标识，跳过')
-      return
-    }
-
     try {
-      const data = await request.get('/user/profile', { params })
+      const data = await request.get('/user/profile')
       if (data.success && data.user) {
         // 用服务端返回的最新数据覆盖本地（尤其是 experience）
         user.value = { ...user.value, ...data.user }

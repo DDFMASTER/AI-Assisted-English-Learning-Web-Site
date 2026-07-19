@@ -10,12 +10,19 @@
         <!-- ========== 开始界面 ========== -->
         <div v-if="phase === 'start'" class="p-8 text-center">
           <Icon icon="ph:book-open-text-bold" class="text-5xl text-[#2563EB] mx-auto mb-4" />
-          <h2 class="text-2xl font-bold mb-2">初次词汇量检测</h2>
+          <h2 class="text-2xl font-bold mb-2">{{ isInitial ? '初次词汇量检测' : '快速词汇量测试' }}</h2>
           <p class="text-gray-500 text-sm leading-relaxed mb-4">
-            欢迎使用 AAEL！在开始学习之前，请先完成一次词汇量检测。<br/>
-            系统将展示 <strong>100 个单词</strong>，请勾选你<strong>认识</strong>的单词。<br/>
-            测试中包含部分伪词用于诚信检测——不认识请勿勾选。<br/>
-            在您成功完成一次测试之前，此弹窗会经常弹出。<strong>完成测试以永久禁用此弹窗。</strong>
+            <template v-if="isInitial">
+              欢迎使用 AAEL！在开始学习之前，请先完成一次词汇量检测。<br/>
+              系统将展示 <strong>100 个单词</strong>，请勾选你<strong>认识</strong>的单词。<br/>
+              测试中包含部分伪词用于诚信检测——不认识请勿勾选。<br/>
+              在您成功完成一次测试之前，此弹窗会经常弹出。<strong>完成测试以永久禁用此弹窗。</strong>
+            </template>
+            <template v-else>
+              系统将展示 <strong>100 个单词</strong>，请勾选你<strong>认识</strong>的单词。<br/>
+              测试中包含部分伪词用于诚信检测——不认识请勿勾选。<br/>
+              认识越多单词，词汇量估值越高，结果越准确。
+            </template>
           </p>
           <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-left">
             <p class="text-xs text-blue-700 font-bold mb-1">📌 操作说明</p>
@@ -27,10 +34,18 @@
           </div>
           <div class="flex gap-3 justify-center">
             <button
+              v-if="isInitial"
               class="px-6 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold hover:bg-gray-200 transition-colors"
               @click="$emit('skip')"
             >
               跳过
+            </button>
+            <button
+              v-else
+              class="px-6 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+              @click="$emit('close')"
+            >
+              返回
             </button>
             <button
               class="px-8 py-3 bg-[#2563EB] text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform"
@@ -93,7 +108,7 @@
         <div v-else-if="phase === 'result'" class="p-8 text-center">
           <Icon icon="ph:trophy-bold" class="text-5xl text-yellow-500 mx-auto mb-4" />
           <h2 class="text-2xl font-bold mb-1">检测完成！</h2>
-          <p class="text-gray-400 text-sm mb-6">AI 已评估你的初始英语能力</p>
+          <p class="text-gray-400 text-sm mb-6">{{ isInitial ? 'AI 已评估你的初始英语能力' : 'AI 已评估你的英语词汇量' }}</p>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div class="bg-blue-50 rounded-xl p-4">
@@ -119,7 +134,7 @@
             class="px-8 py-3 bg-[#2563EB] text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform"
             @click="$emit('done', { vocab: resultVocab, cefr: resultCefr })"
           >
-            开始学习
+            {{ isInitial ? '开始学习' : '完成' }}
           </button>
         </div>
       </div>
@@ -128,12 +143,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import request from '@/utils/request'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
+  /** 是否为初次词汇量检测（注册后引导），false 时显示常规测试文案 */
+  isInitial: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['done', 'close', 'skip'])
@@ -211,4 +228,20 @@ async function submitTest() {
     submitting.value = false
   }
 }
+
+// 每次打开弹窗时重置到初始状态，避免残留上一次测试的旧数据
+watch(() => props.visible, (val) => {
+  if (val) {
+    phase.value = 'start'
+    words.value = []
+    submitting.value = false
+    canAddMore.value = true
+    resultVocab.value = 0
+    resultCefr.value = 'A1'
+    resultCefrLabel.value = '初级'
+    resultLower.value = 0
+    resultUpper.value = 0
+    resultFakeHit.value = 0
+  }
+})
 </script>

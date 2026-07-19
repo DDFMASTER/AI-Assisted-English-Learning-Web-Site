@@ -1,6 +1,7 @@
 package Servlet;
 
 import Entities.User;
+import Service.LoginAttemptService;
 import Service.UserService;
 import Utils.JsonUtil;
 import jakarta.servlet.annotation.WebServlet;
@@ -15,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 @WebServlet("/api/user/login")
 public class UserLoginServlet extends HttpServlet {
     private final UserService userService = new UserService();
+    private final LoginAttemptService loginAttemptService = new LoginAttemptService();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -25,13 +27,35 @@ public class UserLoginServlet extends HttpServlet {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
 
+        // 1. 检查账户是否被锁定
+        if (loginAttemptService.isLocked(username)) {
+            long lockSeconds = loginAttemptService.getLockSecondsRemaining(username);
+            response.getWriter().write(
+                    JsonUtil.buildResponse(false,
+                            "账户已锁定，请于 " + formatLockTime(lockSeconds) + " 后重试",
+                            "\"lockSeconds\":" + lockSeconds));
+            return;
+        }
+
         User user = userService.login(username, password);
 
         if (user == null) {
-            response.getWriter().write(
-                    JsonUtil.error("用户名或密码错误"));
+            // 2. 记录失败（用户名无效或密码错误均记录，防止用户枚举）
+            int remaining = loginAttemptService.recordFailure(username);
+            String msg;
+            String extra = "\"remainingAttempts\":" + remaining;
+            if (remaining <= 0) {
+                msg = "密码错误次数过多，账户已锁定 15 分钟";
+                extra += ",\"lockSeconds\":" + loginAttemptService.getLockSecondsRemaining(username);
+            } else {
+                msg = "用户名或密码错误（剩余 " + remaining + " 次尝试）";
+            }
+            response.getWriter().write(JsonUtil.buildResponse(false, msg, extra));
             return;
         }
+
+        // 3. 登录成功，清除失败记录
+        loginAttemptService.clearAttempts(username);
 
         // 检查 VIP 是否过期
         userService.checkVipExpired(user);
@@ -70,5 +94,15 @@ public class UserLoginServlet extends HttpServlet {
                 + ",\"vipExpireAt\":" + JsonUtil.strVal(vipExpireAt);
 
         response.getWriter().write(JsonUtil.buildResponse(true, "登录成功", extra));
+    }
+
+    /** 将秒数格式化为人类可读的等待时间 */
+    private static String formatLockTime(long seconds) {
+        if (seconds <= 0) return "片刻";
+        long minutes = seconds / 60;
+        long secs = seconds % 60;
+        if (minutes > 0 && secs > 0) return minutes + " 分 " + secs + " 秒";
+        if (minutes > 0) return minutes + " 分钟";
+        return secs + " 秒";
     }
 }

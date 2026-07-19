@@ -25,6 +25,10 @@ public class VocabTestCardServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         response.setContentType("application/json;charset=UTF-8");
+        // 禁止浏览器/代理缓存，确保每次调用都获取全新的随机单词
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setHeader("Expires", "0");
 
         VocabTestCardService service = new VocabTestCardService();
         List<CardWord> words = service.sampleWords();

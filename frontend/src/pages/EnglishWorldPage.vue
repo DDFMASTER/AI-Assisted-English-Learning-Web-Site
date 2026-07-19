@@ -1024,7 +1024,7 @@ async function submitWordChain() {
     const data = await request.post('/wordchain', {
       action: 'validate', letter: wcLetter.value,
       userWord: word, usedWords: [...wcUsedWords.value].join(','),
-    }, { timeout: 15000 })
+    }, { timeout: 35000 })
 
     if (data.success && data.valid) {
       // 用户单词合法
@@ -1042,7 +1042,7 @@ async function submitWordChain() {
         const aiData = await request.post('/wordchain', {
           action: 'generate', letter: wcLetter.value,
           usedWords: [...wcUsedWords.value].join(','),
-        }, { timeout: 15000 })
+        }, { timeout: 35000 })
 
         if (aiData.success && aiData.word && aiData.word.length > 1) {
           const aiWord = aiData.word.toLowerCase()

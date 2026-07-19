@@ -28,6 +28,10 @@ public class AIService {
     private static final String WORDCHAIN_PROMPT_TEMPLATE =
             ConfigUtil.readResourceText("prompts/wordchain.txt");
 
+    /** 单词接龙 AI 调用超时秒数（config.properties: wordchain.ai.timeout.seconds，默认 30） */
+    private static final int WORDCHAIN_AI_TIMEOUT =
+            Utils.ConfigUtil.getInt("wordchain.ai.timeout.seconds", 30);
+
     private final AIClient client;
 
     public AIService(AIClient client) {
@@ -129,7 +133,7 @@ public class AIService {
                 .replace("{userWord}", userWord)
                 .replace("{usedWords}", usedWords);
 
-        String response = client.call(prompt, "[Go]", 20, result);
+        String response = client.call(prompt, "[Go]", WORDCHAIN_AI_TIMEOUT, result);
 
         if (response != null) {
             result.valid = "true".equals(extractSimpleField(response, "valid"));

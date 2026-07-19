@@ -233,6 +233,45 @@
           <button class="px-3 py-1.5 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors" @click="backupLogs">备份</button>
           <button class="px-3 py-1.5 text-xs bg-[#2563EB] text-white rounded-lg hover:bg-blue-600 transition-colors" @click="loadLogs">刷新</button>
         </div>
+        <!-- 筛选栏 -->
+        <div class="flex flex-wrap gap-2 mb-3">
+          <input
+            v-model="logFilter.ip"
+            type="text"
+            placeholder="IP 筛选..."
+            class="h-8 px-2.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-[#2563EB] w-32"
+            @keydown.enter="loadLogs(1)"
+          />
+          <input
+            v-model="logFilter.user"
+            type="text"
+            placeholder="用户筛选..."
+            class="h-8 px-2.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-[#2563EB] w-28"
+            @keydown.enter="loadLogs(1)"
+          />
+          <input
+            v-model="logFilter.timeFrom"
+            type="datetime-local"
+            class="h-8 px-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-[#2563EB] text-gray-500"
+            title="开始时间"
+          />
+          <span class="text-xs text-gray-400 self-center">—</span>
+          <input
+            v-model="logFilter.timeTo"
+            type="datetime-local"
+            class="h-8 px-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-[#2563EB] text-gray-500"
+            title="结束时间"
+          />
+          <button
+            class="px-3 py-1 h-8 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+            @click="applyLogFilter"
+          >筛选</button>
+          <button
+            v-if="hasLogFilter"
+            class="px-3 py-1 h-8 text-xs text-red-400 hover:text-red-600 transition-colors"
+            @click="clearLogFilter"
+          >清除筛选</button>
+        </div>
       </div>
 
       <div v-if="logsLoading" class="text-center py-8 text-gray-400">加载中...</div>
@@ -382,7 +421,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import request from '@/utils/request'
 import AppPagination from '@/components/AppPagination.vue'
@@ -446,14 +485,41 @@ const logPage = ref(1)
 const logTotalPages = ref(1)
 const logsLoading = ref(false)
 
+// 筛选条件
+const logFilter = reactive({ ip: '', user: '', timeFrom: '', timeTo: '' })
+const hasLogFilter = computed(() => {
+  return logFilter.ip || logFilter.user || logFilter.timeFrom || logFilter.timeTo
+})
+
+function applyLogFilter() {
+  logPage.value = 1
+  loadLogs(1)
+}
+
+function clearLogFilter() {
+  logFilter.ip = ''
+  logFilter.user = ''
+  logFilter.timeFrom = ''
+  logFilter.timeTo = ''
+  logPage.value = 1
+  loadLogs(1)
+}
+
 async function loadLogs(page = 1) {
   logsLoading.value = true
   try {
     const adminUserId = userStore.user?.userId
-    const data = await request.get('/admin/monitor/request-logs', { params: { adminUserId, page, pageSize: 15 } })
+    const params = { adminUserId, page, pageSize: 15 }
+    // 传递筛选条件
+    if (logFilter.ip) params.ipFilter = logFilter.ip
+    if (logFilter.user) params.userFilter = logFilter.user
+    if (logFilter.timeFrom) params.timeFrom = logFilter.timeFrom.replace('T', ' ') + ':00'
+    if (logFilter.timeTo) params.timeTo = logFilter.timeTo.replace('T', ' ') + ':00'
+
+    const data = await request.get('/admin/monitor/request-logs', { params })
     if (data.success) {
       // 为每条日志添加 originalIndex（在全部日志列表中的位置），用于删除
-      // 后端按 page 返回，index 计算: totalCount - (page-1)*15 - (1...15)
+      // 使用过滤后的 totalCount
       const startIdx = data.totalCount - (data.page - 1) * 15 - 1
       logs.value = (data.logs || []).map((l, i) => ({ ...l, originalIndex: startIdx - i }))
       logTotal.value = data.totalCount || 0

@@ -76,7 +76,7 @@ public class RequestLogListener implements ServletRequestListener {
      * 从 ServletContext 中获取或创建日志列表
      */
     @SuppressWarnings("unchecked")
-    static List<RequestLogEntry> getLogList(ServletContext ctx) {
+    public static List<RequestLogEntry> getLogList(ServletContext ctx) {
         List<RequestLogEntry> logs = (List<RequestLogEntry>) ctx.getAttribute(REQUEST_LOGS);
         if (logs == null) {
             logs = Collections.synchronizedList(new ArrayList<>());

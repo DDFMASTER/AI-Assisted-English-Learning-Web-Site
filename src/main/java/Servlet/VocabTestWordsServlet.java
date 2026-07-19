@@ -29,6 +29,10 @@ public class VocabTestWordsServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         response.setContentType("application/json;charset=UTF-8");
+        // 禁止浏览器/代理缓存，确保每次调用都获取全新的随机单词
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setHeader("Expires", "0");
 
         HttpSession session = request.getSession(true);
         VocabTestService service = VocabTestService.getInstance();
@@ -50,7 +54,7 @@ public class VocabTestWordsServlet extends HttpServlet {
             session.setAttribute("vocabTestUsedReal", usedReal);
             session.setAttribute("vocabTestUsedFake", usedFake);
         } else {
-            // 初始抽样
+            // 初始抽样 — 全新测试，清空 session 中的所有旧状态
             newWords = service.sampleInitial();
             // 从初始词中提取已用集合存入 session
             Set<String> usedReal = new HashSet<>();
@@ -61,14 +65,18 @@ public class VocabTestWordsServlet extends HttpServlet {
             }
             session.setAttribute("vocabTestUsedReal", usedReal);
             session.setAttribute("vocabTestUsedFake", usedFake);
+            // 新测试开始，重置总词表（之前的旧数据不应影响本次测试）
+            session.setAttribute("vocabTestWords", new ArrayList<>(newWords));
         }
 
-        // 追加到 session 中的总词表
+        // 追加到 session 中的总词表（仅在 more 模式时执行）
         @SuppressWarnings("unchecked")
         List<TestWord> allWords = (List<TestWord>) session.getAttribute("vocabTestWords");
         if (allWords == null) allWords = new ArrayList<>();
-        allWords.addAll(newWords);
-        session.setAttribute("vocabTestWords", allWords);
+        if (moreParam != null) {
+            allWords.addAll(newWords);
+            session.setAttribute("vocabTestWords", allWords);
+        }
 
         // 构建响应
         StringBuilder json = new StringBuilder();
