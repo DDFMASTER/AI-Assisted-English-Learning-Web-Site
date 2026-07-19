@@ -3,6 +3,24 @@ import { ref, computed } from 'vue'
 import request from '@/utils/request'
 import { userKey } from '@/utils/storage'
 
+/**
+ * 生成 UUID v4，兼容非安全上下文（HTTP）。
+ * crypto.randomUUID() 仅在 HTTPS 或 localhost 下可用。
+ */
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    try {
+      return crypto.randomUUID()
+    } catch (_) { /* 静默回退到 polyfill */ }
+  }
+  // RFC 4122 v4 polyfill
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0
+    var v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
+
 const getProgressKey = () => userKey('assessment_progress')
 
 export const useAssessmentStore = defineStore('assessment', () => {
@@ -143,7 +161,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
   /** 将后端题目格式转为前端格式 */
   function transformQuestions(rawQuestions) {
     return rawQuestions.map((q, i) => ({
-      id: crypto.randomUUID(),    // 全局唯一标识，用于错题本等跨测评去重
+      id: generateUUID(),    // 全局唯一标识，用于错题本等跨测评去重
       questionNumber: i + 1,       // 题号（仅用于显示）
       passage: q.passage || '',
       question: q.question || '',
@@ -494,7 +512,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
     if (questions.value.length > 0 && isLegacyNumericId(questions.value[0].id)) {
       questions.value = questions.value.map((q, i) => ({
         ...q,
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         questionNumber: typeof q.questionNumber === 'number' ? q.questionNumber : (i + 1),
       }))
     }

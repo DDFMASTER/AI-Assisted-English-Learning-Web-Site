@@ -23,8 +23,8 @@ import java.util.List;
 @WebListener
 public class RequestLogListener implements ServletRequestListener {
 
-    /** 最大日志条目数 */
-    private static final int MAX_LOG_ENTRIES = 1000;
+    /** 最大日志条目数（内存存储，超出后 FIFO 移除最旧记录） */
+    private static final int MAX_LOG_ENTRIES = 10000;
 
     /** ServletContext 中存储请求日志列表的 key */
     public static final String REQUEST_LOGS = "requestLogs";

@@ -36,27 +36,32 @@ public class SessionListener implements HttpSessionListener, HttpSessionAttribut
         HttpSession session = se.getSession();
         ServletContext ctx = session.getServletContext();
 
-        // 更新在线人数
-        AtomicInteger count = (AtomicInteger) ctx.getAttribute(AppContextListener.ONLINE_COUNT);
-        if (count != null) {
-            int current = count.decrementAndGet();
-            System.out.println("[AAEL] 会话销毁: " + session.getId()
-                    + " | 当前在线会话数: " + current);
-        }
+        // 在线人数递减已移至 attributeRemoved("userId")，
+        // 确保只有登录过的用户才会计数，避免爬虫/未登录会话导致负数。
+        // 此处仅做防御性清理。
 
-        // 清理用户-会话映射
+        // 防御性清理用户-会话映射（正常情况下 attributeRemoved 已处理）
         Long userId = (Long) session.getAttribute("userId");
         if (userId != null) {
+            // 异常情况：userId 未被 attributeRemoved 清理
             @SuppressWarnings("unchecked")
             ConcurrentHashMap<Long, String> map =
                     (ConcurrentHashMap<Long, String>) ctx.getAttribute(AppContextListener.USER_SESSION_MAP);
             if (map != null) {
                 String removed = map.remove(userId);
                 if (removed != null) {
-                    System.out.println("[AAEL] 用户下线: userId=" + userId
+                    System.out.println("[AAEL] 用户下线(防御清理): userId=" + userId
                             + " | sessionId=" + session.getId()
                             + " | 原因: " + (isTimeout(session) ? "超时" : "主动登出"));
                 }
+            }
+
+            // 若 userId 仍在则说明计数尚未递减，补做一次
+            AtomicInteger count = (AtomicInteger) ctx.getAttribute(AppContextListener.ONLINE_COUNT);
+            if (count != null) {
+                int current = count.decrementAndGet();
+                System.out.println("[AAEL] 会话销毁(补递减): " + session.getId()
+                        + " | 当前在线用户数: " + current);
             }
 
             // 清理强制下线标记
@@ -114,6 +119,16 @@ public class SessionListener implements HttpSessionListener, HttpSessionAttribut
             HttpSession session = se.getSession();
             ServletContext ctx = session.getServletContext();
 
+            // 更新在线人数 —— 在此处递减而非 sessionDestroyed，
+            // 确保只有真正登录过的用户才会计数，爬虫/未登录会话不影响计数。
+            AtomicInteger count = (AtomicInteger) ctx.getAttribute(AppContextListener.ONLINE_COUNT);
+            if (count != null) {
+                int current = count.decrementAndGet();
+                System.out.println("[AAEL] 用户下线: userId=" + userId
+                        + " | sessionId=" + session.getId()
+                        + " | 当前在线用户数: " + current);
+            }
+
             @SuppressWarnings("unchecked")
             ConcurrentHashMap<Long, String> map =
                     (ConcurrentHashMap<Long, String>) ctx.getAttribute(AppContextListener.USER_SESSION_MAP);
@@ -121,7 +136,7 @@ public class SessionListener implements HttpSessionListener, HttpSessionAttribut
                 map.remove(userId);
             }
 
-            System.out.println("[AAEL] 用户登出: userId=" + userId
+            System.out.println("[AAEL] 用户登出(attributeRemoved): userId=" + userId
                     + " | sessionId=" + session.getId());
         }
     }

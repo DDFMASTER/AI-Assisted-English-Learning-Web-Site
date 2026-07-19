@@ -53,7 +53,8 @@ public class AdminOnlineUsersServlet extends HttpServlet {
                 onlineUsers.add(new MonitorService.OnlineUserInfo(
                     adminUserId, adminUser.getUsername(), adminUser.getRole(),
                     adminUser.getStudyPurpose(), "当前会话", 0, 0, false));
-                onlineCount = onlineUsers.size();
+                // 使用 AtomicInteger 的真实值 +1，而非用列表大小覆盖
+                onlineCount = onlineCount + 1;
             }
         }
 
