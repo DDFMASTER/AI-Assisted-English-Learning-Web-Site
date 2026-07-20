@@ -228,12 +228,6 @@
         </div>
       </div>
     </Teleport>
-    <footer class="mt-12 pt-6 pb-8 border-t border-gray-100 dark:border-gray-800">
-      <div class="max-w-[1200px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
-        <span>EngliAI — 智能英语学习平台</span>
-        <span>&copy; {{ new Date().getFullYear() }} EngliAI. All rights reserved.</span>
-      </div>
-    </footer>
   </main>
 </template>
 

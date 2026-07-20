@@ -253,19 +253,6 @@
       @skip="showVocabTest = false"
     />
 
-    <!-- 页脚 -->
-    <footer class="mt-12 pt-6 pb-8 border-t border-gray-100">
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
-        <div class="flex items-center gap-4">
-          <span>EngliAI — 智能英语学习平台</span>
-          <router-link to="/materials" class="hover:text-[#2563EB] transition-colors">读物匹配</router-link>
-          <router-link to="/profile" class="hover:text-[#2563EB] transition-colors">个人中心</router-link>
-        </div>
-        <div>
-          <span>&copy; {{ new Date().getFullYear() }} EngliAI. All rights reserved.</span>
-        </div>
-      </div>
-    </footer>
   </main>
 </template>
 

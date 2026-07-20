@@ -1,8 +1,22 @@
 <template>
-  <div id="engli-app">
+  <div id="engli-app" class="flex flex-col">
     <ToastContainer />
     <AppNav v-if="$route.name !== 'Login'" />
-    <router-view />
+    <div class="grow">
+      <router-view />
+    </div>
+    <footer class="pt-6 pb-8 border-t border-gray-100 dark:border-gray-800">
+      <div class="max-w-[1200px] mx-auto px-6 flex flex-col items-center gap-2 text-xs text-gray-400">
+        <div class="flex flex-col sm:flex-row items-center justify-between w-full gap-3">
+          <span>EngliAI — 智能英语学习平台</span>
+          <span>&copy; {{ new Date().getFullYear() }} EngliAI. All rights reserved.</span>
+        </div>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <a href="https://beian.miit.gov.cn/" rel="noreferrer" target="_blank" class="hover:text-[#2563EB] transition-colors">冀ICP备2026024968号-1</a>
+          <a href="https://beian.mps.gov.cn/#/query/webSearch?code=13030202004184" rel="noreferrer" target="_blank" class="hover:text-[#2563EB] transition-colors">冀公网安备13030202004184号</a>
+        </div>
+      </div>
+    </footer>
     <LoginModal
       :visible="userStore.showLoginModal"
       @close="userStore.closeLoginModal()"
@@ -94,5 +108,7 @@ onUnmounted(() => {
 <style>
 #engli-app {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 </style>
