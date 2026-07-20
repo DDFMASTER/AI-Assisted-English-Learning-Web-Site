@@ -281,6 +281,7 @@ public class PkGameServlet extends HttpServlet {
         // 判断胜负结果
         boolean hostWin = false, guestWin = false, tie = false;
         if (room.bothFinished()) {
+            room.finish();  // 双方都完成后标记结束，记录时间供过期清理
             int hc = room.getCorrectCount(room.getHostUserId());
             int gc = room.getCorrectCount(room.getGuestUserId() != null ? room.getGuestUserId() : 0L);
             long ht = room.getTotalTime(room.getHostUserId());
@@ -406,8 +407,8 @@ public class PkGameServlet extends HttpServlet {
         GameRoom room = roomManager.getRoom(getServletContext(), roomCode.trim());
         if (room == null) return JsonUtil.error("房间不存在");
 
-        // 标记为 FINISHED，对手自动获胜
-        room.setStatus(GameRoom.FINISHED);
+        // 标记为 FINISHED 并记录时间，对手自动获胜，5 分钟后自动清理
+        room.finish();
 
         return "{\"success\":true,\"message\":\"已退出对战\"}";
     }

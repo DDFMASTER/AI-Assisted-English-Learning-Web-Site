@@ -461,7 +461,7 @@ function mapArticle(raw) {
     source: raw.source || '未知来源',
     difficulty: DIFFICULTY_LABEL[difficulty] || difficulty,
     category: getCategory(difficulty),
-    readTime: (raw.readTime || 5) + ' min read',
+    readTime: formatReadTime(raw.readTime),
     wordCount: (raw.wordCount || 500) + ' words',
     newWords: vocquizNum > 0 ? vocquizNum + ' 道词汇题' : '',
     abstract: '难度: ' + (DIFFICULTY_LABEL[difficulty] || difficulty)
@@ -476,6 +476,15 @@ function getCategory(difficulty) {
   if (['初中', '高中'].includes(difficulty)) return 'basic'
   if (['网络新闻'].includes(difficulty)) return 'extended'
   return 'advanced'
+}
+
+/** 格式化阅读时间（后端返回分钟数，精确到 0.5） */
+function formatReadTime(minutes) {
+  if (minutes == null || minutes <= 0) return '—'
+  const m = Number(minutes)
+  if (m === 0.5) return '0.5 min read'
+  if (m % 1 === 0) return m + ' min read'
+  return m.toFixed(1) + ' min read'
 }
 
 // ====== 浏览历史 ======

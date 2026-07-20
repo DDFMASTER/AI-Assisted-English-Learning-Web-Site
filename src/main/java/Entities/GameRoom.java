@@ -43,6 +43,9 @@ public class GameRoom {
     private volatile boolean hostFinished;
     private volatile boolean guestFinished;
 
+    /** 房间结束时间（毫秒时间戳），用于 FINISHED 房间的过期清理。0 表示未结束 */
+    private volatile long finishedAt;
+
     // ==== 构造函数 ====
     public GameRoom(String roomCode, Long hostUserId, boolean isPublic) {
         this.roomCode   = roomCode;
@@ -82,6 +85,13 @@ public class GameRoom {
     // ==== Setter ====
     public void setGuestUserId(Long guestUserId) { this.guestUserId = guestUserId; }
     public void setStatus(String status)         { this.status = status; }
+    public long   getFinishedAt()   { return finishedAt; }
+
+    /** 将房间标记为已结束并记录时间，供后续过期清理使用 */
+    public void finish() {
+        this.status = FINISHED;
+        this.finishedAt = System.currentTimeMillis();
+    }
     public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
     public void setQuestions(List<PkQuestion> questions) { this.questions = questions; }
     public void setPublic(boolean isPublic)      { this.isPublic = isPublic; }

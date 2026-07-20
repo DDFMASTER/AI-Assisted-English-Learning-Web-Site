@@ -22,8 +22,11 @@ import java.util.stream.Collectors;
  */
 public class GameRoomManager {
 
-    /** 房间超时时间（毫秒）默认 30 分钟 */
+    /** WAITING 房间超时时间（毫秒）默认 30 分钟 */
     private static final long ROOM_TIMEOUT_MS = 30 * 60 * 1000;
+
+    /** FINISHED 房间保留时间（毫秒）默认 5 分钟，供双方查看结果后自动清理 */
+    private static final long FINISHED_ROOM_TTL_MS = 5 * 60 * 1000;
 
     /** 每页房间数量 */
     private static final int ROOMS_PER_PAGE = 6;
@@ -136,7 +139,7 @@ public class GameRoomManager {
                 return null;
             }
             // 游戏进行中房主退出 → 对手获胜
-            room.setStatus(GameRoom.FINISHED);
+            room.finish();
             return null;
         }
 
@@ -147,7 +150,7 @@ public class GameRoomManager {
                 return null;
             }
             // 游戏进行中加入者退出 → 房主获胜
-            room.setStatus(GameRoom.FINISHED);
+            room.finish();
             return null;
         }
 
@@ -262,15 +265,22 @@ public class GameRoomManager {
         return code;
     }
 
-    /** 清理过期房间 */
+    /** 清理过期房间（WAITING 超时 30 分钟 / FINISHED 超时 5 分钟） */
     private void cleanupExpired(ServletContext ctx) {
         ConcurrentHashMap<String, GameRoom> map = getRoomMap(ctx);
         long now = System.currentTimeMillis();
         Iterator<Map.Entry<String, GameRoom>> it = map.entrySet().iterator();
         while (it.hasNext()) {
             GameRoom room = it.next().getValue();
+            // WAITING 房间：超过 30 分钟未开始 → 清理
             if (GameRoom.WAITING.equals(room.getStatus())
                     && (now - room.getCreatedAt()) > ROOM_TIMEOUT_MS) {
+                it.remove();
+            }
+            // FINISHED 房间：结束后超过 5 分钟 → 清理
+            else if (GameRoom.FINISHED.equals(room.getStatus())
+                    && room.getFinishedAt() > 0
+                    && (now - room.getFinishedAt()) > FINISHED_ROOM_TTL_MS) {
                 it.remove();
             }
         }

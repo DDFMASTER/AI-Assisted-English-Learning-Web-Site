@@ -61,11 +61,33 @@
             </Transition>
           </div>
 
-          <!-- 书签 / 收藏夹（第三个） -->
+          <!-- 点赞（爱心） -->
+          <div class="relative group">
+            <button
+              class="p-2 transition-colors rounded-lg flex items-center gap-1"
+              :class="readerStore.isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-400 dark:text-gray-500 dark:hover:text-red-400'"
+              @click.stop="guard(handleLike)"
+            >
+              <Icon
+                :icon="readerStore.isLiked ? 'ph:heart-fill' : 'ph:heart-bold'"
+                class="text-2xl"
+              />
+              <span
+                v-if="readerStore.likeCount > 0"
+                class="text-xs font-bold"
+                :class="readerStore.isLiked ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'"
+              >{{ readerStore.likeCount }}</span>
+            </button>
+            <div class="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded-lg px-3 py-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[60]">
+              {{ readerStore.isLiked ? '已点赞 · 点击取消' : '点赞支持' }}
+            </div>
+          </div>
+
+          <!-- 书签 / 收藏夹 -->
           <div class="relative group">
             <button
               class="p-2 transition-colors rounded-lg"
-              :class="readerStore.isFavorited ? 'text-yellow-500' : 'text-gray-400 hover:text-gray-600'"
+              :class="readerStore.isFavorited ? 'text-yellow-500' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
               @click.stop="guard(handleFavorite)"
             >
               <Icon
@@ -695,6 +717,10 @@ function handleParagraphClick(pIdx, event) {
 }
 
 // ========== 其他操作 ==========
+async function handleLike() {
+  await readerStore.toggleLike()
+}
+
 async function handleFavorite() {
   await readerStore.toggleFavorite()
 }
@@ -802,8 +828,9 @@ watch(() => readerStore.showTranslation, (newVal) => {
 async function initArticle(articleId) {
   resetReadState()
   await readerStore.fetchArticle(articleId)
-  // 检查收藏状态
+  // 检查收藏 & 点赞状态
   readerStore.checkFavoriteStatus()
+  readerStore.checkLikeStatus()
   if (articleId && readerStore.article?.title) {
     // 记录浏览历史到 IndexedDB
     addToHistory(articleId, readerStore.article.title).catch(err => {

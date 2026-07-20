@@ -144,13 +144,15 @@ public class ArticleListServlet extends HttpServlet {
 
                         int contentLen = rs.getInt("content_length");
                         int wordCount = Math.max(1, contentLen / 5);
-                        int readTime  = Math.max(1, wordCount / 200);
+                        String articleDifficulty = rs.getString("difficulty");
+                        String studyPurpose = Utils.ReadingTimeUtil.getStudyPurpose(request);
+                        double readTime = Utils.ReadingTimeUtil.calculate(contentLen, articleDifficulty, studyPurpose);
 
                         json.append("{");
                         json.append("\"articleId\":").append(rs.getLong("article_id")).append(",");
                         json.append("\"title\":\"").append(esc(rs.getString("title"))).append("\",");
                         json.append("\"source\":\"").append(esc(rs.getString("source"))).append("\",");
-                        json.append("\"difficulty\":\"").append(esc(rs.getString("difficulty"))).append("\",");
+                        json.append("\"difficulty\":\"").append(esc(articleDifficulty)).append("\",");
                         json.append("\"wordCount\":").append(wordCount).append(",");
                         json.append("\"readTime\":").append(readTime).append(",");
                         json.append("\"articleLikeCount\":").append(rs.getInt("article_like_count")).append(",");
